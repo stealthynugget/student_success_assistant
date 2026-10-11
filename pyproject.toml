@@ -1,0 +1,18 @@
+[project]
+name = "student-success-assistant"
+version = "6.0.0"
+description = "OULAD early-warning, hybrid historical-case retrieval and multi-agent student-support system"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::UserWarning", "ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = ["E731", "E702"]

@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+data/raw
+data/processed
+artifacts
+tests
+docs/*.pptx
+frontend/node_modules
+frontend/dist

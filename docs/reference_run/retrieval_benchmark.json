@@ -1,0 +1,63 @@
+{
+  "queries": 500,
+  "k": 10,
+  "query_presentation": "2014J",
+  "corpus": "earlier presentations, same module",
+  "query_positive_rates": {
+    "withdrawn": 0.118,
+    "poor_outcome": 0.358
+  },
+  "modes": {
+    "hybrid": {
+      "neighbour_vote_auc_withdrawal": 0.6505822668050272,
+      "neighbour_vote_auc_poor_outcome": 0.8018848222210619,
+      "outcome_agreement_at_10": 0.6936,
+      "reference_ndcg_at_10_global_ideal": 0.8795900017902634
+    },
+    "behavioural": {
+      "neighbour_vote_auc_withdrawal": 0.6419155232714555,
+      "neighbour_vote_auc_poor_outcome": 0.7850467289719627,
+      "outcome_agreement_at_10": 0.6842,
+      "reference_ndcg_at_10_global_ideal": 0.8742628145864164
+    },
+    "lexical": {
+      "neighbour_vote_auc_withdrawal": 0.6339405818824704,
+      "neighbour_vote_auc_poor_outcome": 0.8319236325031761,
+      "outcome_agreement_at_10": 0.7006,
+      "reference_ndcg_at_10_global_ideal": 0.7554797518173918
+    },
+    "random": {
+      "neighbour_vote_auc_withdrawal": 0.5381644183096967,
+      "neighbour_vote_auc_poor_outcome": 0.5054038531822691,
+      "outcome_agreement_at_10": 0.5287999999999999,
+      "reference_ndcg_at_10_global_ideal": 0.5460183737202833
+    }
+  },
+  "hybrid_minus_random": {
+    "neighbour_vote_auc_withdrawal": 0.11241784849533043,
+    "neighbour_vote_auc_poor_outcome": 0.29648096903879284,
+    "outcome_agreement_at_10": 0.16480000000000006,
+    "reference_ndcg_at_10_global_ideal": 0.3335716280699801
+  },
+  "notes": [
+    "Neighbour-vote AUC and outcome agreement are non-circular: relevance comes from real future outcomes.",
+    "Reference nDCG uses an unweighted distance over all numeric features with a global ideal ranking; it partially overlaps with the behavioural channel and is a secondary diagnostic.",
+    "Hybrid uses fusion weights tuned on the validation presentation (artifacts/index/fusion_weights.json)."
+  ],
+  "index": {
+    "index_version": "5.0",
+    "built_at": "2026-10-10T13:52:40",
+    "n_docs": 25204,
+    "presentations": [
+      "2013B",
+      "2013J",
+      "2014B",
+      "2014J"
+    ],
+    "dense_channel": "disabled",
+    "embedding_model": null,
+    "vector_checksum": "b9631aae3a617edc",
+    "supervised_feature_weights": true,
+    "build_seconds": 2.1
+  }
+}

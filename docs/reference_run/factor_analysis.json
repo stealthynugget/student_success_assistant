@@ -1,0 +1,3067 @@
+{
+  "population": "historical in-scope enrolments",
+  "n": 16827,
+  "base_rates": {
+    "withdrawal": 0.10887264515362216,
+    "poor_outcome": 0.40999584001901707
+  },
+  "model_importance_mean_abs_logodds": {
+    "Score percentile in cohort": 0.14298202341068386,
+    "Lowest score": 0.11195152592664438,
+    "Days since last VLE activity": 0.11164995451607067,
+    "Average assessment score": 0.10552057927585713,
+    "Average days submitted before deadline": 0.10140383650844008,
+    "Missed assessments": 0.10048156710670367,
+    "Relative weekly engagement trend": 0.09728531626825575,
+    "Computer-marked assessment average": 0.08974833556107023,
+    "Highest score": 0.08817450339860095,
+    "Engagement irregularity": 0.08581782734609551,
+    "Weighted assessment score": 0.0856312119298903,
+    "Module": 0.07368806129564398,
+    "Credits studied this term": 0.06546938636822658,
+    "Course day of snapshot": 0.06407648524482693,
+    "Engagement decline ratio": 0.061235561375243566,
+    "Score trajectory": 0.05948712066605351,
+    "Scheduled materials so far": 0.05878806605176391,
+    "Homepage visits": 0.057127066099535655,
+    "Active-days percentile in cohort": 0.054412433810648336,
+    "Late submission rate": 0.05173956566887374,
+    "Assessments due so far": 0.04991261492011935,
+    "Pre-course activity": 0.04692435227859905,
+    "Share of activity on homepage": 0.04639777025976731,
+    "Assessments submitted": 0.04627722240562239,
+    "VLE activity (clicks)": 0.044131806419296336,
+    "Recent engagement momentum": 0.04322724118204844,
+    "Share of activity on content": 0.04252288576152943,
+    "Tutor-marked assignment average": 0.04109271329858462,
+    "Early-weeks activity": 0.03921025635662649,
+    "How early the student registered": 0.03644167792810276,
+    "Share of activity on quizzes": 0.03488576048389008,
+    "Score variability": 0.034568112703403195,
+    "Share of scheduled materials opened": 0.033253390790601925,
+    "Missed-assessment percentile in cohort": 0.03224906590623838,
+    "Recent-weeks activity": 0.03208579314999656,
+    "Share of activity on forums": 0.03000678260547376,
+    "Longest inactive streak (weeks)": 0.02950931747365764,
+    "Forum/collaboration activity": 0.028896966182289673,
+    "Weeks with any activity": 0.028141949784052305,
+    "Tutor-marked assignments missed": 0.02738676528162439,
+    "Share of activity on resources": 0.025509520980466372,
+    "Course-content activity": 0.024516873049095424,
+    "Distinct activity types used": 0.024171618601719257,
+    "Most recent score": 0.023864441300242456,
+    "Activity per active day": 0.023770417913004764,
+    "Weekly engagement trend": 0.023628728547550205,
+    "Distinct resources used": 0.0235772250979536,
+    "Activity percentile in cohort": 0.01900985617934677,
+    "Resource activity": 0.018132800085254325,
+    "Active learning days": 0.01784695988828493,
+    "Average weekly activity": 0.017565969360764756,
+    "Quiz activity": 0.016280337064103128,
+    "Inactive weeks (last 3)": 0.00957822578780508,
+    "Share of due assessments missed": 0.006093455014628913,
+    "Banked results": 0.00416392876174819,
+    "Previous attempts at this module": 0.002041434662241531,
+    "Due assessments submitted": 0.0005011157133343883,
+    "Tutor-marked assignments due": 0.00038046390934381286,
+    "Computer-marked assessments due": 0.00035366657553886796,
+    "Registration date missing": 0.0,
+    "Registered after start": 0.0,
+    "Weeks observed": 0.0,
+    "No scored assessment yet": 0.0,
+    "Computer-marked assessments missed": 0.0,
+    "VLE activity (log clicks)": 0.0,
+    "Other activity": 0.0,
+    "No VLE activity": 0.0
+  },
+  "numeric_factors_ranked": [
+    {
+      "feature": "missed_rate",
+      "label": "Share of due assessments missed",
+      "spearman_with_poor_outcome": 0.5482364112756932,
+      "poor_outcome_rate_spread": 0.7061794414735592,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.053475935828877004,
+          "withdrawal_ci": [
+            0.046371734762247006,
+            0.061598206614225985
+          ],
+          "poor_outcome_rate": 0.20974450386215093,
+          "poor_outcome_ci": [
+            0.1963252834895226,
+            0.22382550341986807
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12303120356612184,
+          "withdrawal_ci": [
+            0.11236060325134967,
+            0.13456154351862606
+          ],
+          "poor_outcome_rate": 0.31203566121842496,
+          "poor_outcome_ci": [
+            0.2966026240036058,
+            0.32789738217062325
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.05527488855869242,
+          "withdrawal_ci": [
+            0.04804866220105189,
+            0.06351538402777643
+          ],
+          "poor_outcome_rate": 0.2139673105497771,
+          "poor_outcome_ci": [
+            0.2004409173308348,
+            0.22814604858647036
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.0,
+            0.3333333333333333
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11708766716196137,
+          "withdrawal_ci": [
+            0.10665803034379351,
+            0.12839059883485351
+          ],
+          "poor_outcome_rate": 0.39821693907875183,
+          "poor_outcome_ci": [
+            0.38180173160983333,
+            0.4148642796386621
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            0.3333333333333333,
+            1.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.1954842543077837,
+          "withdrawal_ci": [
+            0.18243708875928974,
+            0.2092257122459563
+          ],
+          "poor_outcome_rate": 0.9159239453357101,
+          "poor_outcome_ci": [
+            0.9060682878967852,
+            0.9248313009740983
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "missed_count",
+      "label": "Missed assessments",
+      "spearman_with_poor_outcome": 0.5448275642712603,
+      "poor_outcome_rate_spread": 0.7002376708259062,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.053475935828877004,
+          "withdrawal_ci": [
+            0.046371734762247006,
+            0.061598206614225985
+          ],
+          "poor_outcome_rate": 0.20974450386215093,
+          "poor_outcome_ci": [
+            0.1963252834895226,
+            0.22382550341986807
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12303120356612184,
+          "withdrawal_ci": [
+            0.11236060325134967,
+            0.13456154351862606
+          ],
+          "poor_outcome_rate": 0.31203566121842496,
+          "poor_outcome_ci": [
+            0.2966026240036058,
+            0.32789738217062325
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.05527488855869242,
+          "withdrawal_ci": [
+            0.04804866220105189,
+            0.06351538402777643
+          ],
+          "poor_outcome_rate": 0.2139673105497771,
+          "poor_outcome_ci": [
+            0.2004409173308348,
+            0.22814604858647036
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.0,
+            1.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11738484398216939,
+          "withdrawal_ci": [
+            0.10694295140219305,
+            0.1286993536560204
+          ],
+          "poor_outcome_rate": 0.40416047548291234,
+          "poor_outcome_ci": [
+            0.3876980746544564,
+            0.4208414541853679
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            1.0,
+            6.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.19518716577540107,
+          "withdrawal_ci": [
+            0.1821480358641592,
+            0.2089212654347505
+          ],
+          "poor_outcome_rate": 0.9099821746880571,
+          "poor_outcome_ci": [
+            0.899840055404803,
+            0.9191895393393535
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "tma_missed",
+      "label": "Tutor-marked assignments missed",
+      "spearman_with_poor_outcome": 0.5362257793259468,
+      "poor_outcome_rate_spread": 0.6856803327391563,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.046939988116458706,
+          "withdrawal_ci": [
+            0.040296428322360515,
+            0.05461651951471288
+          ],
+          "poor_outcome_rate": 0.21449792038027332,
+          "poor_outcome_ci": [
+            0.20096042167958897,
+            0.22868636053118316
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.13670133729569092,
+          "withdrawal_ci": [
+            0.12550756377860156,
+            0.14872367345143023
+          ],
+          "poor_outcome_rate": 0.3473997028231798,
+          "poor_outcome_ci": [
+            0.3314939578816555,
+            0.36365347796097947
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.06151560178306092,
+          "withdrawal_ci": [
+            0.053886471412529974,
+            0.0701447682871935
+          ],
+          "poor_outcome_rate": 0.21842496285289748,
+          "poor_outcome_ci": [
+            0.20478985087021667,
+            0.23270225324058502
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.0,
+            1.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.09063893016344725,
+          "withdrawal_ci": [
+            0.08139965055302198,
+            0.10081182534421224
+          ],
+          "poor_outcome_rate": 0.36939078751857357,
+          "poor_outcome_ci": [
+            0.353240870537631,
+            0.3858385803929203
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            1.0,
+            3.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.20855614973262032,
+          "withdrawal_ci": [
+            0.19516693695823562,
+            0.2226098511258096
+          ],
+          "poor_outcome_rate": 0.9001782531194296,
+          "poor_outcome_ci": [
+            0.8895906654293664,
+            0.9098534390056907
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "missed_rate_pct",
+      "label": "Missed-assessment percentile in cohort",
+      "spearman_with_poor_outcome": 0.43546399158097593,
+      "poor_outcome_rate_spread": 0.6799657266661898,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.2903351519875292,
+            0.3360607831677382
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.07991681521093286,
+          "withdrawal_ci": [
+            0.07122765174861939,
+            0.08956376349178832
+          ],
+          "poor_outcome_rate": 0.24896019013666074,
+          "poor_outcome_ci": [
+            0.23464374077303685,
+            0.26384900737275135
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.3360607831677382,
+            0.3671348314606741
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.057652303120356616,
+          "withdrawal_ci": [
+            0.05026958383446482,
+            0.06604386943089499
+          ],
+          "poor_outcome_rate": 0.23536404160475483,
+          "poor_outcome_ci": [
+            0.2213370242899594,
+            0.24999460495612916
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.3671348314606741,
+            0.4232456140350877
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.09331352154531947,
+          "withdrawal_ci": [
+            0.08394395966026122,
+            0.10361059915307091
+          ],
+          "poor_outcome_rate": 0.27221396731054975,
+          "poor_outcome_ci": [
+            0.25744099531804854,
+            0.2875064429942781
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.4232456140350877,
+            0.797153024911032
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11649331352154532,
+          "withdrawal_ci": [
+            0.1060882553535302,
+            0.12777302206598395
+          ],
+          "poor_outcome_rate": 0.37800891530460623,
+          "poor_outcome_ci": [
+            0.36177328056884334,
+            0.3945227708691345
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            0.797153024911032,
+            0.9943661971830986
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.19696969696969696,
+          "withdrawal_ci": [
+            0.18388253161987195,
+            0.2107477679170558
+          ],
+          "poor_outcome_rate": 0.9153297682709447,
+          "poor_outcome_ci": [
+            0.9054448612695858,
+            0.9242677281886249
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "days_since_last_activity",
+      "label": "Days since last VLE activity",
+      "spearman_with_poor_outcome": 0.46068394751175545,
+      "poor_outcome_rate_spread": 0.6497326203208555,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.07427213309566251,
+          "withdrawal_ci": [
+            0.06589085230443657,
+            0.08362406851558059
+          ],
+          "poor_outcome_rate": 0.20558526440879382,
+          "poor_outcome_ci": [
+            0.19227184919930254,
+            0.21956994182137926
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.0,
+            1.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.07102526002971768,
+          "withdrawal_ci": [
+            0.0628265570345902,
+            0.08020231081125923
+          ],
+          "poor_outcome_rate": 0.21456166419019315,
+          "poor_outcome_ci": [
+            0.20102063607704385,
+            0.2287536815993942
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            1.0,
+            5.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.10846953937592868,
+          "withdrawal_ci": [
+            0.09840535542970874,
+            0.11942667324151163
+          ],
+          "poor_outcome_rate": 0.3138187221396731,
+          "poor_outcome_ci": [
+            0.2983593891897417,
+            0.329702672261886
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            5.0,
+            15.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.13610698365527488,
+          "withdrawal_ci": [
+            0.12493511240694039,
+            0.14810877306395853
+          ],
+          "poor_outcome_rate": 0.4606240713224368,
+          "poor_outcome_ci": [
+            0.4438369460921276,
+            0.4775009998653194
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            15.0,
+            107.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.15448603683897802,
+          "withdrawal_ci": [
+            0.1426708541720396,
+            0.16708898735879082
+          ],
+          "poor_outcome_rate": 0.8553178847296494,
+          "poor_outcome_ci": [
+            0.8430284880810973,
+            0.8667971606971715
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "active_days_pct",
+      "label": "Active-days percentile in cohort",
+      "spearman_with_poor_outcome": -0.4568867258185937,
+      "poor_outcome_rate_spread": 0.6476530005941771,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0028169014084507,
+            0.1968043647700701
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.1473559120617944,
+          "withdrawal_ci": [
+            0.13578324527584193,
+            0.1597326033029162
+          ],
+          "poor_outcome_rate": 0.7994652406417112,
+          "poor_outcome_ci": [
+            0.7856004991729966,
+            0.8126472048140394
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.1968043647700701,
+            0.4039891818796484
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.1352154531946508,
+          "withdrawal_ci": [
+            0.12407657374012147,
+            0.14718628409207812
+          ],
+          "poor_outcome_rate": 0.49569093610698367,
+          "poor_outcome_ci": [
+            0.47881207044492985,
+            0.5125796293013567
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.4039891818796484,
+            0.6033057851239669
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11589895988112928,
+          "withdrawal_ci": [
+            0.10551857035988431,
+            0.12715535530049696
+          ],
+          "poor_outcome_rate": 0.35661218424962854,
+          "poor_outcome_ci": [
+            0.3405996445048498,
+            0.3729517436043447
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.6033057851239669,
+            0.7996882307092751
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.09093610698365527,
+          "withdrawal_ci": [
+            0.08168222792853733,
+            0.10112292384826332
+          ],
+          "poor_outcome_rate": 0.24635958395245172,
+          "poor_outcome_ci": [
+            0.2320952872227816,
+            0.2612023495672651
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            0.7996882307092751,
+            1.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.054961378490790254,
+          "withdrawal_ci": [
+            0.047757078826060444,
+            0.06318036108209427
+          ],
+          "poor_outcome_rate": 0.15181224004753416,
+          "poor_outcome_ci": [
+            0.14008691007084786,
+            0.16433143410295545
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "inactive_weeks_last3",
+      "label": "Inactive weeks (last 3)",
+      "spearman_with_poor_outcome": 0.4752757694231948,
+      "poor_outcome_rate_spread": 0.6253116780955257,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.08051099227569816,
+          "withdrawal_ci": [
+            0.07179022415115588,
+            0.09018819050192453
+          ],
+          "poor_outcome_rate": 0.21984551396316102,
+          "poor_outcome_ci": [
+            0.2061782391008891,
+            0.23415153782393724
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.0713224368499257,
+          "withdrawal_ci": [
+            0.06310670323608429,
+            0.08051584048933157
+          ],
+          "poor_outcome_rate": 0.20089153046062408,
+          "poor_outcome_ci": [
+            0.18769826335312023,
+            0.21476696386326177
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.0,
+            1.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11292719167904904,
+          "withdrawal_ci": [
+            0.10267151661362257,
+            0.12406565025109435
+          ],
+          "poor_outcome_rate": 0.31827637444279344,
+          "poor_outcome_ci": [
+            0.30275247295870433,
+            0.3342147266864198
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            1.0,
+            2.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.13937592867756315,
+          "withdrawal_ci": [
+            0.1280844967639284,
+            0.1514898233822013
+          ],
+          "poor_outcome_rate": 0.4846953937592868,
+          "poor_outcome_ci": [
+            0.4678363428871798,
+            0.5015893493151486
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            2.0,
+            3.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.14022578728461083,
+          "withdrawal_ci": [
+            0.128905250577618,
+            0.15236660504906788
+          ],
+          "poor_outcome_rate": 0.8262032085561497,
+          "poor_outcome_ci": [
+            0.8130316617698451,
+            0.838631015787462
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "longest_inactive_streak",
+      "label": "Longest inactive streak (weeks)",
+      "spearman_with_poor_outcome": 0.4448184221998899,
+      "poor_outcome_rate_spread": 0.6224004753416518,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.06922162804515745,
+          "withdrawal_ci": [
+            0.06112836747894787,
+            0.0782970583333514
+          ],
+          "poor_outcome_rate": 0.17736185383244207,
+          "poor_outcome_ci": [
+            0.1648275001694759,
+            0.1906318187492531
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.0,
+            1.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.10074294205052006,
+          "withdrawal_ci": [
+            0.09102402752546279,
+            0.11137242827703026
+          ],
+          "poor_outcome_rate": 0.26567607726597325,
+          "poor_outcome_ci": [
+            0.2510254590941199,
+            0.28086110986774515
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            1.0,
+            2.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11857355126300148,
+          "withdrawal_ci": [
+            0.10808285768412626,
+            0.12993415089235294
+          ],
+          "poor_outcome_rate": 0.3473997028231798,
+          "poor_outcome_ci": [
+            0.3314939578816555,
+            0.36365347796097947
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            2.0,
+            4.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12719167904903417,
+          "withdrawal_ci": [
+            0.11635742765670583,
+            0.13887618142720004
+          ],
+          "poor_outcome_rate": 0.45973254086181276,
+          "poor_outcome_ci": [
+            0.4429488349007306,
+            0.47660808341801714
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            4.0,
+            16.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.12863933452168747,
+          "withdrawal_ci": [
+            0.11775062756910196,
+            0.14037473951046645
+          ],
+          "poor_outcome_rate": 0.7997623291740938,
+          "poor_outcome_ci": [
+            0.7859047460860306,
+            0.8129364576073418
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "weeks_active",
+      "label": "Weeks with any activity",
+      "spearman_with_poor_outcome": -0.45457858959473485,
+      "poor_outcome_rate_spread": 0.61883541295306,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            7.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.12418300653594772,
+          "withdrawal_ci": [
+            0.1134682255073938,
+            0.13575464597712938
+          ],
+          "poor_outcome_rate": 0.7777777777777778,
+          "poor_outcome_ci": [
+            0.7634205885930391,
+            0.7915016368314437
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            7.0,
+            11.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.1387815750371471,
+          "withdrawal_ci": [
+            0.12751171849494583,
+            0.15087524989205106
+          ],
+          "poor_outcome_rate": 0.5102526002971768,
+          "poor_outcome_ci": [
+            0.4933600491379965,
+            0.5271217687070453
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            11.0,
+            13.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.1313521545319465,
+          "withdrawal_ci": [
+            0.12035819094269284,
+            0.1431868804551431
+          ],
+          "poor_outcome_rate": 0.3696879643387816,
+          "poor_outcome_ci": [
+            0.3535349993013801,
+            0.38613812750873766
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            13.0,
+            14.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.0912332838038633,
+          "withdrawal_ci": [
+            0.08196483652839488,
+            0.10143399112797218
+          ],
+          "poor_outcome_rate": 0.23328380386329867,
+          "poor_outcome_ci": [
+            0.21930315937725198,
+            0.24787273871187154
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            14.0,
+            16.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.058823529411764705,
+          "withdrawal_ci": [
+            0.05136614047648469,
+            0.06728679561404252
+          ],
+          "poor_outcome_rate": 0.15894236482471777,
+          "poor_outcome_ci": [
+            0.14698024779463334,
+            0.17168208933124227
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "clicks_pct",
+      "label": "Activity percentile in cohort",
+      "spearman_with_poor_outcome": -0.4325080043037581,
+      "poor_outcome_rate_spread": 0.6078431372549019,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0028169014084507,
+            0.2008113590263691
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.14913844325609033,
+          "withdrawal_ci": [
+            0.13750426850648165,
+            0.16157257831029456
+          ],
+          "poor_outcome_rate": 0.7843137254901961,
+          "poor_outcome_ci": [
+            0.7700988578690308,
+            0.7978803610948516
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.2008113590263691,
+            0.4001280409731114
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.13194650817236256,
+          "withdrawal_ci": [
+            0.12093004070874809,
+            0.14380238244822072
+          ],
+          "poor_outcome_rate": 0.4891530460624071,
+          "poor_outcome_ci": [
+            0.47228497850568674,
+            0.5060458518901382
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.4001280409731114,
+            0.600355871886121
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.10936106983655275,
+          "withdrawal_ci": [
+            0.09925815247212216,
+            0.12035490383779751
+          ],
+          "poor_outcome_rate": 0.3450222882615156,
+          "poor_outcome_ci": [
+            0.32914517447369973,
+            0.36125285433240373
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.600355871886121,
+            0.8002560819462228
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.08945022288261516,
+          "withdrawal_ci": [
+            0.08026965606785373,
+            0.09956711631111474
+          ],
+          "poor_outcome_rate": 0.2549777117384844,
+          "poor_outcome_ci": [
+            0.24053637460900829,
+            0.2699778626884651
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            0.8004676539360873,
+            1.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.06446821152703505,
+          "withdrawal_ci": [
+            0.056657975936621224,
+            0.07327145457429654
+          ],
+          "poor_outcome_rate": 0.17647058823529413,
+          "poor_outcome_ci": [
+            0.16396268934608962,
+            0.18971613045363037
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "engagement_recent_mean",
+      "label": "Recent-weeks activity",
+      "spearman_with_poor_outcome": -0.4377621003138184,
+      "poor_outcome_rate_spread": 0.6054664289958407,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.1651812240047534,
+          "withdrawal_ci": [
+            0.15301912119734126,
+            0.17810670976159756
+          ],
+          "poor_outcome_rate": 0.7878787878787878,
+          "poor_outcome_ci": [
+            0.7737437197697395,
+            0.8013574956701789
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.0,
+            4.5
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.13343239227340267,
+          "withdrawal_ci": [
+            0.12235999970515075,
+            0.14534080284965023
+          ],
+          "poor_outcome_rate": 0.5188707280832096,
+          "poor_outcome_ci": [
+            0.5019768192154438,
+            0.5357215991370249
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            4.5,
+            17.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.1037147102526003,
+          "withdrawal_ci": [
+            0.09386091875785417,
+            0.11447229584030323
+          ],
+          "poor_outcome_rate": 0.3164933135215453,
+          "poor_outcome_ci": [
+            0.30099503950629836,
+            0.3324101048614272
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            17.0,
+            46.5
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.08588410104011887,
+          "withdrawal_ci": [
+            0.07688277506042368,
+            0.09582988676374754
+          ],
+          "poor_outcome_rate": 0.24427934621099553,
+          "poor_outcome_ci": [
+            0.23005894537577093,
+            0.2590829602573107
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            46.5,
+            906.5
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.05614973262032086,
+          "withdrawal_ci": [
+            0.04886648135028786,
+            0.06444495738321225
+          ],
+          "poor_outcome_rate": 0.18241235888294713,
+          "poor_outcome_ci": [
+            0.1697303415689826,
+            0.1958184723574643
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "mean_score",
+      "label": "Average assessment score",
+      "spearman_with_poor_outcome": -0.43314563508395504,
+      "poor_outcome_rate_spread": 0.5978226064681397,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            65.33333333333333
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.21197566442523214,
+          "withdrawal_ci": [
+            0.19799945472717204,
+            0.2266596005956176
+          ],
+          "poor_outcome_rate": 0.729106628242075,
+          "poor_outcome_ci": [
+            0.7132451047290324,
+            0.7444051964566755
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            65.33333333333333,
+            75.2
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.12167787383925713,
+          "withdrawal_ci": [
+            0.11067453962883554,
+            0.1336108120819771
+          ],
+          "poor_outcome_rate": 0.4502081332052514,
+          "poor_outcome_ci": [
+            0.43283070647335914,
+            0.4677079073150721
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            75.2,
+            82.0
+          ],
+          "n": 3122,
+          "withdrawal_rate": 0.08904548366431775,
+          "withdrawal_ci": [
+            0.07955326038028643,
+            0.09954781755021397
+          ],
+          "poor_outcome_rate": 0.3062139654067905,
+          "poor_outcome_ci": [
+            0.29029198809068907,
+            0.32261226144006144
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            82.0,
+            87.6
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.06500160102465578,
+          "withdrawal_ci": [
+            0.05687839281890457,
+            0.07419367683758203
+          ],
+          "poor_outcome_rate": 0.2132564841498559,
+          "poor_outcome_ci": [
+            0.19924721629325798,
+            0.22797033127934696
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            87.6,
+            100.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.04610951008645533,
+          "withdrawal_ci": [
+            0.03929501285501592,
+            0.054039296116695335
+          ],
+          "poor_outcome_rate": 0.1312840217739353,
+          "poor_outcome_ci": [
+            0.11989118460225581,
+            0.1435828589821714
+          ]
+        }
+      ],
+      "missing_share": 0.07208652760444524
+    },
+    {
+      "feature": "weighted_score",
+      "label": "Weighted assessment score",
+      "spearman_with_poor_outcome": -0.41850072869021426,
+      "poor_outcome_rate_spread": 0.5805315401857188,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            62.25
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.20717259045789305,
+          "withdrawal_ci": [
+            0.19332223168558899,
+            0.2217424777003934
+          ],
+          "poor_outcome_rate": 0.7217419148254883,
+          "poor_outcome_ci": [
+            0.7057592280785584,
+            0.7371797426707115
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            62.25,
+            72.0625
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.11975664425232149,
+          "withdrawal_ci": [
+            0.10883390628748192,
+            0.1316137070486078
+          ],
+          "poor_outcome_rate": 0.4447646493756004,
+          "poor_outcome_ci": [
+            0.42741403657019306,
+            0.4622509851565233
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            72.06976744186046,
+            79.5
+          ],
+          "n": 3122,
+          "withdrawal_rate": 0.08712363869314542,
+          "withdrawal_ci": [
+            0.07773145211158389,
+            0.09753065969856031
+          ],
+          "poor_outcome_rate": 0.30269058295964124,
+          "poor_outcome_ci": [
+            0.28682535418990285,
+            0.3190407907868612
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            79.5,
+            86.5
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.069164265129683,
+          "withdrawal_ci": [
+            0.06078418671616426,
+            0.07860298275222202
+          ],
+          "poor_outcome_rate": 0.2196605827729747,
+          "poor_outcome_ci": [
+            0.2054891282879454,
+            0.23452088053373593
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            86.5,
+            100.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.05059237912263849,
+          "withdrawal_ci": [
+            0.04344273925963696,
+            0.058846292586427776
+          ],
+          "poor_outcome_rate": 0.14121037463976946,
+          "poor_outcome_ci": [
+            0.12943704078611548,
+            0.15386531773438014
+          ]
+        }
+      ],
+      "missing_share": 0.07208652760444524
+    },
+    {
+      "feature": "score_pct",
+      "label": "Score percentile in cohort",
+      "spearman_with_poor_outcome": -0.4168403027632701,
+      "poor_outcome_rate_spread": 0.5734870317002883,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0005875440658049,
+            0.200836820083682
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.19820685238552674,
+          "withdrawal_ci": [
+            0.18459958546769598,
+            0.21255567816957946
+          ],
+          "poor_outcome_rate": 0.7140569964777458,
+          "poor_outcome_ci": [
+            0.697953498299682,
+            0.7296345189506963
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.2009956440572495,
+            0.4001244555071562
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.13288504642971502,
+          "withdrawal_ci": [
+            0.12142938134685675,
+            0.14524277754983955
+          ],
+          "poor_outcome_rate": 0.4502081332052514,
+          "poor_outcome_ci": [
+            0.43283070647335914,
+            0.4677079073150721
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.4001244555071562,
+            0.6012544802867383
+          ],
+          "n": 3122,
+          "withdrawal_rate": 0.09192825112107623,
+          "withdrawal_ci": [
+            0.0822885745877073,
+            0.1025709525233274
+          ],
+          "poor_outcome_rate": 0.31518257527226134,
+          "poor_outcome_ci": [
+            0.29912112891737,
+            0.33169829584170923
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.6012544802867383,
+            0.8002489110143124
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.061159141850784506,
+          "withdrawal_ci": [
+            0.05328196627129358,
+            0.07011462663574719
+          ],
+          "poor_outcome_rate": 0.2100544348382965,
+          "poor_outcome_ci": [
+            0.19612820677688744,
+            0.2246931101711793
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            0.8002523128679563,
+            1.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.04963176432917067,
+          "withdrawal_ci": [
+            0.04255247016705372,
+            0.057817692491649565
+          ],
+          "poor_outcome_rate": 0.14056996477745756,
+          "poor_outcome_ci": [
+            0.1288205440245839,
+            0.15320256837100407
+          ]
+        }
+      ],
+      "missing_share": 0.07208652760444524
+    },
+    {
+      "feature": "active_days",
+      "label": "Active learning days",
+      "spearman_with_poor_outcome": -0.4008653932221346,
+      "poor_outcome_rate_spread": 0.5641711229946524,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            12.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.11942959001782531,
+          "withdrawal_ci": [
+            0.10890547095169965,
+            0.13082140523144198
+          ],
+          "poor_outcome_rate": 0.7293523469994059,
+          "poor_outcome_ci": [
+            0.7140875411935933,
+            0.7440942320980654
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            12.0,
+            25.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.1277860326894502,
+          "withdrawal_ci": [
+            0.11692872794348487,
+            0.13949223289955387
+          ],
+          "poor_outcome_rate": 0.49658246656760774,
+          "poor_outcome_ci": [
+            0.47970235190616684,
+            0.513470375478819
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            25.0,
+            39.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12303120356612184,
+          "withdrawal_ci": [
+            0.11236060325134967,
+            0.13456154351862606
+          ],
+          "poor_outcome_rate": 0.3786032689450223,
+          "poor_outcome_ci": [
+            0.3623619259786887,
+            0.395121477218422
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            39.0,
+            59.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.10757800891530461,
+          "withdrawal_ci": [
+            0.09755278066610121,
+            0.11849822036641988
+          ],
+          "poor_outcome_rate": 0.2802377414561664,
+          "poor_outcome_ci": [
+            0.26532018342574404,
+            0.2956565036348764
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            59.0,
+            126.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.06654783125371361,
+          "withdrawal_ci": [
+            0.05861227163639213,
+            0.07547165681888007
+          ],
+          "poor_outcome_rate": 0.1651812240047534,
+          "poor_outcome_ci": [
+            0.15301912119734126,
+            0.17810670976159756
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "submitted_count",
+      "label": "Assessments submitted",
+      "spearman_with_poor_outcome": -0.35892913771315,
+      "poor_outcome_rate_spread": 0.5463458110516934,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            2.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.13903743315508021,
+          "withdrawal_ci": [
+            0.12775989476964647,
+            0.15113796203169397
+          ],
+          "poor_outcome_rate": 0.7658942364824718,
+          "poor_outcome_ci": [
+            0.7512910088773148,
+            0.7798912282937143
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            2.0,
+            3.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.1337295690936107,
+          "withdrawal_ci": [
+            0.12264604842830854,
+            0.1456484300060589
+          ],
+          "poor_outcome_rate": 0.41218424962852895,
+          "poor_outcome_ci": [
+            0.3956621329526373,
+            0.42890664463548067
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            3.0,
+            3.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12867756315007428,
+          "withdrawal_ci": [
+            0.1177858280121063,
+            0.14041616046963168
+          ],
+          "poor_outcome_rate": 0.34858841010401187,
+          "poor_outcome_ci": [
+            0.33266851526178154,
+            0.36485362409911914
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            3.0,
+            5.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.08350668647845468,
+          "withdrawal_ci": [
+            0.07462753680876126,
+            0.09333571797887848
+          ],
+          "poor_outcome_rate": 0.3037147102526003,
+          "poor_outcome_ci": [
+            0.28840797031094534,
+            0.31946911123542343
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            5.0,
+            12.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.059417706476530004,
+          "withdrawal_ci": [
+            0.05192225552541885,
+            0.06791767997778105
+          ],
+          "poor_outcome_rate": 0.21954842543077838,
+          "poor_outcome_ci": [
+            0.20588827054163802,
+            0.233848006676852
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "engagement_drop_ratio",
+      "label": "Engagement decline ratio",
+      "spearman_with_poor_outcome": 0.24737195503893056,
+      "poor_outcome_rate_spread": 0.5364767330679401,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            0.23148148
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.09506833036244801,
+          "withdrawal_ci": [
+            0.08561596062903384,
+            0.10544393963452747
+          ],
+          "poor_outcome_rate": 0.4197860962566845,
+          "poor_outcome_ci": [
+            0.40321404992124255,
+            0.43654102936794414
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            0.23163842,
+            0.71402216
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.06567607726597326,
+          "withdrawal_ci": [
+            0.05779166011207925,
+            0.07455104190157433
+          ],
+          "poor_outcome_rate": 0.21931649331352154,
+          "poor_outcome_ci": [
+            0.2056599241131406,
+            0.2336132076363604
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            0.71428573,
+            0.8907015
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.08826151560178307,
+          "withdrawal_ci": [
+            0.07914017240303386,
+            0.09832189645766887
+          ],
+          "poor_outcome_rate": 0.2567607726597325,
+          "poor_outcome_ci": [
+            0.24228375891926687,
+            0.2717925336556051
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            0.8907658,
+            1.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.13907875185735513,
+          "withdrawal_ci": [
+            0.1277980986589372,
+            0.15118254560762612
+          ],
+          "poor_outcome_rate": 0.39821693907875183,
+          "poor_outcome_ci": [
+            0.38180173160983333,
+            0.4148642796386621
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            1.0,
+            1.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.1562685680332739,
+          "withdrawal_ci": [
+            0.14439419353149688,
+            0.16892664623735157
+          ],
+          "poor_outcome_rate": 0.7557932263814616,
+          "poor_outcome_ci": [
+            0.7409932270707231,
+            0.7700100200848701
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "tma_mean_score",
+      "label": "Tutor-marked assignment average",
+      "spearman_with_poor_outcome": -0.3874327265070557,
+      "poor_outcome_rate_spread": 0.5315374507227333,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            62.333333333333336
+          ],
+          "n": 3044,
+          "withdrawal_rate": 0.1938239159001314,
+          "withdrawal_ci": [
+            0.1801706209082821,
+            0.2082490397459986
+          ],
+          "poor_outcome_rate": 0.6875821287779238,
+          "poor_outcome_ci": [
+            0.6708892905622182,
+            0.7038020975991613
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            62.333333333333336,
+            71.5
+          ],
+          "n": 3044,
+          "withdrawal_rate": 0.11629434954007885,
+          "withdrawal_ci": [
+            0.10538638415321429,
+            0.12816958542210746
+          ],
+          "poor_outcome_rate": 0.42772667542706966,
+          "poor_outcome_ci": [
+            0.4102526707664801,
+            0.44538287144804967
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            71.5,
+            78.66666666666667
+          ],
+          "n": 3043,
+          "withdrawal_rate": 0.08872822872165625,
+          "withdrawal_ci": [
+            0.07913662018393573,
+            0.09935693852289036
+          ],
+          "poor_outcome_rate": 0.3069339467630628,
+          "poor_outcome_ci": [
+            0.2907983170728702,
+            0.323556429823063
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            78.66666666666667,
+            86.0
+          ],
+          "n": 3044,
+          "withdrawal_rate": 0.06997371879106438,
+          "withdrawal_ci": [
+            0.061442729687624244,
+            0.07958874648882795
+          ],
+          "poor_outcome_rate": 0.22536136662286466,
+          "poor_outcome_ci": [
+            0.21086980212646908,
+            0.2405452582887441
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            86.0,
+            100.0
+          ],
+          "n": 3044,
+          "withdrawal_rate": 0.05584756898817345,
+          "withdrawal_ci": [
+            0.04823583956593884,
+            0.06457894713426238
+          ],
+          "poor_outcome_rate": 0.15604467805519054,
+          "poor_outcome_ci": [
+            0.1435871154313386,
+            0.16936930592599178
+          ]
+        }
+      ],
+      "missing_share": 0.0955607060082011
+    },
+    {
+      "feature": "clicks_homepage",
+      "label": "Homepage visits",
+      "spearman_with_poor_outcome": -0.3663697725094063,
+      "poor_outcome_rate_spread": 0.5184194890077243,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            35.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.12121212121212122,
+          "withdrawal_ci": [
+            0.11061586584898568,
+            0.13267200857217404
+          ],
+          "poor_outcome_rate": 0.7121212121212122,
+          "poor_outcome_ci": [
+            0.6965901006086676,
+            0.7271686897154831
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            35.0,
+            76.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12303120356612184,
+          "withdrawal_ci": [
+            0.11236060325134967,
+            0.13456154351862606
+          ],
+          "poor_outcome_rate": 0.4852897473997028,
+          "poor_outcome_ci": [
+            0.46842941676596744,
+            0.5021836271954938
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            76.0,
+            131.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12095096582466568,
+          "withdrawal_ci": [
+            0.11036372121445834,
+            0.13240269439855235
+          ],
+          "poor_outcome_rate": 0.37176820208023775,
+          "poor_outcome_ci": [
+            0.3555940858204769,
+            0.38823477214660584
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            131.0,
+            230.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.10104011887072809,
+          "withdrawal_ci": [
+            0.09130759584490632,
+            0.11168253583715317
+          ],
+          "poor_outcome_rate": 0.28707280832095095,
+          "poor_outcome_ci": [
+            0.27203681629566734,
+            0.30259441599498105
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            230.0,
+            7094.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.07813428401663695,
+          "withdrawal_ci": [
+            0.06954083274687309,
+            0.08768958425551657
+          ],
+          "poor_outcome_rate": 0.19370172311348782,
+          "poor_outcome_ci": [
+            0.18070295090493824,
+            0.20739885186228976
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "last_score",
+      "label": "Most recent score",
+      "spearman_with_poor_outcome": -0.36882193681638126,
+      "poor_outcome_rate_spread": 0.5120076849183477,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            60.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.19692603266090297,
+          "withdrawal_ci": [
+            0.18335438589231975,
+            0.21124238549514043
+          ],
+          "poor_outcome_rate": 0.6929234710214537,
+          "poor_outcome_ci": [
+            0.6765162346211122,
+            0.7088566605073139
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            60.0,
+            76.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.12487992315081652,
+          "withdrawal_ci": [
+            0.11374430256043501,
+            0.13693727977491582
+          ],
+          "poor_outcome_rate": 0.4393211655459494,
+          "poor_outcome_ci": [
+            0.4219994799418946,
+            0.45679194972310677
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            76.0,
+            84.0
+          ],
+          "n": 3122,
+          "withdrawal_rate": 0.08904548366431775,
+          "withdrawal_ci": [
+            0.07955326038028643,
+            0.09954781755021397
+          ],
+          "poor_outcome_rate": 0.3036515054452274,
+          "poor_outcome_ci": [
+            0.28777068916118836,
+            0.3200149388757538
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            84.0,
+            96.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.06372078130003202,
+          "withdrawal_ci": [
+            0.0556785949892715,
+            0.07283498241739983
+          ],
+          "poor_outcome_rate": 0.180915786103106,
+          "poor_outcome_ci": [
+            0.16780920488902037,
+            0.19480641337574886
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            96.0,
+            100.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.05923791226384886,
+          "withdrawal_ci": [
+            0.05148720499891228,
+            0.06807164953340558
+          ],
+          "poor_outcome_rate": 0.2132564841498559,
+          "poor_outcome_ci": [
+            0.19924721629325798,
+            0.22797033127934696
+          ]
+        }
+      ],
+      "missing_share": 0.07208652760444524
+    },
+    {
+      "feature": "total_clicks",
+      "label": "VLE activity (clicks)",
+      "spearman_with_poor_outcome": -0.3549494050493458,
+      "poor_outcome_rate_spread": 0.5062388591800356,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            149.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.11764705882352941,
+          "withdrawal_ci": [
+            0.1071958597727,
+            0.12897001817242354
+          ],
+          "poor_outcome_rate": 0.6966726084373143,
+          "poor_outcome_ci": [
+            0.6809257187797482,
+            0.7119710868149123
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            150.0,
+            353.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12689450222882614,
+          "withdrawal_ci": [
+            0.11607180761945014,
+            0.1385681255848893
+          ],
+          "poor_outcome_rate": 0.47786032689450225,
+          "poor_outcome_ci": [
+            0.4610177092623643,
+            0.4947534377099362
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            353.0,
+            639.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11649331352154532,
+          "withdrawal_ci": [
+            0.1060882553535302,
+            0.12777302206598395
+          ],
+          "poor_outcome_rate": 0.37800891530460623,
+          "poor_outcome_ci": [
+            0.36177328056884334,
+            0.3945227708691345
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            639.0,
+            1198.0
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11292719167904904,
+          "withdrawal_ci": [
+            0.10267151661362257,
+            0.12406565025109435
+          ],
+          "poor_outcome_rate": 0.3069836552748886,
+          "poor_outcome_ci": [
+            0.29162659027531235,
+            0.3227809259462874
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            1199.0,
+            11918.0
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.07040998217468805,
+          "withdrawal_ci": [
+            0.06224782158623991,
+            0.07955160305140475
+          ],
+          "poor_outcome_rate": 0.19043374925727866,
+          "poor_outcome_ci": [
+            0.17752482763764788,
+            0.20404847835988027
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "log_total_clicks",
+      "label": "VLE activity (log clicks)",
+      "spearman_with_poor_outcome": -0.3549494050493458,
+      "poor_outcome_rate_spread": 0.5062388591800356,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            5.0106354
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.11764705882352941,
+          "withdrawal_ci": [
+            0.1071958597727,
+            0.12897001817242354
+          ],
+          "poor_outcome_rate": 0.6966726084373143,
+          "poor_outcome_ci": [
+            0.6809257187797482,
+            0.7119710868149123
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            5.0172796,
+            5.869297
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12689450222882614,
+          "withdrawal_ci": [
+            0.11607180761945014,
+            0.1385681255848893
+          ],
+          "poor_outcome_rate": 0.47786032689450225,
+          "poor_outcome_ci": [
+            0.4610177092623643,
+            0.4947534377099362
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            5.869297,
+            6.461468
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11649331352154532,
+          "withdrawal_ci": [
+            0.1060882553535302,
+            0.12777302206598395
+          ],
+          "poor_outcome_rate": 0.37800891530460623,
+          "poor_outcome_ci": [
+            0.36177328056884334,
+            0.3945227708691345
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            6.461468,
+            7.089243
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11292719167904904,
+          "withdrawal_ci": [
+            0.10267151661362257,
+            0.12406565025109435
+          ],
+          "poor_outcome_rate": 0.3069836552748886,
+          "poor_outcome_ci": [
+            0.29162659027531235,
+            0.3227809259462874
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            7.090077,
+            9.385889
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.07040998217468805,
+          "withdrawal_ci": [
+            0.06224782158623991,
+            0.07955160305140475
+          ],
+          "poor_outcome_rate": 0.19043374925727866,
+          "poor_outcome_ci": [
+            0.17752482763764788,
+            0.20404847835988027
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "min_score",
+      "label": "Lowest score",
+      "spearman_with_poor_outcome": -0.3639362956991857,
+      "poor_outcome_rate_spread": 0.504963176432917,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            52.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.2084534101825168,
+          "withdrawal_ci": [
+            0.1945691980405785,
+            0.22305400359521918
+          ],
+          "poor_outcome_rate": 0.6813960934998399,
+          "poor_outcome_ci": [
+            0.6648401207952247,
+            0.6975063440848638
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            52.0,
+            64.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.10662824207492795,
+          "withdrawal_ci": [
+            0.09628253506193228,
+            0.11794053271355083
+          ],
+          "poor_outcome_rate": 0.41242395132885046,
+          "poor_outcome_ci": [
+            0.3952765226873074,
+            0.42978656973157314
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            64.0,
+            72.0
+          ],
+          "n": 3122,
+          "withdrawal_rate": 0.09192825112107623,
+          "withdrawal_ci": [
+            0.0822885745877073,
+            0.1025709525233274
+          ],
+          "poor_outcome_rate": 0.3203074951953876,
+          "poor_outcome_ci": [
+            0.3041695145489868,
+            0.3368871531977091
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            72.0,
+            80.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.07204610951008646,
+          "withdrawal_ci": [
+            0.06349365810610762,
+            0.08165011892436301
+          ],
+          "poor_outcome_rate": 0.23951328850464298,
+          "poor_outcome_ci": [
+            0.22487051103258018,
+            0.25479612766123794
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            80.0,
+            100.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.05475504322766571,
+          "withdrawal_ci": [
+            0.04730912057457022,
+            0.06329501108339418
+          ],
+          "poor_outcome_rate": 0.17643291706692282,
+          "poor_outcome_ci": [
+            0.16346342860267965,
+            0.19019746678773608
+          ]
+        }
+      ],
+      "missing_share": 0.07208652760444524
+    },
+    {
+      "feature": "engagement_weekly_mean",
+      "label": "Average weekly activity",
+      "spearman_with_poor_outcome": -0.3518019274943135,
+      "poor_outcome_rate_spread": 0.5029708853238266,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            10.214285714285714
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.11645870469399881,
+          "withdrawal_ci": [
+            0.10605656197193904,
+            0.12773531714783914
+          ],
+          "poor_outcome_rate": 0.696969696969697,
+          "poor_outcome_ci": [
+            0.6812267586412848,
+            0.7122635466597123
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            10.214285714285714,
+            24.2
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.12689450222882614,
+          "withdrawal_ci": [
+            0.11607180761945014,
+            0.1385681255848893
+          ],
+          "poor_outcome_rate": 0.47934621099554237,
+          "poor_outcome_ci": [
+            0.46249975221528883,
+            0.49623977415484377
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            24.214285714285715,
+            43.21428571428572
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11738484398216939,
+          "withdrawal_ci": [
+            0.10694295140219305,
+            0.1286993536560204
+          ],
+          "poor_outcome_rate": 0.37592867756315007,
+          "poor_outcome_ci": [
+            0.3597132275364661,
+            0.39242709274454673
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            43.25,
+            82.0625
+          ],
+          "n": 3365,
+          "withdrawal_rate": 0.11263001485884101,
+          "withdrawal_ci": [
+            0.10238693878891636,
+            0.12375655219623413
+          ],
+          "poor_outcome_rate": 0.3037147102526003,
+          "poor_outcome_ci": [
+            0.28840797031094534,
+            0.31946911123542343
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            82.07142857142857,
+            776.4285714285714
+          ],
+          "n": 3366,
+          "withdrawal_rate": 0.07100415923945336,
+          "withdrawal_ci": [
+            0.06280781504920113,
+            0.08017860900111623
+          ],
+          "poor_outcome_rate": 0.19399881164587046,
+          "poor_outcome_ci": [
+            0.1809919438920193,
+            0.207703358581545
+          ]
+        }
+      ],
+      "missing_share": 0.0
+    },
+    {
+      "feature": "max_score",
+      "label": "Highest score",
+      "spearman_with_poor_outcome": -0.3700891564488353,
+      "poor_outcome_rate_spread": 0.5027217419148254,
+      "quintiles": [
+        {
+          "quintile": 1,
+          "range": [
+            0.0,
+            75.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.20140890169708614,
+          "withdrawal_ci": [
+            0.18771357129746197,
+            0.21583792296435167
+          ],
+          "poor_outcome_rate": 0.7060518731988472,
+          "poor_outcome_ci": [
+            0.6898284836174838,
+            0.7217689570715488
+          ]
+        },
+        {
+          "quintile": 2,
+          "range": [
+            75.0,
+            86.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.1239193083573487,
+          "withdrawal_ci": [
+            0.11282310972352629,
+            0.13593960342446307
+          ],
+          "poor_outcome_rate": 0.4457252641690682,
+          "poor_outcome_ci": [
+            0.4283697661532027,
+            0.46321412476087503
+          ]
+        },
+        {
+          "quintile": 3,
+          "range": [
+            86.0,
+            94.0
+          ],
+          "n": 3122,
+          "withdrawal_rate": 0.09192825112107623,
+          "withdrawal_ci": [
+            0.0822885745877073,
+            0.1025709525233274
+          ],
+          "poor_outcome_rate": 0.26745675848814865,
+          "poor_outcome_ci": [
+            0.252222623407312,
+            0.2832624760295886
+          ]
+        },
+        {
+          "quintile": 4,
+          "range": [
+            94.0,
+            100.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.06628242074927954,
+          "withdrawal_ci": [
+            0.05807914354093919,
+            0.0755514183653627
+          ],
+          "poor_outcome_rate": 0.20333013128402178,
+          "poor_outcome_ci": [
+            0.18958263145887755,
+            0.217806601177659
+          ]
+        },
+        {
+          "quintile": 5,
+          "range": [
+            100.0,
+            100.0
+          ],
+          "n": 3123,
+          "withdrawal_rate": 0.05027217419148255,
+          "withdrawal_ci": [
+            0.0431458972886268,
+            0.058503511494984124
+          ],
+          "poor_outcome_rate": 0.207492795389049,
+          "poor_outcome_ci": [
+            0.1936339531306721,
+            0.22207037931776413
+          ]
+        }
+      ],
+      "missing_share": 0.07208652760444524
+    }
+  ],
+  "categorical_factors": {
+    "code_module": {
+      "descriptive_only": false,
+      "levels": [
+        {
+          "value": "AAA",
+          "n": 355,
+          "withdrawal_rate": 0.09014084507042254,
+          "poor_outcome_rate": 0.21690140845070421,
+          "poor_outcome_ci": [
+            0.17718193151408532,
+            0.26268234286212977
+          ]
+        },
+        {
+          "value": "BBB",
+          "n": 4326,
+          "withdrawal_rate": 0.08090614886731391,
+          "poor_outcome_rate": 0.39852057327785484,
+          "poor_outcome_ci": [
+            0.3840270311134331,
+            0.4131941882494183
+          ]
+        },
+        {
+          "value": "CCC",
+          "n": 1283,
+          "withdrawal_rate": 0.19095869056897896,
+          "poor_outcome_rate": 0.48324240062353857,
+          "poor_outcome_ci": [
+            0.4559888084913741,
+            0.5105960454642331
+          ]
+        },
+        {
+          "value": "DDD",
+          "n": 3422,
+          "withdrawal_rate": 0.16335476329631796,
+          "poor_outcome_rate": 0.4687317358270017,
+          "poor_outcome_ci": [
+            0.4520561810702708,
+            0.48547741651345855
+          ]
+        },
+        {
+          "value": "EEE",
+          "n": 1438,
+          "withdrawal_rate": 0.07510431154381085,
+          "poor_outcome_rate": 0.3282336578581363,
+          "poor_outcome_ci": [
+            0.30444892039474863,
+            0.3529336936177753
+          ]
+        },
+        {
+          "value": "FFF",
+          "n": 4310,
+          "withdrawal_rate": 0.10765661252900233,
+          "poor_outcome_rate": 0.41276102088167055,
+          "poor_outcome_ci": [
+            0.39814651001565393,
+            0.42753090938704275
+          ]
+        },
+        {
+          "value": "GGG",
+          "n": 1693,
+          "withdrawal_rate": 0.04370939161252215,
+          "poor_outcome_rate": 0.36798582398109864,
+          "poor_outcome_ci": [
+            0.34533636371080195,
+            0.3912330367565133
+          ]
+        }
+      ]
+    },
+    "num_of_prev_attempts": {
+      "descriptive_only": false,
+      "levels": [
+        {
+          "value": "0",
+          "n": 14646,
+          "withdrawal_rate": 0.10514816332104329,
+          "poor_outcome_rate": 0.3857708589375939,
+          "poor_outcome_ci": [
+            0.3779181554720173,
+            0.3936834705824241
+          ]
+        },
+        {
+          "value": "1",
+          "n": 1704,
+          "withdrawal_rate": 0.1255868544600939,
+          "poor_outcome_rate": 0.5481220657276995,
+          "poor_outcome_ci": [
+            0.5244097961157314,
+            0.5716178448551877
+          ]
+        },
+        {
+          "value": "2",
+          "n": 384,
+          "withdrawal_rate": 0.17447916666666666,
+          "poor_outcome_rate": 0.6510416666666666,
+          "poor_outcome_ci": [
+            0.6020846916586199,
+            0.6970064837078184
+          ]
+        },
+        {
+          "value": "3",
+          "n": 67,
+          "withdrawal_rate": 0.11940298507462686,
+          "poor_outcome_rate": 0.7014925373134329,
+          "poor_outcome_ci": [
+            0.5834456017927899,
+            0.7976863884502311
+          ]
+        }
+      ]
+    },
+    "gender": {
+      "descriptive_only": true,
+      "levels": [
+        {
+          "value": "F",
+          "n": 7850,
+          "withdrawal_rate": 0.10140127388535032,
+          "poor_outcome_rate": 0.3955414012738854,
+          "poor_outcome_ci": [
+            0.38477817858579855,
+            0.4064068129729821
+          ]
+        },
+        {
+          "value": "M",
+          "n": 8977,
+          "withdrawal_rate": 0.11540603765177676,
+          "poor_outcome_rate": 0.4226356243733987,
+          "poor_outcome_ci": [
+            0.4124520824700608,
+            0.43288535227547575
+          ]
+        }
+      ]
+    },
+    "region": {
+      "descriptive_only": true,
+      "levels": [
+        {
+          "value": "East Anglian Region",
+          "n": 1812,
+          "withdrawal_rate": 0.10044150110375276,
+          "poor_outcome_rate": 0.39183222958057395,
+          "poor_outcome_ci": [
+            0.36960667125344243,
+            0.41451546803447775
+          ]
+        },
+        {
+          "value": "East Midlands Region",
+          "n": 1184,
+          "withdrawal_rate": 0.125,
+          "poor_outcome_rate": 0.41469594594594594,
+          "poor_outcome_ci": [
+            0.38695277055625965,
+            0.44299088523084185
+          ]
+        },
+        {
+          "value": "Ireland",
+          "n": 624,
+          "withdrawal_rate": 0.09615384615384616,
+          "poor_outcome_rate": 0.3717948717948718,
+          "poor_outcome_ci": [
+            0.3347675611195239,
+            0.4103910903619963
+          ]
+        },
+        {
+          "value": "London Region",
+          "n": 1631,
+          "withdrawal_rate": 0.11281422440220723,
+          "poor_outcome_rate": 0.45309625996321273,
+          "poor_outcome_ci": [
+            0.42907557985532674,
+            0.47733737171135704
+          ]
+        },
+        {
+          "value": "North Region",
+          "n": 925,
+          "withdrawal_rate": 0.10486486486486486,
+          "poor_outcome_rate": 0.3621621621621622,
+          "poor_outcome_ci": [
+            0.3318174938336357,
+            0.3936469987127792
+          ]
+        },
+        {
+          "value": "North Western Region",
+          "n": 1457,
+          "withdrawal_rate": 0.12079615648592999,
+          "poor_outcome_rate": 0.4790665751544269,
+          "poor_outcome_ci": [
+            0.4535036632826051,
+            0.5047395849929094
+          ]
+        },
+        {
+          "value": "Scotland",
+          "n": 1703,
+          "withdrawal_rate": 0.11450381679389313,
+          "poor_outcome_rate": 0.4315913094539049,
+          "poor_outcome_ci": [
+            0.4082470292546803,
+            0.4552435254634611
+          ]
+        },
+        {
+          "value": "South East Region",
+          "n": 1095,
+          "withdrawal_rate": 0.10136986301369863,
+          "poor_outcome_rate": 0.3461187214611872,
+          "poor_outcome_ci": [
+            0.3185227975738649,
+            0.37479059718658103
+          ]
+        },
+        {
+          "value": "South Region",
+          "n": 1650,
+          "withdrawal_rate": 0.09575757575757576,
+          "poor_outcome_rate": 0.34424242424242424,
+          "poor_outcome_ci": [
+            0.3217025523193337,
+            0.36750589424531926
+          ]
+        },
+        {
+          "value": "South West Region",
+          "n": 1261,
+          "withdrawal_rate": 0.10309278350515463,
+          "poor_outcome_rate": 0.359238699444885,
+          "poor_outcome_ci": [
+            0.3332217771523255,
+            0.386110667321354
+          ]
+        },
+        {
+          "value": "Wales",
+          "n": 1136,
+          "withdrawal_rate": 0.10827464788732394,
+          "poor_outcome_rate": 0.4841549295774648,
+          "poor_outcome_ci": [
+            0.4551957503740474,
+            0.5132209138361378
+          ]
+        },
+        {
+          "value": "West Midlands Region",
+          "n": 1322,
+          "withdrawal_rate": 0.12405446293494705,
+          "poor_outcome_rate": 0.43040847201210286,
+          "poor_outcome_ci": [
+            0.4039571890364259,
+            0.45726303515928496
+          ]
+        },
+        {
+          "value": "Yorkshire Region",
+          "n": 1027,
+          "withdrawal_rate": 0.10126582278481013,
+          "poor_outcome_rate": 0.42843232716650437,
+          "poor_outcome_ci": [
+            0.39848894895743553,
+            0.4589091226764605
+          ]
+        }
+      ]
+    },
+    "highest_education": {
+      "descriptive_only": true,
+      "levels": [
+        {
+          "value": "A Level or Equivalent",
+          "n": 7411,
+          "withdrawal_rate": 0.10174065578194576,
+          "poor_outcome_rate": 0.3587909863716098,
+          "poor_outcome_ci": [
+            0.34794633814987386,
+            0.3697819542522187
+          ]
+        },
+        {
+          "value": "HE Qualification",
+          "n": 2399,
+          "withdrawal_rate": 0.09879116298457691,
+          "poor_outcome_rate": 0.3234681117132138,
+          "poor_outcome_ci": [
+            0.30504340398698626,
+            0.3424572885264111
+          ]
+        },
+        {
+          "value": "Lower Than A Level",
+          "n": 6685,
+          "withdrawal_rate": 0.11982049364248318,
+          "poor_outcome_rate": 0.4979805534779357,
+          "poor_outcome_ci": [
+            0.4859992231816865,
+            0.5099642034301801
+          ]
+        },
+        {
+          "value": "No Formal quals",
+          "n": 168,
+          "withdrawal_rate": 0.13095238095238096,
+          "poor_outcome_rate": 0.5714285714285714,
+          "poor_outcome_ci": [
+            0.49582256887553966,
+            0.6438409351886684
+          ]
+        },
+        {
+          "value": "Post Graduate Qualification",
+          "n": 164,
+          "withdrawal_rate": 0.10975609756097561,
+          "poor_outcome_rate": 0.23780487804878048,
+          "poor_outcome_ci": [
+            0.17911762598154607,
+            0.30849450355010755
+          ]
+        }
+      ]
+    },
+    "imd_band": {
+      "descriptive_only": true,
+      "levels": [
+        {
+          "value": "0-10%",
+          "n": 1661,
+          "withdrawal_rate": 0.13305237808549067,
+          "poor_outcome_rate": 0.5496688741721855,
+          "poor_outcome_ci": [
+            0.5256546348252201,
+            0.5734538929770646
+          ]
+        },
+        {
+          "value": "10-20%",
+          "n": 1762,
+          "withdrawal_rate": 0.11861520998864926,
+          "poor_outcome_rate": 0.5005675368898979,
+          "poor_outcome_ci": [
+            0.4772451542327544,
+            0.5238874501865775
+          ]
+        },
+        {
+          "value": "20-30%",
+          "n": 1816,
+          "withdrawal_rate": 0.13381057268722468,
+          "poor_outcome_rate": 0.4697136563876652,
+          "poor_outcome_ci": [
+            0.44684712874237903,
+            0.4927080501259358
+          ]
+        },
+        {
+          "value": "30-40%",
+          "n": 1859,
+          "withdrawal_rate": 0.10704679935449166,
+          "poor_outcome_rate": 0.41527703066164606,
+          "poor_outcome_ci": [
+            0.39307353690830654,
+            0.4378299602006264
+          ]
+        },
+        {
+          "value": "40-50%",
+          "n": 1636,
+          "withdrawal_rate": 0.1008557457212714,
+          "poor_outcome_rate": 0.406479217603912,
+          "poor_outcome_ci": [
+            0.3829238433259506,
+            0.4304727676637938
+          ]
+        },
+        {
+          "value": "50-60%",
+          "n": 1625,
+          "withdrawal_rate": 0.09292307692307693,
+          "poor_outcome_rate": 0.4,
+          "poor_outcome_ci": [
+            0.3764431554212361,
+            0.42402854176527993
+          ]
+        },
+        {
+          "value": "60-70%",
+          "n": 1495,
+          "withdrawal_rate": 0.1177257525083612,
+          "poor_outcome_rate": 0.3612040133779264,
+          "poor_outcome_ci": [
+            0.33723871971419245,
+            0.3858807880443325
+          ]
+        },
+        {
+          "value": "70-80%",
+          "n": 1512,
+          "withdrawal_rate": 0.10185185185185185,
+          "poor_outcome_rate": 0.3716931216931217,
+          "poor_outcome_ci": [
+            0.3476880653469255,
+            0.3963485147284597
+          ]
+        },
+        {
+          "value": "80-90%",
+          "n": 1462,
+          "withdrawal_rate": 0.1012311901504788,
+          "poor_outcome_rate": 0.33652530779753764,
+          "poor_outcome_ci": [
+            0.3127600665641643,
+            0.3611474006546676
+          ]
+        },
+        {
+          "value": "90-100%",
+          "n": 1384,
+          "withdrawal_rate": 0.08526011560693642,
+          "poor_outcome_rate": 0.3063583815028902,
+          "poor_outcome_ci": [
+            0.28263529319660874,
+            0.33115348500401587
+          ]
+        },
+        {
+          "value": "Unknown",
+          "n": 615,
+          "withdrawal_rate": 0.07804878048780488,
+          "poor_outcome_rate": 0.23739837398373984,
+          "poor_outcome_ci": [
+            0.2054650591630409,
+            0.2725920074595003
+          ]
+        }
+      ]
+    },
+    "age_band": {
+      "descriptive_only": true,
+      "levels": [
+        {
+          "value": "0-35",
+          "n": 11800,
+          "withdrawal_rate": 0.11203389830508474,
+          "poor_outcome_rate": 0.43347457627118646,
+          "poor_outcome_ci": [
+            0.42455623425045247,
+            0.44243622013829503
+          ]
+        },
+        {
+          "value": "35-55",
+          "n": 4927,
+          "withdrawal_rate": 0.1018875583519383,
+          "poor_outcome_rate": 0.3574183072863812,
+          "poor_outcome_ci": [
+            0.3441522577201487,
+            0.37090652656527645
+          ]
+        },
+        {
+          "value": "55<=",
+          "n": 100,
+          "withdrawal_rate": 0.08,
+          "poor_outcome_rate": 0.23,
+          "poor_outcome_ci": [
+            0.15843154746876406,
+            0.32154564856827694
+          ]
+        }
+      ]
+    },
+    "disability": {
+      "descriptive_only": true,
+      "levels": [
+        {
+          "value": "N",
+          "n": 15268,
+          "withdrawal_rate": 0.10282944720985067,
+          "poor_outcome_rate": 0.40234477338223734,
+          "poor_outcome_ci": [
+            0.39459189108497744,
+            0.410146785617903
+          ]
+        },
+        {
+          "value": "Y",
+          "n": 1559,
+          "withdrawal_rate": 0.16805644644002565,
+          "poor_outcome_rate": 0.48492623476587554,
+          "poor_outcome_ci": [
+            0.46018498031708344,
+            0.5097415944554334
+          ]
+        }
+      ]
+    }
+  },
+  "caveat": "Associations, not causal effects. Sensitive attributes are reported descriptively for equity monitoring and are never used as reasons for intervention."
+}

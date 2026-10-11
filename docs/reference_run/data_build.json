@@ -1,0 +1,25 @@
+{
+  "feature_version": "5.0",
+  "cutoff_fraction": 0.4,
+  "records": 32593,
+  "in_scope_records": 25204,
+  "withdrawn_total": 10156,
+  "withdrawn_before_snapshot": 7389,
+  "withdrawn_before_start": 3097,
+  "withdrawn_after_snapshot_in_scope": 2775,
+  "presentations": [
+    "2013B",
+    "2013J",
+    "2014B",
+    "2014J"
+  ],
+  "synthetic_fixture": false,
+  "build_seconds": 12.6,
+  "leakage_controls": [
+    "assessment and VLE rows filtered to date <= snapshot_day",
+    "students unregistered on/before snapshot_day excluded from modelling scope (in_scope=0)",
+    "date_unregistration used for scoping only; never a feature",
+    "final_result used as label only",
+    "peer percentiles computed from in-scope peers at snapshot time"
+  ]
+}

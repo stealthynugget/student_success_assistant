@@ -1,0 +1,53 @@
+{
+  "split": {
+    "method": "temporal",
+    "train": [
+      "2013B",
+      "2013J"
+    ],
+    "validation": [
+      "2014B"
+    ],
+    "test": [
+      "2014J"
+    ]
+  },
+  "population": "in_scope",
+  "metric_note": "uncalibrated scores; compare ranking metrics only",
+  "variants": {
+    "enrolment_only": {
+      "n": 8377,
+      "positive_rate": 0.11257013250567029,
+      "roc_auc": 0.5973031393120543,
+      "pr_auc": 0.15350980771188127
+    },
+    "academic_only": {
+      "n": 8377,
+      "positive_rate": 0.11257013250567029,
+      "roc_auc": 0.7168419668194999,
+      "pr_auc": 0.2614201515579048
+    },
+    "engagement_only": {
+      "n": 8377,
+      "positive_rate": 0.11257013250567029,
+      "roc_auc": 0.6764966131080408,
+      "pr_auc": 0.2029031872043952
+    },
+    "full_without_sensitive (production)": {
+      "n": 8377,
+      "positive_rate": 0.11257013250567029,
+      "roc_auc": 0.731383363417801,
+      "pr_auc": 0.2701421205355773
+    },
+    "full_with_sensitive": {
+      "n": 8377,
+      "positive_rate": 0.11257013250567029,
+      "roc_auc": 0.7287250462250912,
+      "pr_auc": 0.2749071818950242
+    }
+  },
+  "cost_of_excluding_sensitive_attributes": {
+    "roc_auc": -0.0026583171927098137,
+    "pr_auc": 0.0047650613594469315
+  }
+}

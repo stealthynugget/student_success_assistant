@@ -1,0 +1,39 @@
+digraph SSA {
+  graph [rankdir=TB, newrank=true, fontname="Helvetica", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.3, ranksep=0.45, splines=true];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#CBD5E1", fillcolor="#F8FAFC", fontcolor="#172036"];
+  edge  [color="#64748B", arrowsize=0.7, fontname="Helvetica", fontsize=8, fontcolor="#64748B"];
+
+  subgraph cluster_data { label="Offline build: python -m ssa.cli build  (per checkpoint: weeks ~6, 9, 15, 22)"; style="rounded"; color="#E2E8F0"; fontcolor="#475569";
+    raw [label="OULAD, all 7 tables\nstudents, registrations, assessments,\nVLE clicks + planned schedule", fillcolor="#EEF2F1"];
+    feat [label="Snapshot features per checkpoint\nin-scope scoping, dense weekly grid,\nTMA/CMA split, schedule coverage, cohort percentiles"];
+    full [label="Complete historical records\nfull-course activity, withdrawal week,\ncoursework + exam results, assessment analytics"];
+    risk [label="Withdrawal model\nGBM, LOPO Platt calibration,\nlearned tiers, TreeSHAP"];
+    out  [label="Outcome model\n4 classes, calibrated"];
+    prio [label="Prioritiser\nweights learned for\nprecision at capacity"];
+    idx  [label="Case index\nsupervised kNN + BM25\n(+ dense), RRF"];
+    eval [label="Evaluation + quality gate\nmodels, retrieval, fairness,\noffline LLM evaluation"];
+    raw -> feat; raw -> full; feat -> risk; feat -> out; risk -> prio; out -> prio; feat -> idx; risk -> idx [label="weights"];
+    risk -> eval; prio -> eval; idx -> eval;
+  }
+
+  subgraph cluster_online { label="One microservice: FastAPI (uvicorn) serving the React console at /"; style="rounded"; color="#E2E8F0"; fontcolor="#475569";
+    ui  [label="React console\ncourse clock, students, plans,\ncase finder, copilot, insights,\nquality, feedback", fillcolor="#FEF7DC", color="#C9A227"];
+    api [label="FastAPI routers\nAPI key, admin key, rate limit,\nstrict pydantic validation,\nbackground jobs", fillcolor="#E6F2F1", color="#2E7466"];
+    svc [label="Service layer\ncheckpoint bundles, real snapshots,\nwhat-if, precedent stories"];
+    subgraph cluster_agents { label="Agents and generative features"; style="rounded,dashed"; color="#94A3B8";
+      wf  [label="Support workflow\nperformance, risk, router,\nintervention, critic (1 revision)"];
+      cop [label="Copilot\nfunction calling over 8 tools,\ngrounding check + revision"];
+      gen [label="Search understanding, precedent\nsynthesis, cohort briefing,\noutreach rewrite, note themes"];
+      grd [label="Guardrails in code\nIDs, numbers, protected terms,\npunitive / clinical / stigma", shape=note, fillcolor="#FFFFFF"];
+    }
+    llm [label="OpenAI-compatible LLM\ncache, retries, usage ledger", style="rounded,dashed", fillcolor="#EEEEFB", color="#4C4BC2"];
+    jud [label="LLM judge (separate model)\non demand + sampled online reviews", fillcolor="#EEEEFB", color="#4C4BC2"];
+    fb  [label="Feedback store\nplans, actions, precedents,\nreal outcomes", fillcolor="#FEF3E2", color="#B45309"];
+    loop [label="Feedback loop\nproposals, admin approval,\ndrift monitors", fillcolor="#FEF3E2", color="#B45309"];
+    ui -> api -> svc; svc -> wf; svc -> cop; svc -> gen; wf -> grd [style=dotted, arrowhead=none]; cop -> grd [style=dotted, arrowhead=none];
+    gen -> grd [style=dotted, arrowhead=none]; wf -> llm [style=dotted]; cop -> llm [style=dotted]; gen -> llm [style=dotted];
+    api -> jud; api -> fb [label="register"]; fb -> loop;
+  }
+  risk -> svc; out -> svc; prio -> svc; idx -> svc; full -> svc [label="precedent stories"];
+  loop -> idx [style=dashed, color="#B45309"]; loop -> wf [style=dashed, color="#B45309", label="action stats"]; loop -> risk [style=dashed, color="#B45309", label="recalibration"];
+}

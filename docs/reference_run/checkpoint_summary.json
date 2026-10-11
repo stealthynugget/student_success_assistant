@@ -1,0 +1,176 @@
+{
+  "checkpoints": [
+    {
+      "checkpoint": 0.15,
+      "tag": "c15",
+      "approx_week": 5.6,
+      "in_scope": 27157,
+      "withdrawal": {
+        "n": 9056,
+        "positive_rate": 0.1791077738515901,
+        "roc_auc": 0.6930342957193047,
+        "pr_auc": 0.34658527977038667,
+        "brier": 0.13594545749303677,
+        "log_loss": 0.43453414549458635,
+        "ece_10": 0.010843713774556398,
+        "roc_auc_95ci": {
+          "lower": 0.6786518858249666,
+          "upper": 0.7045721935396381,
+          "n_boot": 300
+        }
+      },
+      "thresholds": {
+        "medium": 0.13443363271203912,
+        "high": 0.17573912959942498,
+        "method": "validation_f1_above_medium",
+        "medium_recall_target": 0.8,
+        "validation": {
+          "medium": {
+            "threshold": 0.13443363271203912,
+            "precision": 0.2219939253171342,
+            "recall": 0.8000643915003219,
+            "flag_rate": 0.6184188718855312
+          },
+          "high": {
+            "threshold": 0.17573912959942498,
+            "precision": 0.2612676056338028,
+            "recall": 0.5972311654861558,
+            "flag_rate": 0.3922435224573228
+          }
+        }
+      },
+      "outcome_macro_f1": 0.3928831248831092,
+      "p_poor_auc": 0.763611978018246,
+      "prioritization_precision_at_10": 0.8211920529801324
+    },
+    {
+      "checkpoint": 0.25,
+      "tag": "c25",
+      "approx_week": 9.4,
+      "in_scope": 26241,
+      "withdrawal": {
+        "n": 8746,
+        "positive_rate": 0.1500114337983078,
+        "roc_auc": 0.7025102917872399,
+        "pr_auc": 0.28141943452162194,
+        "brier": 0.11928921536852828,
+        "log_loss": 0.3913309053441014,
+        "ece_10": 0.013510525380139951,
+        "roc_auc_95ci": {
+          "lower": 0.6874606270792646,
+          "upper": 0.7179931261760483,
+          "n_boot": 300
+        }
+      },
+      "thresholds": {
+        "medium": 0.10353779344978574,
+        "high": 0.16547776532506875,
+        "method": "validation_f1_above_medium",
+        "medium_recall_target": 0.8,
+        "validation": {
+          "medium": {
+            "threshold": 0.10353779344978574,
+            "precision": 0.1752541184717841,
+            "recall": 0.8,
+            "flag_rate": 0.6523006573306659
+          },
+          "high": {
+            "threshold": 0.16547776532506875,
+            "precision": 0.23485672832789264,
+            "recall": 0.518,
+            "flag_rate": 0.31517576450414403
+          }
+        }
+      },
+      "outcome_macro_f1": 0.4483588939605512,
+      "p_poor_auc": 0.8153028740188433,
+      "prioritization_precision_at_10": 0.9348571428571428
+    },
+    {
+      "checkpoint": 0.4,
+      "tag": "c40",
+      "approx_week": 15.0,
+      "in_scope": 25204,
+      "withdrawal": {
+        "n": 8377,
+        "positive_rate": 0.11257013250567029,
+        "roc_auc": 0.7304031575424712,
+        "pr_auc": 0.2655579599478286,
+        "brier": 0.0922444185323023,
+        "log_loss": 0.3170779872333572,
+        "ece_10": 0.006258740871554632,
+        "roc_auc_95ci": {
+          "lower": 0.7125043557297014,
+          "upper": 0.7451353821729395,
+          "n_boot": 300
+        }
+      },
+      "thresholds": {
+        "medium": 0.07959691291426148,
+        "high": 0.15765263367453844,
+        "method": "validation_f1_above_medium",
+        "medium_recall_target": 0.8,
+        "validation": {
+          "medium": {
+            "threshold": 0.07959691291426148,
+            "precision": 0.1690303239940044,
+            "recall": 0.8002183406113537,
+            "flag_rate": 0.5154216437867712
+          },
+          "high": {
+            "threshold": 0.15765263367453844,
+            "precision": 0.24381926683716965,
+            "recall": 0.4683406113537118,
+            "flag_rate": 0.20912818684257442
+          }
+        }
+      },
+      "outcome_macro_f1": 0.4790499730484577,
+      "p_poor_auc": 0.8525935332525021,
+      "prioritization_precision_at_10": 0.9856801909307876
+    },
+    {
+      "checkpoint": 0.6,
+      "tag": "c60",
+      "approx_week": 22.5,
+      "in_scope": 23926,
+      "withdrawal": {
+        "n": 7893,
+        "positive_rate": 0.05815279361459521,
+        "roc_auc": 0.7582281081505631,
+        "pr_auc": 0.1729306503799273,
+        "brier": 0.05190388599487974,
+        "log_loss": 0.19832049152552012,
+        "ece_10": 0.010552187024521474,
+        "roc_auc_95ci": {
+          "lower": 0.7356966620965011,
+          "upper": 0.7797854106647827,
+          "n_boot": 300
+        }
+      },
+      "thresholds": {
+        "medium": 0.052477538992583124,
+        "high": 0.12708009590056135,
+        "method": "validation_f1_above_medium",
+        "medium_recall_target": 0.8,
+        "validation": {
+          "medium": {
+            "threshold": 0.052477538992583124,
+            "precision": 0.13243027888446215,
+            "recall": 0.8005780346820809,
+            "flag_rate": 0.3913802781762615
+          },
+          "high": {
+            "threshold": 0.12708009590056135,
+            "precision": 0.20945083014048532,
+            "recall": 0.47398843930635837,
+            "flag_rate": 0.1465103224599264
+          }
+        }
+      },
+      "outcome_macro_f1": 0.5282969076377112,
+      "p_poor_auc": 0.9086175828157023,
+      "prioritization_precision_at_10": 0.9936628643852978
+    }
+  ]
+}

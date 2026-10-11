@@ -1,0 +1,299 @@
+{
+  "target": "poor_outcome (Fail or Withdrawn)",
+  "population": "in_scope",
+  "weights": {
+    "p_withdraw": 0.0,
+    "p_poor": 1.0,
+    "academic_gap": 0.0,
+    "engagement_gap": 0.0,
+    "missed_work": 0.0,
+    "recent_decline": 0.0
+  },
+  "validation_objective": 0.9754576516732479,
+  "objective": "mean precision@{10,20,30}% capacity",
+  "selection": "exhaustive simplex grid (step 0.1) on the validation presentation",
+  "test_comparison": {
+    "learned_weights": {
+      "objective_mean_precision": 0.860650348391761,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.9856801909307876,
+          "recall": 0.2828767123287671,
+          "lift": 2.8277544381600026,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.8573134328358208,
+          "recall": 0.4917808219178082,
+          "lift": 2.4594913105704355,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.7389574214086749,
+          "recall": 0.635958904109589,
+          "lift": 2.119947369568654,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "v4_hand_formula": {
+      "objective_mean_precision": 0.7611139558946585,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.8400954653937948,
+          "recall": 0.2410958904109589,
+          "lift": 2.410095792330075,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.7564179104477612,
+          "recall": 0.4339041095890411,
+          "lift": 2.1700386424044162,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.6868284918424195,
+          "recall": 0.5910958904109589,
+          "lift": 1.9703980397821739,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "random": {
+      "objective_mean_precision": 0.34929509584393337,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.3436754176610978,
+          "recall": 0.09863013698630137,
+          "lift": 0.9859482786804851,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.35880597014925375,
+          "recall": 0.20582191780821918,
+          "lift": 1.0293553465548968,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.34540389972144847,
+          "recall": 0.29726027397260274,
+          "lift": 0.9909070095775938,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "only_p_withdraw": {
+      "objective_mean_precision": 0.7086571742657909,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.7816229116945107,
+          "recall": 0.2243150684931507,
+          "lift": 2.2423476476934643,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.6961194029850746,
+          "recall": 0.3993150684931507,
+          "lift": 1.997052136577387,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.6482292081177875,
+          "recall": 0.5578767123287671,
+          "lift": 1.8596630398639404,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "only_p_poor": {
+      "objective_mean_precision": 0.860650348391761,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.9856801909307876,
+          "recall": 0.2828767123287671,
+          "lift": 2.8277544381600026,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.8573134328358208,
+          "recall": 0.4917808219178082,
+          "lift": 2.4594913105704355,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.7389574214086749,
+          "recall": 0.635958904109589,
+          "lift": 2.119947369568654,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "only_academic_gap": {
+      "objective_mean_precision": 0.6443920267053173,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.7446300715990454,
+          "recall": 0.2136986301369863,
+          "lift": 2.1362212704743846,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.6322388059701493,
+          "recall": 0.3626712328767123,
+          "lift": 1.8137892046616235,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.5563072025467569,
+          "recall": 0.47876712328767124,
+          "lift": 1.5959539163473229,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "only_engagement_gap": {
+      "objective_mean_precision": 0.7071275389891608,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.815035799522673,
+          "recall": 0.2339041095890411,
+          "lift": 2.3382037303429564,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.6991044776119403,
+          "recall": 0.401027397260274,
+          "lift": 2.0056158249846656,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.6072423398328691,
+          "recall": 0.5226027397260274,
+          "lift": 1.7420784523218988,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "only_missed_work": {
+      "objective_mean_precision": 0.7389465676261849,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.9403341288782816,
+          "recall": 0.26986301369863014,
+          "lift": 2.69766404027855,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.7170149253731344,
+          "recall": 0.4113013698630137,
+          "lift": 2.056997955428338,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.5594906486271389,
+          "recall": 0.4815068493150685,
+          "lift": 1.6050866998457338,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    },
+    "only_recent_decline": {
+      "objective_mean_precision": 0.5174696001646589,
+      "at_capacity": [
+        {
+          "fraction": 0.1,
+          "k": 838,
+          "precision": 0.5536992840095465,
+          "recall": 0.1589041095890411,
+          "lift": 1.5884722267630038,
+          "max_possible_recall": 0.28698630136986303
+        },
+        {
+          "fraction": 0.2,
+          "k": 1675,
+          "precision": 0.5140298507462686,
+          "recall": 0.29486301369863016,
+          "lift": 1.4746671437333878,
+          "max_possible_recall": 0.5736301369863014
+        },
+        {
+          "fraction": 0.3,
+          "k": 2513,
+          "precision": 0.48467966573816157,
+          "recall": 0.41712328767123286,
+          "lift": 1.3904662876330751,
+          "max_possible_recall": 0.8606164383561644
+        }
+      ]
+    }
+  },
+  "split": {
+    "method": "temporal",
+    "train": [
+      "2013B",
+      "2013J"
+    ],
+    "validation": [
+      "2014B"
+    ],
+    "test": [
+      "2014J"
+    ]
+  },
+  "signal_labels": {
+    "p_withdraw": "Predicted withdrawal risk",
+    "p_poor": "Predicted fail-or-withdraw probability",
+    "academic_gap": "Low score relative to cohort",
+    "engagement_gap": "Low activity relative to cohort",
+    "missed_work": "Missed due assessments",
+    "recent_decline": "Recent engagement decline"
+  }
+}

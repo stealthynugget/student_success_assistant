@@ -1,0 +1,62 @@
+import pytest
+
+from ssa.data.vocab import presentation_sort_key
+from ssa.retrieval.descriptors import parse_query
+from ssa.retrieval.hybrid import BM25, HistoricalCaseIndex
+from ssa.utils import read_json
+
+
+def test_bm25_ranks_matching_documents_first():
+    bm = BM25([["a", "b"], ["c"], ["a", "a", "c"]])
+    s = bm.scores(["a"])
+    assert s[1] == 0 and s[0] > 0 and s[2] > 0
+
+
+def test_query_parsing_maps_language_to_descriptors():
+    toks = parse_query("students with declining engagement who missed assessments and have low scores in BBB")
+    assert {"engagement_declining", "missed_most", "score_low", "module_bbb"} <= set(toks)
+
+
+def test_index_is_isolated_complete_and_versioned(built, features):
+    man = read_json(built.index_dir / "manifest.json")
+    assert str(built.index_dir).startswith(str(built.home))
+    assert man["n_docs"] == int((features["in_scope"] == 1).sum())
+
+
+def test_historical_only_excludes_self_and_future(service, features):
+    q = features[(features["in_scope"] == 1) & (features["code_presentation"] == "2014B")].iloc[0].to_dict()
+    res = service.index.search(profile=q, filters={"code_module": q["code_module"]}, top_k=20)
+    assert res["cases"]
+    for c in res["cases"]:
+        assert presentation_sort_key(c["code_presentation"]) < presentation_sort_key("2014B")
+        assert c["id_student"] != q["id_student"]
+        assert c["code_module"] == q["code_module"]
+    assert res["outcome_summary"]["n_neighbours"] > 0
+
+
+def test_range_and_membership_filters(service, features):
+    res = service.index.search(text="low engagement and missed assessments",
+                               filters={"studied_credits": {"min": 60, "max": 90}, "final_result": ["Fail", "Withdrawn"]}, top_k=15)
+    assert res["cases"]
+    for c in res["cases"]:
+        assert 60 <= c["snapshot"]["studied_credits"] <= 90
+        assert c["final_result"] in {"Fail", "Withdrawn"}
+    with pytest.raises(ValueError):
+        service.index.search(text="low scores", filters={"gender": "F"})
+
+
+def test_benchmark_reports_random_baseline(built):
+    b = read_json(built.metrics_dir / "retrieval_benchmark.json")
+    assert "random" in b["modes"] and "hybrid" in b["modes"]
+    assert b["modes"]["hybrid"]["neighbour_vote_auc_poor_outcome"] > b["modes"]["random"]["neighbour_vote_auc_poor_outcome"]
+
+
+def test_index_manifest_mismatch_detected(built, tmp_path):
+    import shutil
+    d = tmp_path / "idx"
+    shutil.copytree(built.index_dir, d)
+    m = read_json(d / "manifest.json")
+    m["index_version"] = "0.0"
+    (d / "manifest.json").write_text(__import__("json").dumps(m))
+    with pytest.raises(RuntimeError):
+        HistoricalCaseIndex(built, index_dir=d).load()
