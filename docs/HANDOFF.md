@@ -27,9 +27,21 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       students, metrics, copilot (rules) all 200; missing key 401, bad input 400, admin route 403; unbuilt home gives
       503 with a "build first" message. Notes: Starlette warns that its httpx-based TestClient is deprecated;
       `ruff check` reports 120 pre-existing style findings (96 are E501), left for a separate cleanup.*
-- [ ] 2. `python -m ssa.cli build && python -m ssa.cli report` with XGBoost installed (MODEL_ENGINE=auto picks it).
+- [x] 2. `python -m ssa.cli build && python -m ssa.cli report` with XGBoost installed (MODEL_ENGINE=auto picks it).
       Compare `docs/MODEL_CARD.md` with `docs/reference_run/` (sklearn engine): expect small shifts; explanations switch
       to exact TreeSHAP. Investigate anything that moves by more than ~0.02 ROC-AUC or breaks the quality gate.
+      *Done 2026-10-11 (`build --no-dense`, XGBoost 3.4.1, 278 s; `llm-eval --no-llm` as in the reference; `report`).
+      Official quality gate passes with the same three fairness warnings. Withdrawal ROC-AUC vs sklearn: c15 -0.007,
+      c25 -0.002, c40 -0.005, c60 +0.015 (all within 0.02); in-scope counts identical. Drivers now report
+      `method: tree_shap`. Other moves > 0.02: High-tier threshold 0.158 -> 0.141 at c40 (High tier now 24% of students,
+      tiers still monotonic); outcome P(fail or withdraw) ECE 0.080 -> 0.056; behavioural/hybrid retrieval vote-AUC up
+      0.03-0.05 (TreeSHAP-based feature weights; benchmark now uses 600 queries vs 500); prioritiser weights now
+      p_withdraw 0.1 / p_poor 0.9. Fairness: highest_education EO gap 0.03 -> 0.14 is one student in the
+      "Post Graduate Qualification" group (~13 positives; TPR 6/13 -> 5/13); the large groups stay within 0.04. The
+      audit's `sufficient_sample` rule (>= 10 positives) is too loose for gap metrics (see item 8).
+      Fixes: `report` crashed on Windows (cp1252) writing MODEL_CARD.md, now UTF-8; `llm-eval --no-llm` still ran the
+      LLM judge whenever a key was configured, now disabled (regression test added); `copilot_golden` no longer fails
+      on datasets without BBB/FFF in the latest presentation. `docs/reference_run/` is kept as the sklearn baseline.*
 - [ ] 3. Dense retrieval channel: `ENABLE_TEXT_EMBEDDINGS=true python -m ssa.cli index`, then
       `python -m ssa.cli evaluate`; check the benchmark's dense and hybrid rows and that fusion weights were re-tuned.
 - [ ] 4. `cd frontend && npm install && npm run build` (shipped dist/ was built with esbuild), then `docker compose build`

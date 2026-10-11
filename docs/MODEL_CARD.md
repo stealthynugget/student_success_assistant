@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-10 16:02 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **sklearn**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-11 12:39 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -13,78 +13,78 @@ Early-warning support for academic advisors at ~40% of a course presentation: su
 ## Withdrawal model (target: withdrawal after the snapshot)
 | Metric (test presentation, in scope) | Value |
 |---|---|
-| ROC-AUC | 0.730 (95% CI 0.713–0.745) |
-| PR-AUC | 0.266 (base rate 0.113) |
-| Brier / ECE | 0.092 / 0.006 |
+| ROC-AUC | 0.726 (95% CI 0.708–0.740) |
+| PR-AUC | 0.263 (base rate 0.113) |
+| Brier / ECE | 0.093 / 0.009 |
 | Logistic-regression baseline ROC-AUC | 0.703 |
-| Precision / recall when contacting top 10% | 30% / 27% (lift 2.68) |
-| Precision / recall when contacting top 20% | 26% / 45% |
+| Precision / recall when contacting top 10% | 29% / 26% (lift 2.61) |
+| Precision / recall when contacting top 20% | 25% / 44% |
 
-Risk tiers (thresholds learned out-of-fold: Medium ≥ 0.080, High ≥ 0.158):
+Risk tiers (thresholds learned out-of-fold: Medium ≥ 0.077, High ≥ 0.141):
 
 | Tier | Share of students | Observed withdrawal rate | Share of all withdrawals |
 |---|---|---|---|
-| High | 20% | 25.5% | 46% |
-| Medium | 34% | 11.8% | 36% |
-| Low | 46% | 4.6% | 19% |
+| High | 24% | 23.6% | 50% |
+| Medium | 28% | 11.7% | 29% |
+| Low | 48% | 4.9% | 21% |
 
-**Leakage audit.** Scoring the same model on *all* test enrolments, including students who had already left, gives ROC-AUC 0.783 vs 0.730 in scope; 75% of the test presentation's withdrawals had already happened by the snapshot. v4 reported 0.90 by training and testing on that population.
+**Leakage audit.** Scoring the same model on *all* test enrolments, including students who had already left, gives ROC-AUC 0.749 vs 0.726 in scope; 75% of the test presentation's withdrawals had already happened by the snapshot. v4 reported 0.90 by training and testing on that population.
 
 ## Outcome model (Distinction / Pass / Fail / Withdrawn)
-- Test macro-F1 0.479 vs multinomial logistic 0.460 and majority class 0.169; class weighting `inverse` chosen on validation.
-- P(fail or withdraw): ROC-AUC 0.853, ECE 0.080.
+- Test macro-F1 0.485 vs multinomial logistic 0.460 and majority class 0.169; class weighting `inverse` chosen on validation.
+- P(fail or withdraw): ROC-AUC 0.852, ECE 0.056.
 
 ## Feature-group ablation (test ROC-AUC / PR-AUC)
 | Variant | ROC-AUC | PR-AUC |
 |---|---|---|
-| enrolment_only | 0.597 | 0.154 |
-| academic_only | 0.717 | 0.261 |
-| engagement_only | 0.676 | 0.203 |
-| full_without_sensitive (production) | 0.731 | 0.270 |
-| full_with_sensitive | 0.729 | 0.275 |
+| enrolment_only | 0.606 | 0.163 |
+| academic_only | 0.723 | 0.262 |
+| engagement_only | 0.679 | 0.191 |
+| full_without_sensitive (production) | 0.726 | 0.261 |
+| full_with_sensitive | 0.728 | 0.270 |
 
 Sensitive attributes add essentially nothing, so they are excluded from the model by default.
 
 ## Prioritisation (target: fail or withdraw)
-Weights learned on the validation presentation: `{'p_withdraw': 0.0, 'p_poor': 1.0, 'academic_gap': 0.0, 'engagement_gap': 0.0, 'missed_work': 0.0, 'recent_decline': 0.0}`.
+Weights learned on the validation presentation: `{'p_withdraw': 0.1, 'p_poor': 0.9, 'academic_gap': 0.0, 'engagement_gap': 0.0, 'missed_work': 0.0, 'recent_decline': 0.0}`.
 
 | Ranking | Mean precision @10/20/30% | Precision @10% |
 |---|---|---|
-| learned_weights | 0.861 | 99% |
-| v4_hand_formula | 0.761 | 84% |
+| learned_weights | 0.857 | 98% |
+| v4_hand_formula | 0.762 | 84% |
 | random | 0.349 | 34% |
-| only_p_withdraw | 0.709 | 78% |
-| only_p_poor | 0.861 | 99% |
+| only_p_withdraw | 0.707 | 78% |
+| only_p_poor | 0.860 | 99% |
 
 ## Historical-case retrieval
-Queries: 500 in-scope students of 2014J; corpus: earlier presentations, same module.
+Queries: 600 in-scope students of 2014J; corpus: earlier presentations, same module.
 
 | Mode | Neighbour-vote AUC (fail/withdraw) | Outcome agreement@10 | nDCG@10 (global ideal) |
 |---|---|---|---|
-| hybrid | 0.802 | 0.694 | 0.880 |
-| behavioural | 0.785 | 0.684 | 0.874 |
-| lexical | 0.832 | 0.701 | 0.755 |
-| random | 0.505 | 0.529 | 0.546 |
+| hybrid | 0.835 | 0.715 | 0.866 |
+| behavioural | 0.829 | 0.718 | 0.870 |
+| lexical | 0.836 | 0.708 | 0.754 |
+| random | 0.512 | 0.528 | 0.544 |
 
 ## Fairness audit (High tier, test presentation)
 | Attribute | Equal-opportunity gap (TPR max−min) | Selection-rate ratio | Max calibration gap |
 |---|---|---|---|
-| gender | 0.093 | 0.713 | 0.006 |
-| region | 0.261 | 0.605 | 0.027 |
-| highest_education | 0.029 | 0.673 | 0.030 |
-| imd_band | 0.162 | 0.741 | 0.024 |
-| age_band | 0.065 | 0.736 | 0.014 |
-| disability | 0.211 | 0.700 | 0.029 |
+| gender | 0.082 | 0.877 | 0.009 |
+| region | 0.265 | 0.582 | 0.030 |
+| highest_education | 0.140 | 0.593 | 0.038 |
+| imd_band | 0.195 | 0.653 | 0.030 |
+| age_band | 0.048 | 0.804 | 0.018 |
+| disability | 0.232 | 0.708 | 0.034 |
 
 Gaps persist even with sensitive attributes excluded (proxies via engagement/scores and different base rates). They are surfaced as quality-gate warnings and must be reviewed with the institution's equity office before deployment. Mitigation options: per-group threshold review, outreach-capacity floors, monitoring by group via the feedback loop.
 
 ## Early warning across the course (test presentation, students still enrolled at each point)
 | Course week | Still enrolled | ROC-AUC | PR-AUC | Base rate | ECE | Outcome macro-F1 |
 |---|---|---|---|---|---|---|
-| 6 | 27,157 | 0.693 | 0.347 | 0.179 | 0.011 | 0.393 |
-| 9 | 26,241 | 0.703 | 0.281 | 0.150 | 0.014 | 0.448 |
-| 15 | 25,204 | 0.730 | 0.266 | 0.113 | 0.006 | 0.479 |
-| 22 | 23,926 | 0.758 | 0.173 | 0.058 | 0.011 | 0.528 |
+| 6 | 27,157 | 0.686 | 0.316 | 0.179 | 0.017 | 0.397 |
+| 9 | 26,241 | 0.700 | 0.289 | 0.150 | 0.011 | 0.454 |
+| 15 | 25,204 | 0.726 | 0.263 | 0.113 | 0.009 | 0.485 |
+| 22 | 23,926 | 0.773 | 0.176 | 0.058 | 0.008 | 0.531 |
 
 ## AI features (offline evaluation)
 Generator: not connected; judge: not connected.

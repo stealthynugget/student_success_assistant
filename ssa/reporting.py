@@ -371,7 +371,7 @@ def write_reports(s: Settings | None = None) -> dict:
     s = s or get_settings()
     docs = PROJECT_ROOT / "docs"
     docs.mkdir(exist_ok=True)
-    (docs / "MODEL_CARD.md").write_text(model_card(s))
+    (docs / "MODEL_CARD.md").write_text(model_card(s), encoding="utf-8")
     out = {"model_card": str(docs / "MODEL_CARD.md")}
     try:
         out["deck"] = str(build_deck(s))

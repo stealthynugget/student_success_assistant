@@ -34,7 +34,7 @@ from ssa.data import vocab
 from ssa.data.vocab import presentation_sort_key
 from ssa.evaluation.deepeval_suite import case_from_result, run_deepeval
 from ssa.evaluation.judge import LLMJudge, judge_text, pairwise_preference
-from ssa.service import StudentSuccessService
+from ssa.service import NotFound, StudentSuccessService
 from ssa.utils import write_json
 
 
@@ -147,9 +147,12 @@ def copilot_golden(svc: StudentSuccessService, refs: list[dict]) -> list[dict]:
                    "expect_any": [tier], "tool": "get_student"})
     latest = refs[0]["code_presentation"]
     for m in ("BBB", "FFF"):
-        top = svc.prioritize(code_module=m, code_presentation=latest, limit=3)["ranking"]
+        try:
+            top = svc.prioritize(code_module=m, code_presentation=latest, limit=3)["ranking"]
+            c = svc.cohort(m, latest)
+        except NotFound:  # module not offered in this presentation (e.g. small fixtures)
+            continue
         qs.append({"q": f"Who should I contact first in {m} {latest}?", "expect_ids": [t["id_student"] for t in top], "tool": "rank_cohort"})
-        c = svc.cohort(m, latest)
         qs.append({"q": f"Give me an overview of {m} {latest}: how many students are in the High tier?",
                    "expect_any": [str(c["tiers"].get("High", 0))], "tool": "cohort_overview"})
     f = svc.factor_insights().get("numeric_factors_ranked", [])
@@ -215,7 +218,7 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
     gen_llm = (llm or svc.llm()) if use_llm else None
     gen_llm = gen_llm if (gen_llm is not None and gen_llm.available) else None
     judge = LLMJudge(s, llm=judge_llm) if judge_llm is not None else LLMJudge(s)
-    jllm = judge.llm if judge.llm.available else None
+    jllm = judge.llm if (use_llm and judge.llm.available) else None  # --no-llm disables the judge too
     t_start = time.time()
     refs = golden_set(svc, per_tier)
 
@@ -307,7 +310,7 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
               "human_agreement": human_agreement(rows, s), "seconds": round(time.time() - t_start, 1)}
     result["usage"] = AppDB(s).usage_summary(since_s=time.time() - t_start + 5)
     write_json(s.global_metrics_dir / "llm_evaluation.json", result)
-    (s.global_metrics_dir / "llm_evaluation_cases.jsonl").write_text("\n".join(json.dumps(r, default=str) for r in rows))
+    (s.global_metrics_dir / "llm_evaluation_cases.jsonl").write_text("\n".join(json.dumps(r, default=str) for r in rows), encoding="utf-8")
     return result
 
 
@@ -318,7 +321,7 @@ def human_agreement(rows: list[dict], s: Settings) -> dict:
     if not path.exists():
         return {"status": "no human labels provided", "expected_file": str(path)}
     labels = {}
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             d = json.loads(line)
             labels[(d["id_student"], d["code_module"], d["code_presentation"])] = d
