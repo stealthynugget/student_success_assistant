@@ -101,6 +101,14 @@ TEXT_RUBRIC = {
 }
 
 
+def analysis_evidence(res: dict) -> dict:
+    """Everything the support-plan agents saw, so the judge reviews the plan against the same evidence."""
+    wf = res["workflow"]
+    return {"observations": wf["observations"], "risk": res["withdrawal_risk"], "outcome": res["outcome_prediction"],
+            "neighbours": res["similar_cases"]["outcome_summary"], "module_context": wf.get("module_context"),
+            "eligible_actions": wf.get("eligible_actions")}
+
+
 def judge_text(llm, kind: str, output, evidence) -> dict:
     """Generic judge for generated text (copilot answers, precedent syntheses, briefings). Verdict computed in code."""
     if llm is None or not getattr(llm, "available", False):

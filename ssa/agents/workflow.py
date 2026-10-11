@@ -273,7 +273,7 @@ class SupportWorkflow:
             "recommendation_id": rec_id, "prompt_version": PROMPT_VERSION,
             "performance_analysis": st["performance"], "risk_analysis": st["risk_analysis"],
             "intervention_plan": intervention, "observations": st["observations"],
-            "eligible_actions": st["eligible_actions"],
+            "eligible_actions": st["eligible_actions"], "module_context": st["module_context"],
             "guardrails": {"final_plan_violations": self._validate_plan(plan, st),
                            "sensitive_attributes_sent_to_llm": False, "evidence_only": True},
             "trace": st["trace"], "llm_usage": self.llm.usage_summary() if self.llm else {"calls": 0},

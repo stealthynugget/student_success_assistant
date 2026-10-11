@@ -83,16 +83,23 @@ Step 2 of the 2026-10-11 plan replaced the OpenAI-compatible gateway with Claude
 boundary and verbatim replay of thinking blocks, prompt caching for the copilot prefix, retries on 429/529/5xx/timeouts,
 per-call usage and cost in the ledger). Models: haiku-5-5 (fast), sonnet-5-5 (main), opus-5-5 (judge). Mocked-SDK tests in
 `tests/test_llm.py`; no real call verified yet when this was written.
-- [ ] 10. Smoke test against the real API: one `complete_json` per model tier and one copilot question with tool calls;
-      record responses, tokens and cost. Then estimate the cost of `python -m ssa.cli llm-eval` (stop if over $10) and run it.
-- [ ] 11. Check end to end: copilot tool use (including the streaming route once it exists), structured outputs for every
-      generative feature, DeepEval's custom model wrapper (`ssa/evaluation/deepeval_suite.py`, `GatewayModel`) against
-      the installed DeepEval version, and that the judge, A/B, search and copilot sections of the evaluation populate.
-      Re-run `python -m ssa.cli search-benchmark --llm` (typed-search benchmark with the LLM query parser).
-- [ ] 12. Set `ONLINE_EVAL_SAMPLE_RATE=0.1`, use the API for some analyses and copilot questions, and check Model quality >
-      Live reviews and AI usage and cost.
-- [ ] 13. `python -m ssa.cli report` to regenerate the model card and deck with real AI results; review prompt wording
-      for any feature whose LLM output is rejected by the code checks more than 20% of the time (never loosen a guardrail).
+- [x] 10. Smoke test (2026-10-11): one call per tier (haiku search understanding, sonnet briefing, opus judge) and a copilot
+      question with two parallel tool calls; all OK, prompt cache hits on the copilot prefix, $0.09. Fixed: the number
+      checker read "1,702" as 1 and 702. `llm-eval` estimated at ~$9.50 (dry run with a recording stand-in, calibrated on the
+      smoke test) and run under `LLM_BUDGET_USD=10`: 592 calls, 0 errors, $6.09.
+- [x] 11. Every section populated with real results; DeepEval 3.9.9 works through `GatewayModel` (enum renamed to
+      `SingleTurnParams`; schemas pass through as structured outputs). Above 20% code-check rejection: precedent synthesis
+      87.5% (numbers phrased unlike the evidence: "95% CI" labels, signs dropped, medians computed by the model), outreach
+      33% (SMS over 320 characters), copilot robustness 25% (refusals repeating "depression", "age or gender"). Fixed in the
+      prompts only (no guardrail loosened): synthesis 92% accepted, outreach 100%, robustness 88%. The judge was also given
+      less evidence than the generators (no module context / action catalogue / briefing week); with the same evidence the
+      analysis judge pass rate is 96% (was 46%). LLM search parser: off-by-one bounds fixed (F1 templated 0.84, paraphrased
+      0.88 vs rules 0.97 / 0.74). Typed search with the LLM parser: precision@10 lexical 0.86, hybrid 0.77, dense 0.71 (rules
+      parser: 0.52 / 0.62 / 0.63), so the text fusion weights (tuned with the rules parser) should be tuned per parser.
+- [x] 12. `ONLINE_EVAL_SAMPLE_RATE=0.1` through the API (29 analyses, 8 copilot questions): live reviews hold sampled copilot
+      (2, both PASS) and analysis (1, PASS 9.3) judgements; usage and cost view populated per feature and serving model.
+- [x] 13. `python -m ssa.cli report` regenerated the model card (AI section now lists synthesis, briefing, outreach, DeepEval,
+      models and spend) and the deck. Total LLM spend for steps 3-4: $10.26.
 
 ## Console upgrade brief
 Keep: the course-clock concept, the functional colour rules and every capability in `frontend/DESIGN.md`.

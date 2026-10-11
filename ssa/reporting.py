@@ -46,6 +46,28 @@ def _llm_lines(e: dict) -> str:
             f"| Search understanding F1, paraphrased (rules / AI) | {_f(se.get('paraphrased_rules', {}).get('filter_f1'))} / {_f(se.get('paraphrased_llm', {}).get('filter_f1'))} |",
             f"| Copilot correct answers (rules / AI) | {_pct(co['rules'].get('answer_correct_rate'))} / {_pct(co.get('llm', {}).get('answer_correct_rate'))} |",
             f"| Adversarial copilot prompts handled safely ({rb['mode']}) | {_pct(rb['safe_rate'])} |"]
+    sy, br, ou = e.get("synthesis") or {}, e.get("briefing") or {}, e.get("outreach") or {}
+    if sy.get("n"):
+        rows.append(f"| Precedent syntheses accepted by the code checks / judge pass | {_pct(sy.get('llm_accepted_rate'))} / "
+                    f"{_pct(sy.get('judge_pass_rate')) if sy.get('judge_pass_rate') is not None else 'not run'} |")
+    if br.get("n"):
+        rows.append(f"| Cohort briefings accepted by the code checks / judge pass | {_pct(br.get('llm_accepted_rate'))} / "
+                    f"{_pct(br.get('judge_pass_rate')) if br.get('judge_pass_rate') is not None else 'not run'} |")
+    if ou.get("n"):
+        rows.append(f"| Outreach rewrites accepted / within length / safe | {_pct(ou.get('llm_accepted_rate'))} / "
+                    f"{_pct(ou.get('length_compliance'))} / {_pct(ou.get('safe_rate'))} |")
+    de = (ag.get("deepeval") or {}).get("aggregate") or {}
+    if de:
+        rows += ["", f"DeepEval ({ag['deepeval'].get('judge_model')}; mean score, 95% bootstrap CI, pass rate):", "",
+                 "| Metric | Mean | 95% CI | Pass rate |", "|---|---|---|---|"]
+        rows += [f"| {k} | {_f(v['mean'], 2)} | {_f(v['ci95'][0], 2)}–{_f(v['ci95'][1], 2)} | {_pct(v.get('pass_rate'))} |"
+                 for k, v in de.items()]
+    m, u = e.get("models") or {}, (e.get("usage") or {}).get("total") or {}
+    if m:
+        rows += ["", f"Models: {m.get('fast')} (search, outreach, note themes), {m.get('main')} (agents, copilot, synthesis, "
+                     f"briefing), {m.get('judge')} (judge, A/B, DeepEval). Last evaluation run: {u.get('n', 0)} calls, of which "
+                     f"{u.get('cached', 0)} were answered from the response cache of earlier runs; {u.get('errors', 0)} errors; new "
+                     f"spend ${u.get('estimated_cost_usd', 0):.2f} (spend across runs: `/api/llm/usage`)."]
     return "\n".join(rows)
 
 

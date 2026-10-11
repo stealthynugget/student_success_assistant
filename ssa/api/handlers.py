@@ -16,7 +16,7 @@ from ssa.api import schemas as S
 from ssa.api.jobs import JobManager
 from ssa.appdb import AppDB
 from ssa.config import Settings, get_settings
-from ssa.evaluation.judge import LLMJudge, judge_text
+from ssa.evaluation.judge import LLMJudge, analysis_evidence, judge_text
 from ssa.feedback.loop import run_loop
 from ssa.feedback.store import FeedbackStore
 from ssa.service import StudentSuccessService
@@ -145,9 +145,7 @@ class Handlers:
         self.store.register(res, model_version=str(self.svc.bundle(rp.checkpoint).risk.art.metadata.get("engine")))
         rid = res["workflow"]["recommendation_id"]
         self.recent.put(rid, res)
-        self._maybe_online_eval("analysis", rid, res["workflow"], {
-            "observations": res["workflow"]["observations"], "risk": res["withdrawal_risk"], "outcome": res["outcome_prediction"],
-            "neighbours": res["similar_cases"]["outcome_summary"]})
+        self._maybe_online_eval("analysis", rid, res["workflow"], analysis_evidence(res))
         return res
 
     def analyze_job(self, req: S.AnalyzeRequestV2):
@@ -237,9 +235,7 @@ class Handlers:
             from ssa.feedback.store import UnknownRecommendation
             raise UnknownRecommendation(req.recommendation_id)
         judge = LLMJudge(self.settings)
-        ev = {"observations": res["workflow"]["observations"], "risk": res["withdrawal_risk"], "outcome": res["outcome_prediction"],
-              "neighbours": res["similar_cases"]["outcome_summary"]}
-        j = judge.evaluate(res["workflow"], ev)
+        j = judge.evaluate(res["workflow"], analysis_evidence(res))
         if j.get("scores"):
             self.db.add_eval("analysis", req.recommendation_id, j["verdict"], j.get("overall"), j["scores"], j.get("judge_model"),
                              {"checks": j.get("deterministic_checks"), "rationale": j.get("rationale"), "sampled": False})

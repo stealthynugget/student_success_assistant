@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-11 17:57 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-11 22:58 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -77,6 +77,11 @@ Queries: 600 in-scope students of 2014J; corpus: earlier presentations, same mod
 | rules | dense | 0.634 | 0.875 | 0.674 |
 | rules | random_corpus | 0.071 | n/a | n/a |
 | rules | random_within_parsed_filters | 0.370 | n/a | n/a |
+| llm | lexical | 0.862 | 0.985 | 0.846 |
+| llm | hybrid | 0.769 | 0.985 | 0.730 |
+| llm | dense | 0.714 | 0.978 | 0.671 |
+| llm | random_corpus | 0.071 | n/a | n/a |
+| llm | random_within_parsed_filters | 0.459 | n/a | n/a |
 
 ## Fairness audit (High tier, test presentation)
 | Attribute | Equal-opportunity gap (TPR max−min) | Selection-rate ratio | Max calibration gap |
@@ -99,18 +104,33 @@ Gaps persist even with sensitive attributes excluded (proxies via engagement/sco
 | 22 | 23,926 | 0.773 | 0.176 | 0.058 | 0.008 | 0.531 |
 
 ## AI features (offline evaluation)
-Generator: not connected; judge: not connected.
+Generator: claude-sonnet-5-5; judge: claude-opus-5-5.
 
 | Check | Result |
 |---|---|
 | Support plans passing every guardrail | 100% |
-| AI plan drafts accepted / revised | 0% / 0% |
-| Judge pass rate | not run |
-| AI plan preferred in order-swapped A/B | not run |
-| Search understanding F1, templated (rules / AI) | 0.975 / n/a |
-| Search understanding F1, paraphrased (rules / AI) | 0.741 / n/a |
-| Copilot correct answers (rules / AI) | 100% / n/a |
-| Adversarial copilot prompts handled safely (rules) | 100% |
+| AI plan drafts accepted / revised | 79% / 0% |
+| Judge pass rate | 96% |
+| AI plan preferred in order-swapped A/B | 95% |
+| Search understanding F1, templated (rules / AI) | 0.975 / 0.838 |
+| Search understanding F1, paraphrased (rules / AI) | 0.741 / 0.882 |
+| Copilot correct answers (rules / AI) | 100% / 100% |
+| Adversarial copilot prompts handled safely (llm) | 88% |
+| Precedent syntheses accepted by the code checks / judge pass | 92% / 82% |
+| Cohort briefings accepted by the code checks / judge pass | 80% / 75% |
+| Outreach rewrites accepted / within length / safe | 100% / 100% / 100% |
+
+DeepEval (claude-opus-5-5; mean score, 95% bootstrap CI, pass rate):
+
+| Metric | Mean | 95% CI | Pass rate |
+|---|---|---|---|
+| Actionable for an advisor | 0.65 | 0.59–0.69 | 71% |
+| AnswerRelevancyMetric | 1.00 | 1.00–1.00 | 100% |
+| FaithfulnessMetric | 1.00 | 1.00–1.00 | 100% |
+| No protected-attribute reasoning | 0.95 | 0.93–0.97 | 100% |
+| Supportive and non-punitive | 0.90 | 0.90–0.91 | 100% |
+
+Models: claude-haiku-5-5 (search, outreach, note themes), claude-sonnet-5-5 (agents, copilot, synthesis, briefing), claude-opus-5-5 (judge, A/B, DeepEval). Last evaluation run: 612 calls, of which 580 were answered from the response cache of earlier runs; 0 errors; new spend $0.10 (spend across runs: `/api/llm/usage`).
 
 ## Limitations
 - Associations, not causes. Drivers explain the model, not the student.

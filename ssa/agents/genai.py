@@ -140,7 +140,11 @@ def understand_query(llm, text: str) -> dict:
     rules = rule_parse(text)
     vocab_tokens = sorted(_all_tokens())
     ans = _ask(llm, "Translate the advisor's search request into retrieval filters and behavioural descriptors. Use only the allowed "
-                    "values. Only set filters the request explicitly asks for.",
+                    "values. Only set filters the request explicitly asks for. Range bounds are inclusive: 'more than 90 credits' is "
+                    "{\"min\": 91}, 'at least 90' is {\"min\": 90}, 'fewer than 60' is {\"max\": 59}. 'Repeating', 'retaking' or "
+                    "'second attempt' means num_of_prev_attempts {\"min\": 1}; 'first attempt' or 'first time' means {\"max\": 0}. "
+                    "Outcome words map to one value: passed = Pass, distinction = Distinction, failed = Fail, dropped out / withdrew "
+                    "/ left = Withdrawn. Name a region only if the request names it.",
                '{"filters": {"code_module"?: str|[str], "code_presentation"?: str, "region"?: str|[str], "highest_education"?: str, '
                '"age_band"?: str, "studied_credits"?: {"min"?: number, "max"?: number}, "num_of_prev_attempts"?: {"min"?: number, '
                '"max"?: number}, "final_result"?: str|[str]}, "descriptors": [str], "explanation": str}',
@@ -194,7 +198,11 @@ def synthesize_precedents(llm, profile: dict, prediction: dict, similar: dict) -
         return deterministic
     ans = _ask(llm, "Explain to an advisor what happened next to these similar historical students (after the same point in "
                     "the course), what patterns stand out, and what that implies for supporting this student now. Cite case IDs "
-                    "in cited_cases. Max 120 words in what_happened.",
+                    "in cited_cases. Max 120 words in what_happened. Numbers: every number you write must appear in the evidence "
+                    "as given (a rate such as 0.24 may be written as 24%). Do not compute new figures such as medians, averages, "
+                    "shares or counts across cases; describe such patterns in words ('most', 'half', 'all six'). Keep the sign of "
+                    "changes as given (write 'a change of -55%', or say 'activity fell sharply' without a number). Do not state "
+                    "confidence levels; if you quote an interval, write 'between X% and Y%'.",
                '{"what_happened": str, "patterns": [str], "implication": str, "cited_cases": [int]}', evidence, "precedent_synthesis")
     if ans:
         ids = {s["case_id"] for s in stories}
@@ -290,7 +298,9 @@ def outreach_variant(llm, message: str, channel: str = "email", tone: str = "war
     limit = CHANNEL_LIMITS[channel]
     det = {"message": _det_variant(message, channel, tone)[:limit], "subject": "Checking in about your module" if channel == "email" else None,
            "english_back_translation": None, "language": "English", "channel": channel, "tone": tone, "source": "deterministic", "checks": []}
-    ans = _ask(llm, f"Rewrite the outreach message for channel '{channel}' (max {limit} characters) in a {tone} tone, in {language}. "
+    ans = _ask(llm, f"Rewrite the outreach message for channel '{channel}' (hard limit {limit} characters including spaces, so at "
+                    f"most about {limit // 7} words{'; an SMS is two or three short sentences with one clear invitation' if channel == 'sms' else ''}) "
+                    f"in a {tone} tone, in {language}. "
                     "Keep the meaning, keep it supportive, add no facts, no numbers, no mention of risk, predictions, percentages or "
                     "withdrawal. If the language is not English, also give an English back-translation.",
                '{"subject": str|null, "message": str, "english_back_translation": str|null}', {"message": message},

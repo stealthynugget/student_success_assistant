@@ -30,7 +30,7 @@ from ssa.appdb import AppDB
 from ssa.config import Settings, get_settings
 from ssa.data.vocab import presentation_sort_key
 from ssa.evaluation.deepeval_suite import case_from_result, run_deepeval
-from ssa.evaluation.judge import LLMJudge, judge_text, pairwise_preference
+from ssa.evaluation.judge import LLMJudge, analysis_evidence, judge_text, pairwise_preference
 from ssa.evaluation.search_queries import PARAPHRASES, labelled_queries
 from ssa.service import NotFound, StudentSuccessService
 from ssa.utils import write_json
@@ -181,8 +181,7 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
         rp = svc.resolve(ref=ref)
         res = svc.analyze(rp, use_llm=gen_llm is not None)
         wf = res["workflow"]
-        ev = {"observations": wf["observations"], "risk": res["withdrawal_risk"], "outcome": res["outcome_prediction"],
-              "neighbours": res["similar_cases"]["outcome_summary"]}
+        ev = analysis_evidence(res)
         j = judge.evaluate(wf, ev) if jllm else None
         pair = None
         if gen_llm is not None and jllm and wf["intervention_plan"]["source"].startswith("llm"):
