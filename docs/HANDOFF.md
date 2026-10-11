@@ -132,6 +132,10 @@ per-call usage and cost in the ledger). Models: haiku-5-5 (fast), sonnet-5-5 (ma
       analysis judge pass rate is 96% (was 46%). LLM search parser: off-by-one bounds fixed (F1 templated 0.84, paraphrased
       0.88 vs rules 0.97 / 0.74). Typed search with the LLM parser: precision@10 lexical 0.86, hybrid 0.77, dense 0.71 (rules
       parser: 0.52 / 0.62 / 0.63), so the text fusion weights (tuned with the rules parser) should be tuned per parser.
+      Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
+      `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
+      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
+      hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
 - [x] 12. `ONLINE_EVAL_SAMPLE_RATE=0.1` through the API (29 analyses, 8 copilot questions): live reviews hold sampled copilot
       (2, both PASS) and analysis (1, PASS 9.3) judgements; usage and cost view populated per feature and serving model.
 - [x] 13. `python -m ssa.cli report` regenerated the model card (AI section now lists synthesis, briefing, outreach, DeepEval,

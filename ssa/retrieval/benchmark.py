@@ -203,9 +203,10 @@ def _score_text_queries(index: HistoricalCaseIndex, queries: list[dict], parse, 
     return {"modes": out, "precision_by_query_kind": by_kind, "parser_exact_filter_match": parsed_exact / max(len(queries), 1)}
 
 
-def tune_text_weights(index: HistoricalCaseIndex, settings: Settings | None = None, k: int = 10) -> dict:
-    """Choose the dense:lexical fusion ratio for typed queries on a separate templated tuning set (rule parser).
-    Stored next to the profile weights; adopted only if it beats lexical alone on the tuning set."""
+def tune_text_weights(index: HistoricalCaseIndex, settings: Settings | None = None, k: int = 10, llm=None) -> dict:
+    """Choose the dense:lexical fusion ratio for typed queries on a separate templated tuning set, once per query parser
+    (rules always; the LLM parser when ``llm`` is given), since the parsers hand the ranker different filters and
+    descriptors. Stored next to the profile weights; lexical alone is kept unless a dense weight beats it."""
     from ssa.evaluation.search_queries import text_tuning_queries
     s = settings or get_settings()
     index._ensure()
@@ -213,18 +214,24 @@ def tune_text_weights(index: HistoricalCaseIndex, settings: Settings | None = No
         return {"status": "skipped", "reason": "dense channel not built"}
     grid = [{"lexical": 1.0, "dense": dw} for dw in TEXT_DENSE_GRID]
     modes = {f"w{i}": ("hybrid", w) for i, w in enumerate(grid)}
-    res = _score_text_queries(index, text_tuning_queries(), _parsers()["rules"], modes, k)["modes"]
-    scored = sorted(((res[f"w{i}"][f"precision_at_{k}"], -w["dense"], w) for i, w in enumerate(grid)), key=lambda x: (-x[0], -x[1]))
-    best_p, _, best = scored[0]
-    lexical_only = res["w0"][f"precision_at_{k}"]
     path = s.index_dir / "fusion_weights.json"
     doc = read_json(path, {})
-    doc["text_weights"] = best
-    doc["text_tuning"] = {"queries": "text_tuning_queries(): 30 templated (seed 101) + 10 tuning-only paraphrases; disjoint from the reported set",
-                          "objective": f"precision@{k}", "parser": "rules", "lexical_only": lexical_only, "best": best_p,
-                          "grid": [{"weights": w, f"precision_at_{k}": p} for p, _, w in scored]}
+    out = {}
+    for parser, parse in _parsers(llm).items():
+        res = _score_text_queries(index, text_tuning_queries(), parse, modes, k)["modes"]
+        scored = sorted(((res[f"w{i}"][f"precision_at_{k}"], -w["dense"], w) for i, w in enumerate(grid)), key=lambda x: (-x[0], -x[1]))
+        best_p, _, best = scored[0]
+        lexical_only = res["w0"][f"precision_at_{k}"]
+        doc.setdefault("text_weights_by_parser", {})[parser] = best
+        doc.setdefault("text_tuning_by_parser", {})[parser] = {
+            "queries": "text_tuning_queries(): 30 templated (seed 101) + 10 tuning-only paraphrases; disjoint from the reported set",
+            "objective": f"precision@{k}", "lexical_only": lexical_only, "best": best_p,
+            "grid": [{"weights": w, f"precision_at_{k}": p} for p, _, w in scored]}
+        if parser == "rules":  # also the default for typed text that was not parsed
+            doc["text_weights"], doc["text_tuning"] = best, {**doc["text_tuning_by_parser"]["rules"], "parser": "rules"}
+        out[parser] = {"weights": best, "precision": best_p, "lexical_only": lexical_only}
     write_json(path, doc)
-    return {"status": "tuned", "weights": best, "precision": best_p, "lexical_only": lexical_only}
+    return {"status": "tuned", **out}
 
 
 def run_text_benchmark(index: HistoricalCaseIndex, settings: Settings | None = None, llm=None, k: int = 10) -> dict:
@@ -232,16 +239,18 @@ def run_text_benchmark(index: HistoricalCaseIndex, settings: Settings | None = N
     from ssa.evaluation.search_queries import text_search_queries
     index._ensure()
     queries = text_search_queries()
-    modes = {"lexical": ("lexical", None), "hybrid": ("hybrid", None)}
+    base_modes = {"lexical": ("lexical", None), "hybrid": ("hybrid", None)}
     if index.dense is not None:
-        modes["dense"] = ("dense", None)
+        base_modes["dense"] = ("dense", None)
     out = {"queries": len(queries), "k": k, "corpus": "all indexed enrolments (typed search has no query student)",
            "relevance": "a returned case is relevant when it meets every expected filter and shows every expected behaviour",
            "hybrid_text_weights": index.fusion_weights(text_only=True),
+           "hybrid_text_weights_by_parser": {p: index.fusion_weights(text_only=True, parser=p) for p in _parsers(llm)},
            "notes": ["random_corpus = a random case from the whole corpus; random_within_parsed_filters = a random case among "
                      "those passing the parser's filters (isolates what the ranking adds beyond filtering)."],
            "parsers": {}}
     for name, parse in _parsers(llm).items():
         t0 = time.time()
+        modes = {**base_modes, "hybrid": ("hybrid", index.fusion_weights(text_only=True, parser=name))}
         out["parsers"][name] = {**_score_text_queries(index, queries, parse, modes, k), "seconds": round(time.time() - t0, 1)}
     return out

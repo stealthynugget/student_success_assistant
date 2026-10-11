@@ -128,10 +128,11 @@ def _selection_lines(p: dict) -> list[str]:
 def _typed_search_lines(t: dict) -> list[str]:
     if not t.get("parsers"):
         return []
-    tw = t.get("hybrid_text_weights", {})
+    by = t.get("hybrid_text_weights_by_parser") or {"rules": t.get("hybrid_text_weights", {})}
+    tw = "; ".join(f"{p} parser lexical {w.get('lexical')}, dense {w.get('dense')}" for p, w in by.items())
     lines = ["", "### Typed search", f"{t['queries']} labelled plain-English queries (templated, paraphrased and behaviour-led); a returned "
              "case is relevant when it meets every expected filter and shows every expected behaviour. Hybrid typed search uses "
-             f"its own tuned weights (lexical {tw.get('lexical')}, dense {tw.get('dense')}).", "",
+             f"weights tuned per query parser on a separate query set ({tw}).", "",
              "| Query parser | Mode | Precision@10 | Filter match@10 | Behaviour match@10 |", "|---|---|---|---|---|"]
     for parser, res in t["parsers"].items():
         for mode, v in res["modes"].items():

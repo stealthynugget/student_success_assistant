@@ -249,7 +249,7 @@ class HistoricalCaseIndex:
     def search(self, *, profile: dict | None = None, text: str | None = None, filters: dict | None = None,
                top_k: int = 10, mode: str = "hybrid", historical_only: bool = True, weights: dict | None = None,
                rrf_k: int = 60, candidate_pool: int = 200, outcome_neighbourhood: int = 50,
-               extra_tokens: list[str] | None = None) -> dict:
+               extra_tokens: list[str] | None = None, parser: str | None = None) -> dict:
         self._ensure()
         if mode not in MODES:
             raise ValueError(f"mode must be one of {MODES}")
@@ -261,7 +261,7 @@ class HistoricalCaseIndex:
         idx = np.where(allowed)[0]
         if len(idx) == 0:
             return {"cases": [], "outcome_summary": None, "channels_used": [], "candidates": 0}
-        w = self.fusion_weights(text_only=profile is None)
+        w = self.fusion_weights(text_only=profile is None, parser=parser)
         w.update(weights or {})
 
         ranks: dict[str, np.ndarray] = {}
@@ -319,14 +319,17 @@ class HistoricalCaseIndex:
         return {"cases": cases, "outcome_summary": summary, "channels_used": list(ranks), "fusion_weights": w,
                 "candidates": int(len(idx)), "historical_only_before": before, "query_descriptors": q_tokens}
 
-    def fusion_weights(self, text_only: bool = False) -> dict:
+    def fusion_weights(self, text_only: bool = False, parser: str | None = None) -> dict:
         """Precedence: advisor-feedback-learned weights > validation-tuned weights > defaults. Typed queries (no query
-        student) use their own tuned ``text_weights`` when present: only the lexical and dense channels rank them."""
+        student) use their own tuned ``text_weights`` when present: only the lexical and dense channels rank them.
+        ``parser`` ("rules" or "llm": who interpreted the typed query) selects that parser's tuned weights if any."""
         w = dict(DEFAULT_WEIGHTS)
         tuned = read_json(self.dir / "fusion_weights.json", {})
         w.update(tuned.get("weights", {}))
         if text_only:
             w.update(tuned.get("text_weights", {}))
+            if parser:
+                w.update(tuned.get("text_weights_by_parser", {}).get(parser, {}))
         w.update(read_json(self.settings.retrieval_weights_path, {}).get("weights", {}))
         return w
 

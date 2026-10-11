@@ -211,7 +211,8 @@ class Handlers:
             filters = merged or None
             descriptors += interpretation["descriptors"]
         res = self.svc.similar(rp, text=req.query, filters=filters, top_k=req.top_k, mode=req.mode,
-                               historical_only=req.historical_only, checkpoint=req.checkpoint, descriptors=descriptors or None)
+                               historical_only=req.historical_only, checkpoint=req.checkpoint, descriptors=descriptors or None,
+                               parser=interpretation["source"] if interpretation else None)
         res["interpretation"] = interpretation
         res["applied_filters"] = filters
         return res

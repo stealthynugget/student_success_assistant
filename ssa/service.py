@@ -482,14 +482,14 @@ class StudentSuccessService:
 
     def similar(self, rp: ResolvedProfile | None = None, text: str | None = None, filters: dict | None = None, top_k: int = 10,
                 mode: str = "hybrid", historical_only: bool = True, checkpoint=None, stories: bool = True,
-                descriptors: list[str] | None = None) -> dict:
+                descriptors: list[str] | None = None, parser: str | None = None) -> dict:
         cp = rp.checkpoint if rp else checkpoint
         b = self.bundle(cp)
         prof = rp.profile if rp else None
         if prof is not None and filters is None:
             filters = {"code_module": prof.get("code_module")}
         res = b.index.search(profile=prof, text=text, filters=filters, top_k=top_k, mode=mode, historical_only=historical_only,
-                             extra_tokens=descriptors)
+                             extra_tokens=descriptors, parser=parser)
         if stories:
             res["cases"] = self.precedent_stories(res["cases"], b.settings.cutoff_fraction)
             res["aftermath"] = self.aftermath_summary(res["cases"])

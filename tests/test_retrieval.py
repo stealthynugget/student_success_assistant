@@ -81,3 +81,14 @@ def test_text_weights_apply_only_to_typed_queries(service, monkeypatch):
     monkeypatch.setattr("ssa.retrieval.hybrid.read_json", lambda p, d=None: tuned if p.name == "fusion_weights.json" else (d or {}))
     assert idx.fusion_weights()["dense"] == 0.0
     assert idx.fusion_weights(text_only=True)["dense"] == 2.0
+
+
+def test_text_weights_follow_the_parser(service, monkeypatch):
+    idx = service.bundle(None).index
+    tuned = {"weights": {"lexical": 0.5, "dense": 0.0}, "text_weights": {"lexical": 1.0, "dense": 2.0},
+             "text_weights_by_parser": {"rules": {"lexical": 1.0, "dense": 2.0}, "llm": {"lexical": 1.0, "dense": 0.0}}}
+    monkeypatch.setattr("ssa.retrieval.hybrid.read_json", lambda p, d=None: tuned if p.name == "fusion_weights.json" else (d or {}))
+    assert idx.fusion_weights(text_only=True, parser="llm")["dense"] == 0.0
+    assert idx.fusion_weights(text_only=True, parser="rules")["dense"] == 2.0
+    assert idx.fusion_weights(text_only=True, parser="other")["dense"] == 2.0  # unknown parser: the default text weights
+    assert idx.fusion_weights(parser="llm")["dense"] == 0.0 and idx.fusion_weights(parser="llm")["lexical"] == 0.5  # profiles unaffected

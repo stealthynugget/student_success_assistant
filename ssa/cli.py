@@ -132,9 +132,6 @@ def cmd_search_benchmark(args):
     """Tune typed-search fusion weights (optional) and run the typed-search benchmark on existing indexes."""
     from ssa.retrieval.benchmark import tune_text_weights
     from ssa.retrieval.hybrid import HistoricalCaseIndex
-    if args.tune:
-        for sc in _checkpoints(args):
-            log.info(f"[{sc.tag}] text weights: {tune_text_weights(HistoricalCaseIndex(sc).load(), settings=sc)}")
     s = get_settings().at(None)
     llm = None
     if args.llm:
@@ -142,6 +139,9 @@ def cmd_search_benchmark(args):
         llm = LLMClient(s)
         if not llm.available:
             raise SystemExit("--llm requested but the LLM is not configured or LLM_ENABLED=false")
+    if args.tune:
+        for sc in _checkpoints(args):
+            log.info(f"[{sc.tag}] text weights: {tune_text_weights(HistoricalCaseIndex(sc).load(), settings=sc, llm=llm)}")
     _text_benchmark(s, llm=llm)
 
 
