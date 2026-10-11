@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { api, fmt } from "../api.js";
-import { studentPath, useApi, useStore } from "../store.jsx";
-import { Empty, ErrorNote, Loading, Seg, Tier } from "../ui.jsx";
+import { api, fmt } from "../api";
+import { studentPath, useApi, useStore } from "../store";
+import { Empty, ErrorNote, Loading, Seg, Tier } from "../ui";
 
 const COLS = [["id_student", "Student"], ["risk_tier", "Withdrawal tier"], ["withdrawal_risk", "Withdrawal risk"], ["p_poor_outcome", "Fail or withdraw"],
   ["weighted_score", "Score"], ["score_pct", "Score vs cohort"], ["missed_rate", "Missed work"], ["clicks_pct", "Activity vs cohort"],

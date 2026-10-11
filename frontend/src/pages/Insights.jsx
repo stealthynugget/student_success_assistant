@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { api, fmt } from "../api.js";
+import { api, fmt } from "../api";
 import { C, GroupedBars, HBars, LineChart } from "../charts.jsx";
-import { useApi, useStore } from "../store.jsx";
-import { ErrorNote, Loading, Tabs } from "../ui.jsx";
+import { useApi, useStore } from "../store";
+import { ErrorNote, Loading, Tabs } from "../ui";
 
 export default function Insights() {
   const [tab, setTab] = useState("signals");

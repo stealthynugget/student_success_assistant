@@ -302,9 +302,32 @@ def create_app(settings: Settings | None = None, service=None, llm=None) -> Fast
 
     dist = PROJECT_ROOT / "frontend" / "dist"
     if dist.exists():
-        from fastapi.staticfiles import StaticFiles
-        app.mount("/", StaticFiles(directory=str(dist), html=True), name="console")
+        app.mount("/", _console_files(dist), name="console")
     return app
+
+
+def _console_files(dist):
+    """The built console. Client-side routes (e.g. /students/BBB/2014J/123) get index.html; missing files and /api stay 404."""
+    from fastapi.staticfiles import StaticFiles
+
+    class SPAFiles(StaticFiles):
+        async def get_response(self, path: str, scope):
+            try:
+                resp = await super().get_response(path, scope)
+            except StarletteHTTPException as exc:
+                if exc.status_code != 404 or not _is_client_route(path):
+                    raise
+                return await super().get_response("index.html", scope)
+            if resp.status_code == 404 and _is_client_route(path):
+                return await super().get_response("index.html", scope)
+            return resp
+
+    return SPAFiles(directory=str(dist), html=True)
+
+
+def _is_client_route(path: str) -> bool:
+    last = path.rstrip("/").rsplit("/", 1)[-1]
+    return not path.startswith("api") and "." not in last
 
 
 class _Http(Exception):

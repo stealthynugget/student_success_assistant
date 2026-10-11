@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { api, settings } from "../api.js";
-import { useStore } from "../store.jsx";
-import { ErrorNote } from "../ui.jsx";
+import { api, settings } from "../api";
+import { useStore } from "../store";
+import { ErrorNote } from "../ui";
 
 export default function Settings() {
   const { reload, ready, config } = useStore();

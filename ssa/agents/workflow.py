@@ -130,6 +130,8 @@ class SupportWorkflow:
         ev = {"risk_model": {k: r[k] for k in ("withdrawal_risk", "risk_tier", "thresholds")}, "risk_drivers": drivers,
               "outcome_model": st["outcome"], "similar_cases_outcomes": nb, "performance_analysis": st["performance"]}
         ans = self._ask("Explain the risk assessment for an advisor in plain language (max 4 sentences in risk_summary). "
+                        "Every number you write must appear in the evidence as given (a rate such as 0.24 may be written as 24%); "
+                        "do not state confidence levels such as '95%' - if you quote an interval, write 'between X% and Y%'. "
                         "key_factors must be labels copied from risk_drivers.",
                         '{"risk_summary": str, "key_factors": [str], "historical_context": str, "uncertainty_note": str}', ev,
                         feature="risk")

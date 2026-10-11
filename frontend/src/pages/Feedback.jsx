@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { api, fmt, settings } from "../api.js";
-import { useApi, useStore } from "../store.jsx";
-import { Empty, ErrorNote, Generated, Loading, Section } from "../ui.jsx";
+import { api, fmt, settings } from "../api";
+import { useApi, useStore } from "../store";
+import { Empty, ErrorNote, Generated, Loading, Section } from "../ui";
 
 export default function Feedback() {
   const { notify } = useStore();

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { api, fmt } from "../api.js";
-import { studentPath, useApi, useStore } from "../store.jsx";
-import { downloadCsv, ErrorNote, Loading, Tier } from "../ui.jsx";
+import { api, fmt } from "../api";
+import { studentPath, useApi, useStore } from "../store";
+import { downloadCsv, ErrorNote, Loading, Tier } from "../ui";
 
 const SIGNALS = { p_withdraw: "Withdrawal risk", p_poor: "Fail or withdraw", academic_gap: "Score gap", engagement_gap: "Activity gap",
   missed_work: "Missed work", recent_decline: "Recent decline" };

@@ -177,3 +177,18 @@ def test_copilot_stream_rules_branch(built, service):
     done = events[-1][1]
     assert done["source"] == "rules" and events[-2][1]["delta"] == done["answer"]
     assert c.post("/api/copilot/stream", json={"question": "x"}, headers={}).status_code == 401
+
+
+def test_console_spa_fallback(built, service):
+    from pathlib import Path
+
+    from fastapi.testclient import TestClient
+
+    from ssa.api.app import create_app
+    if not (Path(__file__).resolve().parents[1] / "frontend" / "dist" / "index.html").exists():
+        pytest.skip("console not built")
+    c = TestClient(create_app(built, service))
+    deep = c.get("/students/AAA/2014J/123")
+    assert deep.status_code == 200 and "<div id=\"root\">" in deep.text
+    assert c.get("/assets/missing-file.js").status_code == 404
+    assert c.get("/api/nope", headers=H).status_code == 404

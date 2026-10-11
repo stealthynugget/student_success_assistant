@@ -228,7 +228,8 @@ def briefing_evidence(cohort: dict, ranking: dict) -> dict:
             "p_poor_outcome": r["p_poor_outcome"], "reasons": r["reasons"]} for r in ranking["ranking"][:12]]
     upcoming = sorted([a for a in cohort.get("assessments", []) if a.get("upcoming")], key=lambda a: a["deadline_day"])[:3]
     return {"module": cohort["code_module"], "presentation": cohort["code_presentation"], "course_week": cohort["snapshot_week"],
-                "students_enrolled": cohort["in_scope"], "already_withdrawn": cohort["already_withdrawn"], "tiers": cohort["tiers"],
+                "students_still_enrolled": cohort["in_scope"],
+                "withdrew_before_this_week_not_counted_in_enrolled": cohort["already_withdrawn"], "tiers": cohort["tiers"],
                 "expected_withdrawals": cohort["expected_withdrawals"], "expected_fail_or_withdraw": cohort["expected_fail_or_withdraw"],
                 "common_high_tier_drivers": cohort["common_high_tier_drivers"][:5],
                 "upcoming_assessments": [{"type": a["assessment_type"], "week": a["deadline_week"], "weight": a["weight"],
@@ -248,7 +249,9 @@ def cohort_briefing(llm, cohort: dict, ranking: dict, factors_top: list[dict]) -
            "focus_this_week": ["Contact the top-ranked students before the next deadline.",
                                "Prioritise students with missed work or recent inactivity."],
            "students_to_contact": contact, "source": "deterministic", "checks": []}
-    ans = _ask(llm, "Write a short weekly briefing for the module team: a one-sentence headline, 3-5 key points, 2-4 concrete "
+    ans = _ask(llm, "Students who withdrew before this week are not part of the still-enrolled count; never describe them as a "
+                    "share of it. "
+                    "Write a short weekly briefing for the module team: a one-sentence headline, 3-5 key points, 2-4 concrete "
                     "focus actions for this week, and up to 5 student IDs to contact first (from top_priorities).",
                '{"headline": str, "key_points": [str], "focus_this_week": [str], "students_to_contact": [int]}', evidence, "cohort_briefing")
     if ans:

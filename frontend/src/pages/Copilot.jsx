@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { runJob } from "../api.js";
-import { useStore } from "../store.jsx";
-import { ErrorNote, Generated, Source } from "../ui.jsx";
+import { runJob } from "../api";
+import { useStore } from "../store";
+import { ErrorNote, Generated, Source } from "../ui";
 
 export default function Copilot({ query }) {
   const { module, presentation, checkpoint, config } = useStore();
