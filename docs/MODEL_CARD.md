@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-11 12:39 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-11 13:14 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -64,6 +64,7 @@ Queries: 600 in-scope students of 2014J; corpus: earlier presentations, same mod
 | hybrid | 0.835 | 0.715 | 0.866 |
 | behavioural | 0.829 | 0.718 | 0.870 |
 | lexical | 0.836 | 0.708 | 0.754 |
+| dense | 0.775 | 0.725 | 0.724 |
 | random | 0.512 | 0.528 | 0.544 |
 
 ## Fairness audit (High tier, test presentation)

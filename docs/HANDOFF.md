@@ -42,8 +42,16 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       Fixes: `report` crashed on Windows (cp1252) writing MODEL_CARD.md, now UTF-8; `llm-eval --no-llm` still ran the
       LLM judge whenever a key was configured, now disabled (regression test added); `copilot_golden` no longer fails
       on datasets without BBB/FFF in the latest presentation. `docs/reference_run/` is kept as the sklearn baseline.*
-- [ ] 3. Dense retrieval channel: `ENABLE_TEXT_EMBEDDINGS=true python -m ssa.cli index`, then
+- [x] 3. Dense retrieval channel: `ENABLE_TEXT_EMBEDDINGS=true python -m ssa.cli index`, then
       `python -m ssa.cli evaluate`; check the benchmark's dense and hybrid rows and that fusion weights were re-tuned.
+      *Done 2026-10-11 (all-MiniLM-L6-v2 on CPU, about 7 min per checkpoint). `dense_channel: built` at all 4 checkpoints;
+      fusion re-tuned with dense in the grid, and the tuner picked dense = 0.0 everywhere: the best grid point with
+      dense scored 0.007-0.028 lower on the validation objective. Hybrid is therefore unchanged (c40 vote-AUC poor
+      0.835). Dense alone at c40: vote-AUC withdrawal 0.543 (random 0.554), poor outcome 0.775, outcome agreement@10
+      0.725 (best of all modes), nDCG 0.724. Likely reasons: narratives are templated text from discretised
+      descriptors (dense ends up a softer lexical channel), and corpus narratives end with "Final outcome: ..." while
+      queries never do. The benchmark uses profile queries, so it does not measure the channel's real job
+      (free-text case search); judge it in Phase 2 with the labelled search queries before changing the narratives.*
 - [ ] 4. `cd frontend && npm install && npm run build` (shipped dist/ was built with esbuild), then `docker compose build`
       and `docker compose up app`; open the console and check every page.
 - [ ] 5. **Console upgrade** (brief below). Works fully in computed mode; AI-labelled sections show their computed
