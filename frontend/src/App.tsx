@@ -4,7 +4,7 @@ import {
   User, Users, type LucideIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type MouseEvent as ReactMouseEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
@@ -14,13 +14,13 @@ import { ErrorNote, Loading } from "./ui";
 const CaseFinder = lazy(() => import("./pages/CaseFinder"));
 const Student = lazy(() => import("./pages/Student"));
 const Today = lazy(() => import("./pages/Today"));
-const CopilotPage = lazy(() => import("./pages/Copilot.jsx"));
-const Feedback = lazy(() => import("./pages/Feedback.jsx"));
-const Insights = lazy(() => import("./pages/Insights.jsx"));
-const Priorities = lazy(() => import("./pages/Priorities.jsx"));
-const Quality = lazy(() => import("./pages/Quality.jsx"));
-const Settings = lazy(() => import("./pages/Settings.jsx"));
-const Students = lazy(() => import("./pages/Students.jsx"));
+const CopilotPage = lazy(() => import("./pages/Copilot"));
+const Feedback = lazy(() => import("./pages/Feedback"));
+const Insights = lazy(() => import("./pages/Insights"));
+const Priorities = lazy(() => import("./pages/Priorities"));
+const Quality = lazy(() => import("./pages/Quality"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Students = lazy(() => import("./pages/Students"));
 
 const NAV: [string, string, LucideIcon][] = [
   ["/today", "This week", CalendarClock], ["/students", "Students", Users], ["/priorities", "Who to contact", SlidersHorizontal],
@@ -145,14 +145,7 @@ function Palette({ open, setOpen, toggleTheme }: { open: boolean; setOpen: (v: b
   );
 }
 
-// ---------------------------------------------------------------- legacy routes (pages not yet converted)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function Legacy({ page: P }: { page: ComponentType<any> }) {
-  const loc = useLocation();
-  const parts = loc.pathname.split("/").filter(Boolean);
-  const query = Object.fromEntries(new URLSearchParams(loc.search));
-  return <P parts={parts} query={query} />;
-}
+// ---------------------------------------------------------------- old #/ links
 const legacyPath = (p: string) => p.replace(/^\/student\//, "/students/");
 function OldStudentRedirect() {
   const { m, p, id } = useParams();
@@ -179,7 +172,7 @@ export default function App() {
   }, []);
   useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
 
-  // In-app links rendered as plain <a> (older pages) navigate without a full reload.
+  // In-app links rendered as plain <a> (e.g. inside generated text) navigate without a full reload.
   const onClick = (e: ReactMouseEvent) => {
     const a = (e.target as HTMLElement).closest("a");
     const href = a?.getAttribute("href");
@@ -194,21 +187,21 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate replace to="/today" />} />
       <Route path="/today" element={<Today />} />
-      <Route path="/students" element={<Legacy page={Students} />} />
+      <Route path="/students" element={<Students />} />
       <Route path="/students/:module/:presentation/:id" element={<Student />} />
       <Route path="/student/:m/:p/:id" element={<OldStudentRedirect />} />
-      <Route path="/priorities" element={<Legacy page={Priorities} />} />
+      <Route path="/priorities" element={<Priorities />} />
       <Route path="/cases" element={<CaseFinder />} />
-      <Route path="/copilot" element={<Legacy page={CopilotPage} />} />
-      <Route path="/insights" element={<Legacy page={Insights} />} />
-      <Route path="/quality" element={<Legacy page={Quality} />} />
-      <Route path="/feedback" element={<Legacy page={Feedback} />} />
+      <Route path="/copilot" element={<CopilotPage />} />
+      <Route path="/insights" element={<Insights />} />
+      <Route path="/quality" element={<Quality />} />
+      <Route path="/feedback" element={<Feedback />} />
       <Route path="*" element={<Navigate replace to="/today" />} />
     </Routes>
   ), []);
 
   let body;
-  if (page === "settings") body = <div className="content"><Suspense fallback={<Loading />}><Legacy page={Settings} /></Suspense></div>;
+  if (page === "settings") body = <div className="content"><Suspense fallback={<Loading />}><Settings /></Suspense></div>;
   else if (error) body = (
     <div className="content"><h1>Can't load the console</h1><p className="muted">The service didn't respond as expected.</p>
       <ErrorNote error={error} onRetry={reload} /><p style={{ marginTop: 16 }}><NavLink to="/settings">Open Settings</NavLink> to check the service address and API key.</p></div>);
@@ -226,8 +219,8 @@ export default function App() {
         ))}
         <div className="foot">
           <span className="llm">{llm?.configured ? `AI drafting on (${llm.model})` : "AI not connected: computed text only"}</span>
-          <button type="button" onClick={() => setPalette(true)} aria-label="Open command palette (Ctrl+K)">Search <kbd>Ctrl K</kbd></button>
-          <button type="button" onClick={toggleTheme} aria-label={`Theme: ${theme}. Switch theme`}><Contrast aria-hidden="true" />Theme: {theme}</button>
+          <button type="button" onClick={() => setPalette(true)} title="Open the command palette">Search <kbd>Ctrl K</kbd></button>
+          <button type="button" onClick={toggleTheme}><Contrast aria-hidden="true" />Theme: {theme}<span className="visually-hidden"> (switch theme)</span></button>
         </div>
       </nav>
       <main className="main" id="main" tabIndex={-1}>{body}</main>

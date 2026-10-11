@@ -19,7 +19,7 @@
     color-scheme: dark;
     --ink: #e7eaf1; --ink-2: #c3c9d6; --muted: #9aa3b5; --paper: #10141c; --surface: #171c27; --surface-2: #1c2230;
     --rule: #2d3546; --rule-2: #232a38; --field: #46506a; --on-ink: #10141c;
-    --marker: #f4c53d; --marker-soft: #4a3f15; --on-marker: #172036;
+    --marker: #f4c53d; --marker-soft: #3b3312; --on-marker: #172036;
     --high: #e2735f; --medium: #e3a548; --low: #4fb39e; --on-tier: #10141c;
     --ai: #a3a2f7; --ai-soft: #24244a;
     --ok: #4fb39e; --warn: #e3a548; --bad: #e2735f; --bad-soft: #3a1f1c; --warn-soft: #3a2e17;
@@ -31,7 +31,7 @@
   color-scheme: dark;
   --ink: #e7eaf1; --ink-2: #c3c9d6; --muted: #9aa3b5; --paper: #10141c; --surface: #171c27; --surface-2: #1c2230;
   --rule: #2d3546; --rule-2: #232a38; --field: #46506a; --on-ink: #10141c;
-  --marker: #f4c53d; --marker-soft: #4a3f15; --on-marker: #172036;
+  --marker: #f4c53d; --marker-soft: #3b3312; --on-marker: #172036;
   --high: #e2735f; --medium: #e3a548; --low: #4fb39e; --on-tier: #10141c;
   --ai: #a3a2f7; --ai-soft: #24244a;
   --ok: #4fb39e; --warn: #e3a548; --bad: #e2735f; --bad-soft: #3a1f1c; --warn-soft: #3a2e17;
@@ -135,6 +135,8 @@ abbr.chip.ref { text-decoration: none; cursor: help; border-bottom: 1px dotted c
 
 .tier { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; padding: 2px 8px; border-radius: 999px; color: var(--on-tier); white-space: nowrap; }
 .tier.High { background: var(--high); } .tier.Medium { background: var(--medium); } .tier.Low { background: var(--low); }
+/* white on the Medium amber is 3.1:1; ink on it passes 4.5:1 (dark theme already uses dark text on all tiers) */
+.tier.Medium { color: #172036; }
 .chip { display: inline-block; font-size: 13px; padding: 2px 8px; border-radius: var(--r-chip); background: var(--rule-2); color: var(--ink-2); margin: 0 4px 4px 0; text-decoration: none; }
 a.chip:hover { background: var(--rule); }
 .chip.ai { background: var(--ai-soft); color: var(--ai); }
@@ -240,3 +242,21 @@ pre.json { background: var(--surface-2); border: 1px solid var(--rule-2); paddin
 [cmdk-item][data-selected="true"] { background: var(--rule-2); }
 [cmdk-item] svg { width: 16px; height: 16px; color: var(--muted); }
 [cmdk-empty] { padding: 16px; color: var(--muted); }
+
+/* virtualised tables: sticky header inside the scroll box */
+.vt thead th { position: sticky; top: 0; background: var(--paper); z-index: 2; }
+.vt:focus-visible { outline-offset: 0; }
+table.data tr.beyond td { color: var(--muted); }
+.toolcard { border: 1px solid var(--rule); border-radius: var(--r-chip); background: var(--surface); }
+.toolcard > summary { display: flex; align-items: center; gap: 8px; padding: 6px 10px; list-style: none; color: var(--ink); font-size: 14px; flex-wrap: wrap; }
+.toolcard > summary::-webkit-details-marker { display: none; }
+.toolcard > summary svg { width: 15px; height: 15px; flex: none; }
+.toolcard > pre, .toolcard > p { margin: 0 10px 10px; }
+.toolcard:target { outline: 3px solid var(--marker); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tabs { flex-wrap: wrap; margin-bottom: var(--s5); } .tabpanel:focus-visible { outline: 3px solid var(--marker); outline-offset: 4px; }
+td.wrap { overflow-wrap: anywhere; word-break: break-word; max-width: 60ch; }
+
+.h3 { font-size: 18px; } .h4 { font-size: 15px; }
+.empty .empty-title { color: var(--ink); font-weight: 700; font-size: 18px; margin: 0 0 var(--s2); }

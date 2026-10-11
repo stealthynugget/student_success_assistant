@@ -206,3 +206,91 @@ export function Diverging({ items }: { items: { label: string; value: number; ti
     </div>
   );
 }
+
+/** Labelled horizontal bars in HTML (crisp text at any width). */
+export function HBars({ items, max, format = (v) => String(v), label }: {
+  items: { label: string; value: number; color?: string; strong?: boolean }[]; max?: number; format?: (v: number) => string; label: string }) {
+  const m = max ?? Math.max(1e-9, ...items.map((d) => d.value || 0));
+  return (
+    <div className="bars-h" role="list" aria-label={label}>
+      {items.map((d) => (
+        <div key={d.label} role="listitem" style={{ display: "contents" }}>
+          <span style={{ fontWeight: d.strong ? 700 : 400 }}>{d.label}</span>
+          <span><span className="bar" style={{ display: "block", width: `${Math.max(0, (100 * (d.value || 0)) / m)}%`, background: d.color || COL.ink }} /></span>
+          <span className="small">{format(d.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Grouped bars (categories x series) with a tooltip. */
+export function GroupedBars({ categories, series, max = 1, format = (v) => String(v), height = 230, label }: {
+  categories: string[]; series: { name: string; color: string; values: (number | null)[] }[]; max?: number; format?: (v: number) => string;
+  height?: number; label: string }) {
+  const reduce = useReducedMotion();
+  const data = categories.map((c, i) => Object.fromEntries([["cat", c], ...series.map((s, j) => [`s${j}`, s.values[i] ?? null])]));
+  return (
+    <figure className="chart" style={{ margin: 0 }} aria-label={label}>
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="cat" {...AXIS} interval={0} />
+          <YAxis {...AXIS} width={48} domain={[0, max]} tickFormatter={(v) => format(v)} />
+          <Tooltip cursor={{ fill: "var(--rule-2)" }} content={<Tip unit="" fmtV={format} />} />
+          {series.map((s, j) => <Bar key={j} dataKey={`s${j}`} name={s.name} fill={s.color} isAnimationActive={!reduce} radius={[2, 2, 0, 0]} />)}
+        </BarChart>
+      </ResponsiveContainer>
+      <figcaption className="legend">{series.map((s) => <span key={s.name}><i style={{ background: s.color, height: 10 }} />{s.name}</span>)}</figcaption>
+    </figure>
+  );
+}
+
+/** Calibration: mean predicted vs observed rate per bin (dot size = students); the diagonal is perfect calibration. */
+export function Reliability({ rows, height = 260 }: { rows: { mean_predicted: number; observed_rate: number; n: number }[]; height?: number }) {
+  const max = Math.min(1, Math.ceil(Math.max(0.1, ...rows.map((r) => Math.max(r.mean_predicted, r.observed_rate))) * 10.5) / 10);
+  const data = rows.filter((r) => r.n > 0).map((r) => ({ x: r.mean_predicted, y: r.observed_rate, n: r.n }));
+  const biggest = Math.max(1, ...data.map((d) => d.n));
+  return (
+    <figure className="chart" style={{ margin: 0 }} aria-label="Predicted versus observed withdrawal rate">
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data} margin={{ top: 8, right: 16, bottom: 18, left: 0 }}>
+          <CartesianGrid />
+          <XAxis dataKey="x" type="number" domain={[0, max]} {...AXIS} tickFormatter={(v) => fmt.pct(v)}
+            label={{ value: "predicted", position: "insideBottomRight", offset: -12, fill: "var(--muted)", fontSize: 12 }} />
+          <YAxis dataKey="y" type="number" domain={[0, max]} {...AXIS} width={48} tickFormatter={(v) => fmt.pct(v)} />
+          <ReferenceLine segment={[{ x: 0, y: 0 }, { x: max, y: max }]} stroke="var(--muted)" strokeDasharray="4 4" />
+          <Tooltip content={({ active, payload }) => active && payload?.length ? <div className="chart-tip">
+            {fmt.int(payload[0].payload.n)} students: predicted {fmt.pct(payload[0].payload.x, 1)}, observed {fmt.pct(payload[0].payload.y, 1)}</div> : null} />
+          <Line dataKey="y" stroke="none" isAnimationActive={false}
+            dot={(p: any) => <circle key={p.index} cx={p.cx} cy={p.cy} r={4 + 8 * Math.sqrt(p.payload.n / biggest)} fill="var(--ink)" fillOpacity={0.75} />} />
+        </LineChart>
+      </ResponsiveContainer>
+    </figure>
+  );
+}
+
+/** Several weekly series with optional labelled week markers (e.g. "Withdrawn diverge"). */
+export function SeriesLines({ series, markers = [], height = 280, label, yLabel }: {
+  series: Series[]; markers?: { x: number; label: string; color: string }[]; height?: number; label: string; yLabel: string }) {
+  const reduce = useReducedMotion();
+  const n = Math.max(...series.map((s) => s.values.length));
+  const data = Array.from({ length: n }, (_, w) => Object.fromEntries([["week", w], ...series.map((s) => [s.key, s.values[w] ?? null])]));
+  return (
+    <figure className="chart" style={{ margin: 0 }} aria-label={label}>
+      <div className="small muted" style={{ marginBottom: 2 }}>{yLabel} by course week</div>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data} margin={{ top: 20, right: 40, bottom: 4, left: 0 }}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="week" {...AXIS} interval="preserveStartEnd" minTickGap={24} />
+          <YAxis {...AXIS} width={44} />
+          <Tooltip content={<Tip />} cursor={{ stroke: "var(--ink)", strokeDasharray: "3 3" }} />
+          {markers.map((m, i) => <ReferenceLine key={i} x={m.x} stroke={m.color} strokeDasharray="4 3"
+            label={{ value: m.label, position: i % 2 ? "insideTopLeft" : "insideTopRight", fill: "var(--ink)", fontSize: 12 }} />)}
+          {series.map((s) => <Line key={s.key} dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={s.width ?? 2.2} dot={false} isAnimationActive={!reduce} />)}
+        </LineChart>
+      </ResponsiveContainer>
+      <figcaption className="legend">{series.map((s) => <span key={s.key}><i style={{ background: s.color }} />{s.name}</span>)}</figcaption>
+    </figure>
+  );
+}

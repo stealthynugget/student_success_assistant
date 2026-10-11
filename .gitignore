@@ -16,3 +16,4 @@ artifacts/*
 frontend/node_modules/
 .demo/
 docs/screenshots/_deck_*.jpg
+docs/screenshots/step5-review/

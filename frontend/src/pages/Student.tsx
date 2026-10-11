@@ -95,11 +95,11 @@ export default function Student() {
               <div className="grid two">
                 <div className="stack">
                   <p className="small muted" style={{ marginBottom: 0 }}>{r.interpretation}</p>
-                  <h4>Likely final outcome</h4>
+                  <h3 className="h4">Likely final outcome</h3>
                   <Stacked label="Predicted final outcome" parts={OUTCOMES.map((k) => ({ label: k, value: o.probabilities[k], display: fmt.pct(o.probabilities[k]), color: COL[k] }))} />
                 </div>
                 <div className="stack">
-                  <h4>What moves the estimate</h4>
+                  <h3 className="h4">What moves the estimate</h3>
                   <Diverging items={r.drivers.map((d: any) => ({ label: d.label, value: d.contribution_logodds, title: `${d.label}: ${d.value ?? "n/a"}` }))} />
                   <div className="small muted">Method: {r.drivers[0]?.method?.replace("_", " ")}. Effects on the model's log-odds scale, relative to a typical student. Drivers explain the model, not the student.</div>
                 </div>
@@ -109,13 +109,13 @@ export default function Student() {
             <Section id="course" title="Across the course" sub="Only what was known at each point; later weeks stay hidden.">
               <div className="grid two">
                 <div className="stack">
-                  <h4>Withdrawal risk at each checkpoint</h4>
+                  <h3 className="h4">Withdrawal risk at each checkpoint</h3>
                   {timeline.isLoading && <Loading lines={2} label="Recomputing risk at earlier weeks" />}
                   {timeline.data && <RiskTrail points={(timeline.data as any).points.filter((x: any) => x.checkpoint <= (checkpoint ?? 1) + 1e-9)} current={checkpoint ?? 0} />}
                   <p className="small muted">Dots are coloured by tier; the ringed dot is the selected week.</p>
                 </div>
                 <div className="stack">
-                  <h4>Weekly online activity</h4>
+                  <h3 className="h4">Weekly online activity</h3>
                   {td?.weekly_clicks && <>
                     <ActivityChart label="This student's weekly activity compared with the cohort median" snapshotWeek={td.snapshot_week}
                       deadlines={td.assessment_deadlines.filter((d: any) => d.week <= td.snapshot_week)}
@@ -211,7 +211,7 @@ function Plan({ res, refStudent, steps }: { res: any; refStudent: any; steps: St
       </div>
       <div className="grid two">
         <div className="stack">
-          <h4>Checks on this plan</h4>
+          <h3 className="h4">Checks on this plan</h3>
           <p>{wf.guardrails.final_plan_violations.length === 0 ? "Passed every check: eligible actions only, numbers traceable to the evidence, no protected attributes, no punitive or clinical wording." :
             `Issues: ${wf.guardrails.final_plan_violations.join("; ")}`}</p>
           <div className="row"><button onClick={doJudge} disabled={judge.status === "running"}><Scale aria-hidden="true" />{judge.status === "running" ? "Reviewing…" : "Ask the AI judge to review"}</button>
@@ -224,7 +224,7 @@ function Plan({ res, refStudent, steps }: { res: any; refStudent: any; steps: St
           ) : <p className="muted">{judge.data.status}</p>)}
         </div>
         <div className="stack">
-          <h4>Agent trace</h4>
+          <h3 className="h4">Agent trace</h3>
           <ol className="small">{wf.trace.map((t: any, i: number) => <li key={i}>{t.agent.replaceAll("_", " ")}{t.source ? ` (${t.source})` : ""}{t.decision ? `: ${t.decision}` : ""}
             {t.llm_rejected ? `: AI draft rejected (${t.llm_rejected.join("; ")})` : ""}{t.violations?.length ? `: ${t.violations.join("; ")}` : ""}</li>)}</ol>
           <div className="small muted">AI calls {wf.llm_usage.calls ?? 0}, tokens {fmt.int((wf.llm_usage.prompt_tokens || 0) + (wf.llm_usage.completion_tokens || 0))}</div>
@@ -255,7 +255,7 @@ function Precedents({ data, synthesis }: { data: any; synthesis?: any }) {
       <div className="grid two">
         <div className="stack">
           {nb && <>
-            <h4>Outcomes of the {nb.n_neighbours} most similar students</h4>
+            <h3 className="h4">Outcomes of the {nb.n_neighbours} most similar students</h3>
             <Stacked label="Outcomes of similar students" parts={OUTCOMES.map((k) => ({ label: k, value: nb.counts[k] || 0, color: COL[k] }))} />
             <p className="small">{fmt.pct(nb.fail_or_withdrawn_rate)} failed or withdrew (95% interval {fmt.pct(nb.fail_or_withdrawn_ci95[0])} to {fmt.pct(nb.fail_or_withdrawn_ci95[1])}).</p>
           </>}
@@ -271,7 +271,7 @@ function Precedents({ data, synthesis }: { data: any; synthesis?: any }) {
             : <p className="small muted">A written summary of these precedents is added when you build a support plan.</p>}
         </div>
         <div className="stack">
-          <h4>Their whole-course activity</h4>
+          <h3 className="h4">Their whole-course activity</h3>
           <Trajectories label="Weekly activity of similar students over the whole course" snapshotWeek={sw} highlight={hl} onHighlight={setHl}
             items={data.cases.filter((c: any) => c.story?.trajectory).map((c: any) => ({ id: c.case_id, result: c.final_result, values: c.story.trajectory }))} />
         </div>

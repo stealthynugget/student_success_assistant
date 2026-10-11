@@ -52,7 +52,7 @@ export default function Today() {
 
           <div className="grid wide-left section">
             <section className="stack" aria-labelledby="reach-h">
-              <h3 id="reach-h">Who to reach first</h3>
+              <h2 className="h3" id="reach-h">Who to reach first</h2>
               {top.error && <ErrorNote error={top.error as ApiError} />}
               {!top.data && !top.error && <Loading lines={5} label="Ranking students" />}
               {top.data && (
@@ -69,7 +69,7 @@ export default function Today() {
               <Link to="/priorities" className="row small">See the full ranked list <ArrowRight aria-hidden="true" size={14} /></Link>
             </section>
             <section className="stack" aria-labelledby="brief-h">
-              <h3 id="brief-h">Weekly briefing</h3>
+              <h2 className="h3" id="brief-h">Weekly briefing</h2>
               {brief.status === "idle" && <Empty title="Brief the module team"
                 action={<button className="primary" onClick={makeBrief}><PenLine aria-hidden="true" />Write briefing</button>}>
                 {config?.llm.configured ? "AI drafts a short briefing from this week's computed figures; code checks every number and student ID before you see it."
@@ -82,13 +82,13 @@ export default function Today() {
 
           <div className="grid two section">
             <section className="stack" aria-labelledby="spread-h">
-              <h3 id="spread-h">How risk is spread</h3>
+              <h2 className="h3" id="spread-h">How risk is spread</h2>
               <RiskHistogram counts={c.risk_histogram.counts} edges={c.risk_histogram.edges} thresholds={c.thresholds} />
               <div className="legend">{(["Low", "Medium", "High"] as const).map((t) => <span key={t}><i style={{ background: COL[t], height: 10 }} />{t} tier</span>)}</div>
               <p className="small muted">Calibrated probability of withdrawing after week {c.snapshot_week}. Tier cut-offs ({fmt.pct(c.thresholds.medium)} and {fmt.pct(c.thresholds.high)}) were learned on earlier presentations.</p>
             </section>
             <section className="stack" aria-labelledby="drivers-h">
-              <h3 id="drivers-h">What drives High priority here</h3>
+              <h2 className="h3" id="drivers-h">What drives High priority here</h2>
               {c.common_high_tier_drivers.length ? (
                 <div className="bars-h">
                   {c.common_high_tier_drivers.map(([label, n]: [string, number]) => (
@@ -103,14 +103,14 @@ export default function Today() {
 
           <div className="grid two section">
             <section className="stack" aria-labelledby="act-h">
-              <h3 id="act-h">Typical weekly activity so far</h3>
+              <h2 className="h3" id="act-h">Typical weekly activity so far</h2>
               <ActivityChart label="Median weekly activity of enrolled students" yLabel="median clicks per week" snapshotWeek={c.snapshot_week}
                 deadlines={c.assessments.filter((a: any) => a.deadline_week != null && a.deadline_week <= c.snapshot_week).map((a: any) => ({ week: a.deadline_week, type: a.assessment_type }))}
                 series={[{ key: "median", name: "Median clicks", values: c.cohort_median_weekly_clicks.slice(0, c.snapshot_week + 1), color: COL.ink }]} />
               <p className="small muted">Dashed lines: assessment deadlines. Yellow: the selected point in the course.</p>
             </section>
             <section className="stack" aria-labelledby="ass-h">
-              <h3 id="ass-h">Assessments</h3>
+              <h2 className="h3" id="ass-h">Assessments</h2>
               <div className="table-wrap"><table className="data">
                 <thead><tr><th scope="col">Type</th><th scope="col" className="num">Week</th><th scope="col" className="num">Weight</th>
                   <th scope="col" className="num">Usually submitted</th><th scope="col" className="num">Missing it signals risk</th></tr></thead>
@@ -137,7 +137,7 @@ function Briefing({ data, module, presentation, again }: { data: any; module: st
     <Generated source={data.source} title="Briefing">
       <p><strong>{data.headline}</strong></p>
       <ul>{data.key_points.map((k: string, i: number) => <li key={i}>{k}</li>)}</ul>
-      <h4>Focus this week</h4>
+      <h3 className="h4">Focus this week</h3>
       <ul>{data.focus_this_week.map((k: string, i: number) => <li key={i}>{k}</li>)}</ul>
       <div className="row small"><span className="muted">Contact first:</span>
         {data.students_to_contact.map((id: number) => <Link className="chip" key={id} to={studentPath(module, presentation, id)}>{id}</Link>)}</div>

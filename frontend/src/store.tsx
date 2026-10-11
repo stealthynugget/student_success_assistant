@@ -1,6 +1,6 @@
 // App state: service config/readiness (TanStack Query), the course clock (module, presentation, checkpoint) and toasts.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { api, ApiError } from "./api";
 
@@ -63,23 +63,5 @@ export const useStore = () => {
   if (!s) throw new Error("useStore outside StoreProvider");
   return s;
 };
-
-// Compatibility hook for pages not yet moved to TanStack Query: re-runs when deps change and cancels stale requests.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useApi<T = any>(fn: (signal: AbortSignal) => Promise<T>, deps: unknown[], { enabled = true } = {}) {
-  const [state, setState] = useState<{ data: T | null; error: ApiError | null; loading: boolean }>({ data: null, error: null, loading: enabled });
-  const ctl = useRef<AbortController | null>(null);
-  const run = useCallback(() => {
-    if (!enabled) return;
-    ctl.current?.abort();
-    const c = new AbortController();
-    ctl.current = c;
-    setState((s) => ({ ...s, loading: true, error: null }));
-    fn(c.signal).then((data) => { if (!c.signal.aborted) setState({ data, error: null, loading: false }); })
-      .catch((error) => { if (error.name !== "AbortError") setState({ data: null, error, loading: false }); });
-  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { run(); return () => ctl.current?.abort(); }, [run]);
-  return { ...state, reload: run };
-}
 
 export const studentPath = (m: string, p: string, id: number | string) => `/students/${m}/${p}/${id}`;

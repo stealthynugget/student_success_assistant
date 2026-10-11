@@ -2,6 +2,7 @@
 import { Check, Copy, PenLine, RotateCcw } from "lucide-react";
 import { animate, AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import * as RTabs from "@radix-ui/react-tabs";
 import type { ApiError } from "./api";
 
 export const Tier = ({ tier }: { tier?: string | null }) =>
@@ -52,7 +53,7 @@ export function ErrorNote({ error, onRetry }: { error?: ApiError | Error | null;
 }
 
 export const Empty = ({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) => (
-  <div className="empty"><h3>{title}</h3><div>{children}</div>{action && <div style={{ marginTop: 12 }}>{action}</div>}</div>
+  <div className="empty"><p className="empty-title">{title}</p><div>{children}</div>{action && <div style={{ marginTop: 12 }}>{action}</div>}</div>
 );
 
 export const Loading = ({ lines = 3, label = "Loading" }: { lines?: number; label?: string }) => (
@@ -159,4 +160,20 @@ export function downloadCsv(rows: Record<string, any>[], filename: string) {
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   a.download = filename;
   a.click();
+}
+
+/** Accessible tab set (Radix): arrow keys move between tabs, Enter/Space selects; each tab controls a real panel. Only the
+ *  active panel renders its content (so inactive tabs fetch nothing), but every panel exists for aria-controls. */
+export function TabSet({ tabs, value, onChange, label, children }: { tabs: [string, string][]; value: string; onChange: (v: string) => void;
+  label: string; children: ReactNode }) {
+  return (
+    <RTabs.Root value={value} onValueChange={onChange} activationMode="manual">
+      <RTabs.List className="seg tabs" aria-label={label}>
+        {tabs.map(([v, l]) => <RTabs.Trigger key={v} value={v} asChild><button type="button">{l}</button></RTabs.Trigger>)}
+      </RTabs.List>
+      {tabs.map(([v]) => (
+        <RTabs.Content key={v} value={v} forceMount hidden={v !== value} className="tabpanel">{v === value ? children : null}</RTabs.Content>
+      ))}
+    </RTabs.Root>
+  );
 }

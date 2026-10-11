@@ -65,10 +65,24 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       (c) `npm audit`: esbuild/Vite dev-server advisory GHSA-67mh-4wv8-2f99 (dev only; fixed by the Vite upgrade in
       item 5); (d) console follow-ups for item 5: the What-if panel says "values fall outside what the model has seen"
       on an unmodified real record, and the ablation chart labels on Model quality render oversized.*
-- [ ] 5. **Console upgrade** (brief below). Works fully in computed mode; AI-labelled sections show their computed
+- [x] 5. **Console upgrade** (brief below). Works fully in computed mode; AI-labelled sections show their computed
       fallbacks until Phase 2.
-- [ ] 6. Copilot streaming: add `/api/copilot/stream` (SSE: tool-call events, then answer tokens) and wire it into the
+      *Done 2026-10-12: Vite 8, React 19, TypeScript (all pages), React Router (real URLs; the API serves the console with an
+      SPA fallback), TanStack Query, TanStack Table v9 + Virtual (Students, Who to contact: sort, filter, column choice,
+      virtualised rows), Radix tabs, Motion (agent steps, clock marker, counting stats; reduced motion respected), cmdk
+      palette (Ctrl/Cmd+K), Recharts at pixel size (fixes the oversized Model quality labels), sonner, lucide, self-hosted
+      Atkinson Hyperlegible, light and dark themes from the DESIGN.md tokens. Student page is a case file (sticky header,
+      tier, risk dial, scroll-spy outline). AI text is always labelled "Drafted by AI, review before use"; computed fallbacks
+      are labelled "Computed". Lighthouse accessibility 100 on all 10 pages, light and dark, desktop and 820 px; Playwright
+      sweep of every page in both themes at 1366 and 820 px: no console errors, failed requests or overflow. npm audit: 0.
+      Docker web stage on Node 22. Note: a cold container's first Student page takes ~50 s (embedding model download and
+      checkpoint recompute); see item 9.*
+- [x] 6. Copilot streaming: add `/api/copilot/stream` (SSE: tool-call events, then answer tokens) and wire it into the
       console. Test the LLM branch with `FakeLLM` only; the rule-based branch can stream its answer in one event.
+      *Done 2026-10-11/12: events tool_call, tool_result, text (unverified until done), text_reset, revision, done, error;
+      Claude streaming via the SDK's messages.stream; incremental delivery verified under uvicorn and with a real answer.
+      The console shows tool-call cards as tools run, streams the answer marked "checks pending", renders Markdown lists and
+      tables safely, and links cited student IDs to their case files.*
 - [ ] 7. Prioritisation: at week 15 the learned weights put 1.0 on P(fail or withdraw). Try a finer/regularised
       simplex search if a blended ranking is wanted; keep the test comparison honest.
 - [ ] 8. Fairness: region, IMD and disability equal-opportunity gaps 0.16-0.26. Investigate proxies and add a per-group

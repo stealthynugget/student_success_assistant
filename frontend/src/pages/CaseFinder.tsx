@@ -87,7 +87,7 @@ function Results({ data }: { data: any }) {
     <div className="stack">
       <div className="grid two">
         <div className="stack">
-          <h3>{fmt.int(data.candidates)} students matched the filters; the closest {data.cases.length} are shown</h3>
+          <h2 className="h3">{fmt.int(data.candidates)} students matched the filters; the closest {data.cases.length} are shown</h2>
           {nb && <><Stacked label="Outcomes among the closest matches" parts={OUTCOMES.map((k) => ({ label: k, value: nb.counts[k] || 0, color: COL[k] }))} />
             <p className="small">Among the closest {nb.n_neighbours}: {fmt.pct(nb.fail_or_withdrawn_rate)} failed or withdrew (95% interval {fmt.pct(nb.fail_or_withdrawn_ci95[0])} to {fmt.pct(nb.fail_or_withdrawn_ci95[1])}).</p></>}
           <p className="small muted">Matching used: {data.channels_used.join(" and ")}.
