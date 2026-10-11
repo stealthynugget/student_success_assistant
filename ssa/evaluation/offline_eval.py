@@ -259,6 +259,7 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
 
     result = {"generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "llm_configured": gen_llm is not None, "use_llm": use_llm,
               "generator_model": getattr(gen_llm, "model", None), "judge_model": getattr(jllm, "model", None),
+              "models": {"provider": s.llm_provider, "fast": s.fast_model, "main": s.llm_model, "judge": s.judge_model} if gen_llm else None,
               "agents": agents, "search": eval_search(gen_llm), "copilot": eval_copilot(svc, gen_llm, refs),
               "synthesis": synthesis, "briefing": briefing, "outreach": outreach, "robustness": eval_robustness(svc, gen_llm),
               "human_agreement": human_agreement(rows, s), "seconds": round(time.time() - t_start, 1)}

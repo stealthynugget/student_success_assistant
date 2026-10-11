@@ -201,7 +201,8 @@ class StudentSuccessService:
         }
         return {"ready": all(checks.values()), "checks": checks, "checkpoints": self.checkpoint_list(),
                 "index": read_json(s.index_dir / "manifest.json", {}), "llm_configured": s.llm_configured,
-                "llm_model": s.llm_model if s.llm_configured else None, "judge_model": s.judge_model if s.llm_configured else None}
+                "llm_provider": s.llm_provider if s.llm_configured else None, "llm_model": s.llm_model if s.llm_configured else None,
+                "fast_model": s.fast_model if s.llm_configured else None, "judge_model": s.judge_model if s.llm_configured else None}
 
     def config(self) -> dict:
         b = self.bundle()
@@ -213,7 +214,8 @@ class StudentSuccessService:
             "vocab": {"regions": list(vocab.REGIONS), "education": list(vocab.EDUCATION), "age_bands": list(vocab.AGE_BANDS),
                       "outcomes": list(vocab.OUTCOMES)},
             "features": {k: FRIENDLY.get(k, k) for k in NUMERIC},
-            "llm": {"configured": self.settings.llm_configured, "model": self.settings.llm_model, "judge_model": self.settings.judge_model,
+            "llm": {"configured": self.settings.llm_configured, "enabled": self.settings.llm_enabled, "provider": self.settings.llm_provider,
+                    "model": self.settings.llm_model, "fast_model": self.settings.fast_model, "judge_model": self.settings.judge_model,
                     "online_eval_sample_rate": self.settings.online_eval_sample_rate},
             "dense_retrieval": b.index.manifest.get("dense_channel") if b.index.ready else None,
         }

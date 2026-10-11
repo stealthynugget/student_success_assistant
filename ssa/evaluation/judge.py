@@ -13,6 +13,7 @@ import numpy as np
 
 from ssa.agents import guardrails as gr
 from ssa.agents.llm import LLMClient, LLMUnavailable
+from ssa.agents.llm_schemas import FEATURE_SCHEMAS, scores_schema
 from ssa.config import Settings, get_settings
 
 RUBRIC = {
@@ -76,7 +77,7 @@ class LLMJudge:
         for i in range(max(1, n_samples)):
             try:
                 ans = self.llm.complete_json(SYSTEM, prompt + ("" if i == 0 else f"\n(sample {i + 1})"), temperature=0.0 if i == 0 else 0.3,
-                                             feature="judge:analysis")
+                                             feature="judge:analysis", schema=scores_schema(RUBRIC))
                 sc = ans.get("scores", {})
                 if all(k in sc for k in RUBRIC):
                     samples.append({"scores": {k: float(np.clip(float(sc[k]), 0, 10)) for k in RUBRIC},
@@ -108,7 +109,7 @@ def judge_text(llm, kind: str, output, evidence) -> dict:
               f"<output>{json.dumps(output, default=str)[:6000]}</output>\n"
               'Return JSON: {"scores": {dimension: number}, "unsupported_claims": [str], "rationale": str}')
     try:
-        ans = llm.complete_json(SYSTEM, prompt, temperature=0.0, feature=f"judge:{kind}")
+        ans = llm.complete_json(SYSTEM, prompt, temperature=0.0, feature=f"judge:{kind}", schema=scores_schema(TEXT_RUBRIC))
         sc = {k: float(np.clip(float(ans["scores"][k]), 0, 10)) for k in TEXT_RUBRIC}
     except (LLMUnavailable, KeyError, TypeError, ValueError):
         return {"verdict": "ERROR", "scores": None, "status": "judge call failed"}
@@ -129,7 +130,7 @@ def pairwise_preference(llm, evidence: dict, a: dict, b: dict) -> dict:
                   f"<plan_1>{json.dumps(first, default=str)}</plan_1>\n<plan_2>{json.dumps(second, default=str)}</plan_2>\n"
                   'Return JSON: {"winner": "plan_1"|"plan_2"|"tie", "reason": str}')
         try:
-            ans = llm.complete_json(SYSTEM, prompt, temperature=0.0, feature="judge:pairwise")
+            ans = llm.complete_json(SYSTEM, prompt, temperature=0.0, feature="judge:pairwise", schema=FEATURE_SCHEMAS["judge:pairwise"])
             w = ans.get("winner")
             votes.append(label[0] if w == "plan_1" else label[1] if w == "plan_2" else "tie")
         except (LLMUnavailable, ValueError, TypeError):

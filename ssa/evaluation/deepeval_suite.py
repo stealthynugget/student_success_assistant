@@ -3,8 +3,8 @@
 Fixes vs v4:
 * Faithfulness is measured against the evidence the output must be grounded in (observations,
   model outputs, neighbour statistics) - v4 used *other students'* summaries as context.
-* DeepEval's judge LLM is routed through our own gateway client via ``DeepEvalBaseLLM`` so the
-  configured key/base-URL/model are honoured.
+* DeepEval's judge LLM is routed through our own ``LLMClient`` via ``DeepEvalBaseLLM`` (the judge model, structured
+  outputs from DeepEval's pydantic schemas, usage ledger), so the configured provider/key/model are honoured.
 * Scores, reasons and pass/fail are extracted per metric and aggregated with bootstrap CIs
   (v4 returned ``str(result)``).
 """
@@ -15,6 +15,7 @@ import json
 import numpy as np
 
 from ssa.agents.llm import LLMClient
+from ssa.agents.llm_schemas import strict
 from ssa.config import Settings, get_settings
 
 
@@ -37,7 +38,9 @@ def _gateway_model(llm: LLMClient):
             return self._llm
 
         def generate(self, prompt: str, schema=None, **kwargs):
-            data = self._llm.complete_json("Return a single JSON object as instructed.", prompt, temperature=0.0)
+            js = strict(schema.model_json_schema()) if hasattr(schema, "model_json_schema") else None
+            data = self._llm.complete_json("Return a single JSON object as instructed.", prompt, temperature=0.0, feature="deepeval",
+                                           schema=js)
             if schema is not None:
                 try:
                     return schema(**data)
@@ -49,7 +52,7 @@ def _gateway_model(llm: LLMClient):
             return self.generate(prompt, schema)
 
         def get_model_name(self):
-            return f"gateway:{self._llm.model}"
+            return f"{self._llm.provider}:{self._llm.model}"
 
     return GatewayModel()
 

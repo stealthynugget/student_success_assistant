@@ -13,8 +13,7 @@
   runtime errors after two fixes (index-loading race, slow ranking).
 
 ## Work plan
-LLM API access is blocked until later today, so work is split into two phases. Phase 1 needs no LLM API (package
-downloads from PyPI, npm and Hugging Face are fine). Phase 2 starts only when the user confirms access.
+Work was split into two phases: Phase 1 without LLM access, Phase 2 once access was available (it is now, via Claude).
 
 ### Phase 1: now, no LLM API
 The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite were never installed or run.
@@ -78,15 +77,22 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       multi-worker scaling.
 After each item: run `python -m pytest`, commit, and summarise what changed.
 
-### Phase 2: when LLM API access is available
-- [ ] 10. Set `OPENAI_API_KEY`, `OPENAI_MODEL` and a different `JUDGE_MODEL` in `.env`; run `python -m ssa.cli llm-eval`.
-- [ ] 11. Check end to end: copilot function calling (including the new streaming route), JSON-mode prompts for every
+### Phase 2: LLM provider is Claude (access available 2026-10-11)
+Step 2 of the 2026-10-11 plan replaced the OpenAI-compatible gateway with Claude: `LLMClient` has an Anthropic backend
+(structured outputs per feature schema in `ssa/agents/llm_schemas.py`, tool use with tool_use/tool_result conversion at the
+boundary and verbatim replay of thinking blocks, prompt caching for the copilot prefix, retries on 429/529/5xx/timeouts,
+per-call usage and cost in the ledger). Models: haiku-5-5 (fast), sonnet-5-5 (main), opus-5-5 (judge). Mocked-SDK tests in
+`tests/test_llm.py`; no real call verified yet when this was written.
+- [ ] 10. Smoke test against the real API: one `complete_json` per model tier and one copilot question with tool calls;
+      record responses, tokens and cost. Then estimate the cost of `python -m ssa.cli llm-eval` (stop if over $10) and run it.
+- [ ] 11. Check end to end: copilot tool use (including the streaming route once it exists), structured outputs for every
       generative feature, DeepEval's custom model wrapper (`ssa/evaluation/deepeval_suite.py`, `GatewayModel`) against
       the installed DeepEval version, and that the judge, A/B, search and copilot sections of the evaluation populate.
-- [ ] 12. Turn on `ONLINE_EVAL_SAMPLE_RATE`, use the console for a while, and check Model quality > Live reviews and
-      AI usage and cost.
+      Re-run `python -m ssa.cli search-benchmark --llm` (typed-search benchmark with the LLM query parser).
+- [ ] 12. Set `ONLINE_EVAL_SAMPLE_RATE=0.1`, use the API for some analyses and copilot questions, and check Model quality >
+      Live reviews and AI usage and cost.
 - [ ] 13. `python -m ssa.cli report` to regenerate the model card and deck with real AI results; review prompt wording
-      for any feature whose LLM output is often rejected by the code checks.
+      for any feature whose LLM output is rejected by the code checks more than 20% of the time (never loosen a guardrail).
 
 ## Console upgrade brief
 Keep: the course-clock concept, the functional colour rules and every capability in `frontend/DESIGN.md`.

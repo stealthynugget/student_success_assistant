@@ -1,5 +1,6 @@
 -r requirements-core.txt
-# LLM features, judge and offline DeepEval
+# LLM features, judge and offline DeepEval: Claude (Anthropic SDK) by default; openai only for LLM_PROVIDER=openai
+anthropic>=1.13,<2
 openai>=1.40,<3
 deepeval>=2.0,<4
 # Dense narrative channel for free-text case search (optional; pulls in torch)

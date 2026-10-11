@@ -26,6 +26,7 @@ from typing import Any
 from ssa.agents import guardrails as gr
 from ssa.agents.evidence import ACTIONS_BY_ID, derive_facts, eligible_actions, observations
 from ssa.agents.llm import LLMUnavailable
+from ssa.agents.llm_schemas import FEATURE_SCHEMAS
 from ssa.models.features import SENSITIVE
 
 PROMPT_VERSION = "5.0.0"
@@ -77,7 +78,7 @@ class SupportWorkflow:
         if feedback:
             user += "\nYour previous answer violated these rules; fix all of them:\n- " + "\n- ".join(feedback)
         try:
-            return self.llm.complete_json(SYSTEM, user, feature=f"agent:{feature}")
+            return self.llm.complete_json(SYSTEM, user, feature=f"agent:{feature}", schema=FEATURE_SCHEMAS.get(f"agent:{feature}"))
         except LLMUnavailable:
             return None
 

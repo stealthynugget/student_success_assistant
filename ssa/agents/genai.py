@@ -16,6 +16,7 @@ from collections import Counter
 
 from ssa.agents import guardrails as gr
 from ssa.agents.llm import LLMUnavailable
+from ssa.agents.llm_schemas import FEATURE_SCHEMAS
 from ssa.data import vocab
 from ssa.retrieval.descriptors import _all_tokens, parse_query
 
@@ -30,7 +31,7 @@ def _ask(llm, task: str, schema: str, evidence: dict, feature: str, temperature:
         return None
     user = f"Task: {task}\nReturn JSON with keys: {schema}\n<evidence>\n{json.dumps(evidence, default=str)}\n</evidence>"
     try:
-        return llm.complete_json(SYSTEM, user, temperature=temperature, feature=feature)
+        return llm.complete_json(SYSTEM, user, temperature=temperature, feature=feature, schema=FEATURE_SCHEMAS.get(feature))
     except (LLMUnavailable, ValueError, TypeError):
         return None
 

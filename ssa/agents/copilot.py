@@ -1,6 +1,6 @@
 """Advisor copilot: a tool-using conversational agent over the whole system.
 
-The LLM plans which tools to call (OpenAI function calling), the service executes them, and the final answer is
+The LLM plans which tools to call (tool use; Claude by default), the service executes them, and the final answer is
 checked in code: every number must appear in a tool result or the question, no protected-attribute reasoning, no
 punitive or clinical language. One automatic revision is attempted when grounding fails. Without an LLM, a
 deterministic intent router answers the common questions with the same tools, so the feature never disappears.
@@ -151,12 +151,12 @@ class Copilot:
             if m.get("role") in ("user", "assistant") and isinstance(m.get("content"), str):
                 msgs.append({"role": m["role"], "content": gr.sanitize_text(m["content"], 2000)})
         msgs.append({"role": "user", "content": question})
-        answer = None
+        answer, final_turn = None, {}
         try:
             for _ in range(MAX_ROUNDS):
                 turn = self.llm.chat(msgs, TOOLS, feature="copilot")
                 if turn.get("tool_calls"):
-                    msgs.append({"role": "assistant", "content": turn.get("content"),
+                    msgs.append({"role": "assistant", "content": turn.get("content"), "provider_content": turn.get("provider_content"),
                                  "tool_calls": [{"id": tc["id"], "type": "function",
                                                  "function": {"name": tc["name"], "arguments": json.dumps(tc["arguments"])}} for tc in turn["tool_calls"]]})
                     for tc in turn["tool_calls"]:
@@ -164,6 +164,7 @@ class Copilot:
                         msgs.append({"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(res, default=str)[:12000]})
                     continue
                 answer = (turn.get("content") or "").strip()
+                final_turn = turn
                 break
         except LLMUnavailable:
             out = self._rules(question, t0)
@@ -176,11 +177,12 @@ class Copilot:
         ungrounded = gr.ungrounded_numbers(answer, evidence)
         revised = False
         if ungrounded or flags:
-            msgs.append({"role": "assistant", "content": answer})
+            msgs.append({"role": "assistant", "content": answer, "provider_content": final_turn.get("provider_content")})
             msgs.append({"role": "user", "content": "Rewrite your answer using only facts from the tool results. Problems: "
                                                      + "; ".join(([f"numbers not in tool results: {ungrounded}"] if ungrounded else []) + flags)})
             try:
-                turn = self.llm.chat(msgs, None, feature="copilot_revision")
+                # same tool set (the history holds tool calls; changing tools would invalidate it), but no new calls
+                turn = self.llm.chat(msgs, TOOLS, feature="copilot_revision", tool_choice="none")
                 if turn.get("content"):
                     answer, revised = turn["content"].strip(), True
                     flags = self._flags(answer)

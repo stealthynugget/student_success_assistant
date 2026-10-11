@@ -64,11 +64,18 @@ class Settings:
 
     # LLM
     llm_enabled: bool = True  # master switch: when false no LLM request is ever sent, whatever keys are set
+    llm_provider: str = "anthropic"  # anthropic | openai
+    anthropic_api_key: str | None = None
+    claude_model_fast: str = "claude-haiku-5-5"  # search understanding, outreach rewrites, note themes
+    claude_model_main: str = "claude-sonnet-5-5"  # agents, copilot, precedent synthesis, briefing
+    claude_model_judge: str = "claude-opus-5-5"  # judge, pairwise A/B, DeepEval wrapper
+    claude_effort: tuple[str, str, str] = ("low", "medium", "high")  # (fast, main, judge) output_config.effort
+    claude_max_tokens: int = 8000  # per response, thinking included (adaptive thinking is on for these models)
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"
-    llm_model: str = "gpt-4o-mini"
-    judge_model: str = "gpt-4o"
-    llm_timeout_s: float = 30.0
+    llm_model: str = "claude-sonnet-5-5"  # generator for the active provider (main tier)
+    judge_model: str = "claude-opus-5-5"  # judge for the active provider; always differs from every generator
+    llm_timeout_s: float = 90.0
     llm_max_retries: int = 2
     llm_cache_enabled: bool = True
 
@@ -81,7 +88,7 @@ class Settings:
     trusted_proxy_count: int = 0
     admin_key: str | None = None
     online_eval_sample_rate: float = 0.0
-    llm_price_per_1k: tuple[float, float] = (0.00015, 0.0006)  # (prompt, completion) USD per 1k tokens
+    llm_prices: dict = field(default_factory=lambda: {k: dict(v) for k, v in DEFAULT_LLM_PRICES.items()})  # USD per MTok
 
     # ---- checkpoint views ----------------------------------------------
     def at(self, checkpoint: float | None) -> "Settings":
@@ -180,8 +187,28 @@ class Settings:
         return self.raw_dir / ".synthetic_fixture"
 
     @property
+    def llm_api_key(self) -> str | None:
+        return self.anthropic_api_key if self.llm_provider == "anthropic" else self.openai_api_key
+
+    @property
     def llm_configured(self) -> bool:
-        return self.llm_enabled and bool(self.openai_api_key)
+        return self.llm_enabled and bool(self.llm_api_key)
+
+    @property
+    def fast_model(self) -> str:
+        return self.claude_model_fast if self.llm_provider == "anthropic" else self.llm_model
+
+    def model_for(self, feature: str) -> str:
+        """Model per feature: judging on the judge model, light parsing/rewriting on the fast tier, the rest on main."""
+        if feature.startswith(("judge", "deepeval")):
+            return self.judge_model
+        if feature in FAST_FEATURES:
+            return self.fast_model
+        return self.llm_model
+
+    def effort_for(self, feature: str) -> str:
+        fast, main, judge = self.claude_effort
+        return judge if feature.startswith(("judge", "deepeval")) else fast if feature in FAST_FEATURES else main
 
     def ensure_dirs(self) -> None:
         for d in [
@@ -189,6 +216,48 @@ class Settings:
             self.analysis_dir, self.feedback_db.parent, self.llm_cache_db.parent, self.global_metrics_dir, self.app_db.parent,
         ]:
             d.mkdir(parents=True, exist_ok=True)
+
+
+FAST_FEATURES = frozenset({"search_understanding", "outreach_rewrite", "feedback_themes"})
+
+# USD per million tokens, from https://platform.claude.com/docs/en/about-claude/pricing (fetched 2026-10-11).
+# cache_write = 5-minute TTL writes. Haiku 5.5 is priced by prompt length: prompts over 100K tokens use the "long" row.
+# Other models (e.g. for LLM_PROVIDER=openai) are priced only when added through LLM_PRICE_TABLE.
+DEFAULT_LLM_PRICES: dict = {
+    "claude-opus-5-5": {"input": 4.00, "cache_write": 5.00, "cache_read": 0.20, "output": 20.00},
+    "claude-sonnet-5-5": {"input": 2.00, "cache_write": 2.50, "cache_read": 0.10, "output": 10.00},
+    "claude-haiku-5-5": {"input": 0.10, "cache_write": 0.125, "cache_read": 0.01, "output": 0.50,
+                         "long_context_threshold": 100_000,
+                         "long": {"input": 0.50, "cache_write": 0.625, "cache_read": 0.05, "output": 2.50}},
+}
+
+
+def _price_table() -> dict:
+    """Defaults plus LLM_PRICE_TABLE (a JSON object of the same shape) for other models or price changes."""
+    table = {k: dict(v) for k, v in DEFAULT_LLM_PRICES.items()}
+    raw = os.getenv("LLM_PRICE_TABLE", "").strip()
+    if raw:
+        import json
+        table.update(json.loads(raw))
+    return table
+
+
+def _llm_models(provider: str) -> dict:
+    if provider == "anthropic":
+        fast = os.getenv("CLAUDE_MODEL_FAST") or "claude-haiku-5-5"
+        main = os.getenv("CLAUDE_MODEL_MAIN") or "claude-sonnet-5-5"
+        judge = os.getenv("CLAUDE_MODEL_JUDGE") or "claude-opus-5-5"
+        generators = {fast, main}
+        out = {"claude_model_fast": fast, "claude_model_main": main, "claude_model_judge": judge, "llm_model": main, "judge_model": judge}
+    elif provider == "openai":
+        main, judge = os.getenv("OPENAI_MODEL") or "gpt-4o-mini", os.getenv("JUDGE_MODEL") or "gpt-4o"
+        generators = {main}
+        out = {"llm_model": main, "judge_model": judge}
+    else:
+        raise ValueError(f"LLM_PROVIDER must be 'anthropic' or 'openai', not {provider!r}")
+    if judge in generators:  # self-preference bias: the judge must never grade output from its own model
+        raise ValueError(f"the judge model ({judge}) must differ from every generator model ({sorted(generators)})")
+    return out
 
 
 @lru_cache(maxsize=1)
@@ -199,6 +268,7 @@ def get_settings() -> Settings:
     if primary not in cps:
         cps = tuple(sorted(set(cps) | {primary}))
     origins = tuple(o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip() and o.strip() != "*")
+    provider = (os.getenv("LLM_PROVIDER") or "anthropic").strip().lower()
     return Settings(
         home=home,
         data_dir=Path(os.getenv("SSA_DATA_DIR", str(home / "data"))).resolve(),
@@ -211,11 +281,15 @@ def get_settings() -> Settings:
         embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2"),
         enable_text_embeddings=_bool("ENABLE_TEXT_EMBEDDINGS", True),
         llm_enabled=_bool("LLM_ENABLED", True),
+        llm_provider=provider,
+        anthropic_api_key=os.getenv("ANTHROPIC_API_KEY") or None,
+        claude_effort=(os.getenv("CLAUDE_EFFORT_FAST") or "low", os.getenv("CLAUDE_EFFORT_MAIN") or "medium",
+                       os.getenv("CLAUDE_EFFORT_JUDGE") or "high"),
+        claude_max_tokens=_int("CLAUDE_MAX_TOKENS", 8000),
         openai_api_key=os.getenv("OPENAI_API_KEY") or None,
         openai_base_url=os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1",
-        llm_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        judge_model=os.getenv("JUDGE_MODEL", "gpt-4o"),
-        llm_timeout_s=_float("LLM_TIMEOUT_S", 30.0),
+        **_llm_models(provider),
+        llm_timeout_s=_float("LLM_TIMEOUT_S", 90.0),
         llm_max_retries=_int("LLM_MAX_RETRIES", 2),
         llm_cache_enabled=_bool("LLM_CACHE_ENABLED", True),
         api_key=os.getenv("STUDENT_ASSISTANT_API_KEY") or None,
@@ -226,7 +300,7 @@ def get_settings() -> Settings:
         trusted_proxy_count=_int("TRUSTED_PROXY_COUNT", 0),
         admin_key=os.getenv("STUDENT_ASSISTANT_ADMIN_KEY") or None,
         online_eval_sample_rate=_float("ONLINE_EVAL_SAMPLE_RATE", 0.0),
-        llm_price_per_1k=(_float("LLM_PRICE_PROMPT_PER_1K", 0.00015), _float("LLM_PRICE_COMPLETION_PER_1K", 0.0006)),
+        llm_prices=_price_table(),
     )
 
 

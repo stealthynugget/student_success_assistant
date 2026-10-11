@@ -16,7 +16,7 @@ for feedback, usage and evaluation records, any OpenAI-compatible LLM (optional:
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.lock               # exact pins (Linux: add --extra-index-url https://download.pytorch.org/whl/cpu); requirements-core.txt = no LLM / DeepEval / embeddings
-cp .env.example .env                          # set STUDENT_ASSISTANT_API_KEY; OPENAI_API_KEY for AI features
+cp .env.example .env                          # set STUDENT_ASSISTANT_API_KEY; ANTHROPIC_API_KEY for AI features (Claude)
 unzip OULAD_Dataset.zip -d data/raw           # the 7 OULAD CSVs (see data/README.md)
 make build                                    # 4 checkpoints: features, models, indexes, evaluation, LLM eval, gate, report (~12 min)
 make api                                      # FastAPI on http://127.0.0.1:8000  (docs at /api/docs, console at /)
