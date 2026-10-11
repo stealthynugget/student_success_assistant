@@ -48,6 +48,12 @@ class Scripted:
 def _client(ssa_home, script, monkeypatch, **kw):
     llm = LLMClient(_settings(ssa_home, **kw), ledger=False)
     monkeypatch.setattr(llm._backend.client.messages, "create", script)
+
+    def stream(**kwargs):  # streaming requests go through the same script; text arrives as one delta
+        msg = script(**kwargs)
+        return FakeStream(msg, [b.text for b in msg.content if b.type == "text"])
+
+    monkeypatch.setattr(llm._backend.client.messages, "stream", stream)
     monkeypatch.setattr("ssa.agents.llm.time.sleep", lambda s: None)
     return llm
 
@@ -237,3 +243,45 @@ def test_budget_cap_stops_instead_of_falling_back(ssa_home, monkeypatch):
         except Exception:  # feature code catches Exception-derived LLM errors; the cap must get past that
             pytest.fail("budget stop was swallowed by an except Exception handler")
     assert len(script.requests) == 1
+
+
+class FakeStream:
+    """Stands in for client.messages.stream(...): yields text deltas, then the final message."""
+
+    def __init__(self, msg, deltas):
+        self.msg, self.text_stream = msg, iter(deltas)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def get_final_message(self):
+        return self.msg
+
+
+def test_copilot_streams_tool_events_then_answer_text(ssa_home, service, features, monkeypatch):
+    from ssa.agents.copilot import Copilot
+    from tests.conftest import ref_of
+    ref = ref_of(features)
+    rounds = [
+        (_msg([{"type": "tool_use", "id": "toolu_a", "name": "get_student", "input": ref}], stop="tool_use"), []),
+        (_msg([_text("The student's record is summarised above [get_student].")]),
+         ["The student's record ", "is summarised above [get_student]."]),
+    ]
+    requests = []
+
+    def stream(**kwargs):
+        requests.append(kwargs)
+        msg, deltas = rounds.pop(0)
+        return FakeStream(msg, deltas)
+
+    llm = _client(ssa_home, Scripted(), monkeypatch)
+    monkeypatch.setattr(llm._backend.client.messages, "stream", stream)
+    events = []
+    out = Copilot(service, llm).ask("How is this student doing?", on_event=lambda k, d: events.append((k, d)))
+    assert [k for k, _ in events] == ["tool_call", "tool_result", "text", "text"]
+    assert events[0][1]["tool"] == "get_student" and events[1][1]["ok"] is True
+    assert "".join(d["delta"] for k, d in events if k == "text") == out["answer"] and out["source"] == "llm"
+    assert len(requests) == 2 and requests[1]["messages"][2]["content"][0]["tool_use_id"] == "toolu_a"

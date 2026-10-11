@@ -273,7 +273,7 @@ class AnthropicBackend:
         return [{**m, "content": [b for b in m["content"] if b.get("type") not in ("thinking", "redacted_thinking")]}
                 if m["role"] == "assistant" and isinstance(m["content"], list) else m for m in msgs]
 
-    def chat(self, *, model, messages, tools, max_tokens, effort, tool_choice) -> tuple[dict, Usage, str]:
+    def chat(self, *, model, messages, tools, max_tokens, effort, tool_choice, _sender=None) -> tuple[dict, Usage, str]:
         system, msgs = self.convert_messages(messages)
         kwargs = {"model": model, "max_tokens": max(max_tokens, self.s.claude_max_tokens), "messages": msgs,
                   "cache_control": {"type": "ephemeral"}}  # automatic breakpoint on the growing history (tool-loop rounds)
@@ -285,14 +285,27 @@ class AnthropicBackend:
         oc = self._output_config(model, effort, None)
         if oc:
             kwargs["output_config"] = oc
+        return self._send(kwargs, msgs, _sender or self.client.messages.create)
+
+    def chat_stream(self, *, model, messages, tools, max_tokens, effort, tool_choice, on_text) -> tuple[dict, Usage, str]:
+        """Like ``chat`` but streams text deltas to ``on_text`` as they are generated (SDK ``messages.stream``)."""
+        def stream(**kwargs):
+            with self.client.messages.stream(**kwargs) as st:
+                for delta in st.text_stream:
+                    on_text(delta)
+                return st.get_final_message()
+        return self.chat(model=model, messages=messages, tools=tools, max_tokens=max_tokens, effort=effort,
+                         tool_choice=tool_choice, _sender=stream)
+
+    def _send(self, kwargs: dict, msgs: list[dict], sender) -> tuple[dict, Usage, str]:
         try:
-            resp = self.client.messages.create(**kwargs)
+            resp = sender(**kwargs)
         except self.sdk.BadRequestError as exc:
             if "signature" not in str(exc) or "thinking" not in str(exc):
                 raise
             log.warning("thinking blocks rejected for this conversation; retrying once without them")
             kwargs["messages"] = self._strip_thinking(msgs)
-            resp = self.client.messages.create(**kwargs)
+            resp = sender(**kwargs)
         self._check_stop(resp)
         text = "".join(b.text for b in resp.content if b.type == "text").strip() or None
         calls = [{"id": b.id, "name": b.name, "arguments": dict(b.input or {})} for b in resp.content if b.type == "tool_use"]
@@ -471,6 +484,39 @@ class LLMClient:
             return self._backend.chat(**kw)
 
         return self._run(key, feature, model, call)
+
+    def chat_stream(self, messages: list[dict], tools: list[dict] | None = None, temperature: float = 0.1, max_tokens: int = 900,
+                    feature: str = "copilot", tool_choice: str = "auto", on_text=None, on_reset=None) -> dict:
+        """``chat`` with the answer text streamed to ``on_text(delta)``. If an attempt fails after streaming some text, ``on_reset()``
+        is called before the retry. Cache hits and backends without streaming deliver the whole text as one delta."""
+        model, effort = self.model_for(feature), self.settings.effort_for(feature)
+        key = hashlib.sha256(json.dumps(["chat", self.provider, model, effort, messages, tools, tool_choice, temperature, max_tokens],
+                                        default=str, sort_keys=True).encode()).hexdigest()
+        sent = {"any": False}
+
+        def emit(delta):
+            if delta:
+                sent["any"] = True
+                if on_text:
+                    on_text(delta)
+
+        def call(attempt, previous):
+            if sent["any"]:
+                sent["any"] = False
+                if on_reset:
+                    on_reset()
+            kw = {"model": model, "messages": messages, "tools": tools, "max_tokens": max_tokens, "effort": effort,
+                  "tool_choice": tool_choice}
+            if hasattr(self._backend, "chat_stream"):
+                return self._backend.chat_stream(**kw, on_text=emit)
+            if self.provider == "openai":
+                kw["temperature"] = temperature
+            return self._backend.chat(**kw)
+
+        turn = self._run(key, feature, model, call)
+        if not sent["any"] and turn.get("content"):
+            emit(turn["content"])
+        return turn
 
     def usage_summary(self) -> dict:
         return {"calls": len(self.calls), "cached": sum(c.cached for c in self.calls),

@@ -15,13 +15,12 @@ import math
 import time
 import traceback
 
-
 import numpy as np
 from fastapi import APIRouter, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -229,6 +228,12 @@ def create_app(settings: Settings | None = None, service=None, llm=None) -> Fast
     @r.post("/copilot", tags=["agents"])
     def copilot(req: S.CopilotRequest):
         return h.copilot(req)
+
+    @r.post("/copilot/stream", tags=["agents"], response_class=StreamingResponse,
+            responses={200: {"content": {"text/event-stream": {}}, "description": "Server-sent events (see Handlers.copilot_stream)"}})
+    def copilot_stream(req: S.CopilotRequest):
+        return StreamingResponse(h.copilot_stream(req), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     @r.post("/outreach/variants", tags=["agents"])
     def outreach(req: S.OutreachRequest):

@@ -106,6 +106,7 @@ def test_fastapi_contract(built, service):
     pytest.importorskip("fastapi")
     pytest.importorskip("httpx")
     from fastapi.testclient import TestClient
+
     from ssa.api.app import create_app
     c = TestClient(create_app(built, service))
     assert c.get("/api/health").status_code == 200
@@ -152,3 +153,27 @@ def test_what_if_unchanged_record_gives_no_warnings(handlers, service, features)
     # control: a value the user really moved far outside the training range is still flagged
     moved = handlers.predict(S.PredictRequest.model_validate({"student": ref, "what_if": {"days_since_last_activity": 299}}))
     assert [o["field"] for o in moved["input_quality"]["out_of_distribution"]] == ["days_since_last_activity"]
+
+
+def _sse(text: str) -> list[tuple[str, dict]]:
+    out = []
+    for block in text.strip().split("\n\n"):
+        lines = dict(line.split(": ", 1) for line in block.splitlines() if ": " in line)
+        out.append((lines["event"], json.loads(lines["data"])))
+    return out
+
+
+def test_copilot_stream_rules_branch(built, service):
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+
+    from ssa.api.app import create_app
+    c = TestClient(create_app(built, service))
+    with c.stream("POST", "/api/copilot/stream", json={"question": "overview of AAA 2014J"}, headers=H) as r:
+        assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
+        events = _sse(r.read().decode())
+    kinds = [k for k, _ in events]
+    assert kinds[:2] == ["tool_call", "tool_result"] and kinds[-2:] == ["text", "done"]
+    done = events[-1][1]
+    assert done["source"] == "rules" and events[-2][1]["delta"] == done["answer"]
+    assert c.post("/api/copilot/stream", json={"question": "x"}, headers={}).status_code == 401

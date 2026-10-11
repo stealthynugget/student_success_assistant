@@ -140,7 +140,33 @@ class Copilot:
         return result
 
     # ------------------------------------------------------------ answer
-    def ask(self, question: str, history: list[dict] | None = None) -> dict:
+    def ask(self, question: str, history: list[dict] | None = None, on_event=None) -> dict:
+        """Answer one question. ``on_event(kind, data)`` (optional) receives progress for streaming: ``tool_call`` and
+        ``tool_result`` as tools run, ``text`` deltas of the answer as it is generated (unverified until ``done``),
+        ``text_reset`` when streamed text turned out to precede tool calls, and ``revision`` when the grounding check
+        replaced the answer. Computed (rules / guardrail) answers arrive as one ``text`` event."""
+        emit = on_event or (lambda kind, data: None)
+        out = self._ask(question, history, emit)
+        if out["source"] != "llm":
+            emit("text", {"delta": out["answer"]})
+        return out
+
+    def _turn(self, msgs, emit, **kw) -> dict:
+        streamed = []
+        if getattr(self.llm, "chat_stream", None) is not None and kw.get("tool_choice") != "none":
+            def on_text(delta):
+                streamed.append(delta)
+                emit("text", {"delta": delta})
+            turn = self.llm.chat_stream(msgs, TOOLS, on_text=on_text, on_reset=lambda: (streamed.clear(), emit("text_reset", {})), **kw)
+        else:
+            turn = self.llm.chat(msgs, TOOLS, **kw)
+            if turn.get("content") and not turn.get("tool_calls") and kw.get("tool_choice") != "none":
+                emit("text", {"delta": turn["content"]})  # no streaming available: the whole answer in one event
+        if streamed and turn.get("tool_calls"):
+            emit("text_reset", {})
+        return turn
+
+    def _ask(self, question: str, history, emit) -> dict:
         question = gr.sanitize_text(question, 1500)
         t0 = time.time()
         if (h := gr.injection_signals(question)):
@@ -148,7 +174,7 @@ class Copilot:
                               "but I can't follow instructions that try to change how I work.", "tool_calls": [], "source": "guardrail",
                     "grounding": {"passed": True, "ungrounded_numbers": []}, "flags": [f"injection pattern: {h}"], "seconds": 0.0}
         if self.llm is None:
-            return self._rules(question, t0)
+            return self._rules(question, t0, emit)
         trace: list[dict] = []
         msgs = [{"role": "system", "content": SYSTEM}]
         for m in (history or [])[-8:]:
@@ -158,20 +184,23 @@ class Copilot:
         answer, final_turn = None, {}
         try:
             for _ in range(MAX_ROUNDS):
-                turn = self.llm.chat(msgs, TOOLS, feature="copilot")
+                turn = self._turn(msgs, emit, feature="copilot")
                 if turn.get("tool_calls"):
                     msgs.append({"role": "assistant", "content": turn.get("content"), "provider_content": turn.get("provider_content"),
                                  "tool_calls": [{"id": tc["id"], "type": "function",
                                                  "function": {"name": tc["name"], "arguments": json.dumps(tc["arguments"])}} for tc in turn["tool_calls"]]})
                     for tc in turn["tool_calls"]:
+                        emit("tool_call", {"id": tc["id"], "tool": tc["name"], "arguments": tc["arguments"]})
                         res = self._exec(tc["name"], tc["arguments"], trace)
+                        emit("tool_result", {"id": tc["id"], "tool": tc["name"], "ok": trace[-1]["ok"], "ms": trace[-1]["ms"]})
                         msgs.append({"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(res, default=str)[:12000]})
                     continue
                 answer = (turn.get("content") or "").strip()
                 final_turn = turn
                 break
         except LLMUnavailable:
-            out = self._rules(question, t0)
+            emit("text_reset", {})
+            out = self._rules(question, t0, emit)
             out["flags"] = ["LLM unavailable; answered with the rule-based router"]
             return out
         if not answer:
@@ -186,9 +215,10 @@ class Copilot:
                                                      + "; ".join(([f"numbers not in tool results: {ungrounded}"] if ungrounded else []) + flags)})
             try:
                 # same tool set (the history holds tool calls; changing tools would invalidate it), but no new calls
-                turn = self.llm.chat(msgs, TOOLS, feature="copilot_revision", tool_choice="none")
+                turn = self._turn(msgs, emit, feature="copilot_revision", tool_choice="none")
                 if turn.get("content"):
                     answer, revised = turn["content"].strip(), True
+                    emit("revision", {"answer": answer})
                     flags = self._flags(answer)
                     ungrounded = gr.ungrounded_numbers(answer, evidence)
             except LLMUnavailable:
@@ -207,7 +237,7 @@ class Copilot:
         return f
 
     # -------------------------------------------------- rule-based router
-    def _rules(self, q: str, t0: float) -> dict:
+    def _rules(self, q: str, t0: float, emit=None) -> dict:
         trace: list[dict] = []
         ql = q.lower()
         mod = re.search(r"\b(aaa|bbb|ccc|ddd|eee|fff|ggg)\b", ql)
@@ -260,5 +290,8 @@ class Copilot:
             answer = ("Ask me about one student (e.g. 'student 59272 in BBB 2014J' or 'students similar to 59272 in BBB'), a cohort "
                       "('who should I contact first in FFF 2014J?', 'overview of BBB'), assessments ('which assessments matter in DDD?'), "
                       "risk factors, or model accuracy. Connect an LLM for open-ended questions.")
+        for i, t in enumerate(trace if emit else []):  # computed tools are instant: report them when done
+            emit("tool_call", {"id": f"rules-{i}", "tool": t["tool"], "arguments": t["arguments"]})
+            emit("tool_result", {"id": f"rules-{i}", "tool": t["tool"], "ok": t["ok"], "ms": t["ms"]})
         return {"answer": answer, "tool_calls": trace, "source": "rules", "revised": False,
                 "grounding": {"passed": True, "ungrounded_numbers": []}, "flags": [], "seconds": round(time.time() - t0, 2)}

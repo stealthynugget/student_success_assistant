@@ -6,6 +6,8 @@ the handlers directly as well as through FastAPI's TestClient.
 """
 from __future__ import annotations
 
+import json
+import math
 import random
 import threading
 from collections import OrderedDict
@@ -20,7 +22,22 @@ from ssa.evaluation.judge import LLMJudge, analysis_evidence, judge_text
 from ssa.feedback.loop import run_loop
 from ssa.feedback.store import FeedbackStore
 from ssa.service import StudentSuccessService
-from ssa.utils import read_json
+from ssa.utils import get_logger, read_json
+
+log = get_logger("ssa.api")
+
+
+def _jsonable(o):
+    """Plain JSON for event streams: numpy scalars/arrays to Python, NaN/inf to null (browsers reject NaN)."""
+    if isinstance(o, dict):
+        return {str(k): _jsonable(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_jsonable(v) for v in o]
+    if hasattr(o, "tolist"):
+        return _jsonable(o.tolist())
+    if isinstance(o, float) and not math.isfinite(o):
+        return None
+    return o
 
 
 class _LRU(OrderedDict):
@@ -156,15 +173,36 @@ class Handlers:
         self.svc.cohort(req.code_module, req.code_presentation, req.checkpoint)
         return self.jobs.submit("briefing", lambda progress: self.briefing(req, progress))
 
-    def copilot(self, req: S.CopilotRequest, progress=None):
+    def copilot(self, req: S.CopilotRequest, progress=None, on_event=None):
         cp = Copilot(self.svc, self._llm(req.use_llm), req.checkpoint)
-        res = cp.ask(req.question, [t.model_dump() for t in req.history])
+        res = cp.ask(req.question, [t.model_dump() for t in req.history], on_event=on_event)
         if progress:
             progress("answer", {"source": res["source"]})
         if res["source"] == "llm":
             self._maybe_online_eval("copilot", "copilot", {"question": req.question, "answer": res["answer"]},
                                     {"tool_results": [t["result"] for t in res["tool_calls"]]})
         return res
+
+    def copilot_stream(self, req: S.CopilotRequest):
+        """Server-sent events for one copilot answer: ``tool_call`` / ``tool_result`` as tools run, ``text`` deltas (unverified
+        until ``done``), ``text_reset``, ``revision``, then ``done`` with the full checked result (or ``error``)."""
+        import queue
+        import threading
+        q: queue.Queue = queue.Queue()
+
+        def work():
+            try:
+                res = self.copilot(req, on_event=lambda kind, data: q.put((kind, data)))
+                q.put(("done", res))
+            except Exception as exc:  # generic message to the client; details in the log
+                log.error(f"copilot stream failed: {type(exc).__name__}: {exc}")
+                q.put(("error", {"error": "the copilot could not answer; try again"}))
+            q.put(None)
+
+        threading.Thread(target=work, daemon=True, name="copilot-stream").start()
+        while (item := q.get()) is not None:
+            kind, data = item
+            yield f"event: {kind}\ndata: {json.dumps(_jsonable(data), ensure_ascii=False, default=str)}\n\n"
 
     def copilot_job(self, req: S.CopilotRequest):
         return self.jobs.submit("copilot", lambda progress: self.copilot(req, progress))
