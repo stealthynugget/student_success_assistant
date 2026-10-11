@@ -1,67 +1,70 @@
-"""In-process background jobs for slow, LLM-heavy operations (analysis, briefing, copilot).
+"""Background jobs for slow, LLM-heavy operations (analysis, briefing, copilot).
 
 The UI submits a job, then polls ``GET /api/jobs/{id}``; each agent step is appended to ``steps`` as it completes,
-so advisors see the multi-agent workflow progress live. Jobs expire after ``ttl_s``; the store is bounded.
-For multi-worker deployments, run one worker or move jobs to a shared queue (documented in DEPLOYMENT.md)."""
+so advisors see the multi-agent workflow progress live. A job runs in a thread pool of the worker that accepted it; its
+record lives in a job store (``ssa.api.shared``): in-process by default, or SQLite so any worker on the host can answer
+the poll. A record that stops updating for ``stale_s`` while queued or running is reported as lost (its worker died)."""
 from __future__ import annotations
 
 import threading
 import time
 import traceback
 import uuid
-from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 
+from ssa.api.shared import MemoryJobStore
 from ssa.utils import get_logger
 
 log = get_logger("ssa.jobs")
 
 
 class JobManager:
-    def __init__(self, workers: int = 4, max_jobs: int = 500, ttl_s: int = 1800):
+    def __init__(self, store=None, workers: int = 4, stale_s: int = 900):
         self._pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="ssa-job")
-        self._jobs: OrderedDict[str, dict] = OrderedDict()
+        self.store = store or MemoryJobStore()
+        self.stale_s = stale_s
         self._lock = threading.Lock()
-        self.max_jobs, self.ttl_s = max_jobs, ttl_s
-
-    def _gc(self):
-        now = time.time()
-        for k in [k for k, j in self._jobs.items() if now - j["created"] > self.ttl_s]:
-            self._jobs.pop(k, None)
-        while len(self._jobs) > self.max_jobs:
-            self._jobs.popitem(last=False)
 
     def submit(self, kind: str, fn) -> dict:
         jid = uuid.uuid4().hex
-        job = {"id": jid, "kind": kind, "status": "queued", "steps": [], "result": None, "error": None,
-               "created": time.time(), "updated": time.time()}
-        with self._lock:
-            self._gc()
-            self._jobs[jid] = job
+        now = time.time()
+        job = {"id": jid, "kind": kind, "status": "queued", "steps": [], "result": None, "error": None, "created": now, "updated": now}
+        self.store.put(job)
+
+        def save(**changes):
+            with self._lock:
+                job.update(changes, updated=time.time())
+                self.store.put(job)
 
         def progress(name, payload=None):
             src = payload.get("source") if isinstance(payload, dict) else None
-            with self._lock:
-                job["steps"].append({"step": name, "source": src, "t": round(time.time() - job["created"], 2)})
-                job["updated"] = time.time()
+            save(steps=job["steps"] + [{"step": name, "source": src, "t": round(time.time() - job["created"], 2)}])
 
         def run():
-            job["status"] = "running"
+            save(status="running")
             try:
-                job["result"] = fn(progress)
-                job["status"] = "done"
+                result = fn(progress)
             except Exception as exc:
                 log.error(f"job {jid} failed: {traceback.format_exc()}")
-                job["status"], job["error"] = "error", {"type": type(exc).__name__, "message": str(exc)[:300]}
-            job["updated"] = time.time()
+                save(status="error", error={"type": type(exc).__name__, "message": str(exc)[:300]})
+                return
+            try:
+                save(status="done", result=result)
+            except Exception as exc:  # e.g. the store could not be written
+                log.error(f"job {jid} result not stored: {traceback.format_exc()}")
+                save(status="error", error={"type": type(exc).__name__, "message": "result could not be stored"})
 
         self._pool.submit(run)
         return self.public(job, include_result=False)
 
     def get(self, jid: str) -> dict | None:
-        with self._lock:
-            j = self._jobs.get(jid)
-            return self.public(j) if j else None
+        j = self.store.get(jid)
+        if not j:
+            return None
+        if j["status"] in ("queued", "running") and time.time() - j["updated"] > self.stale_s:
+            j["status"] = "error"
+            j["error"] = {"type": "JobLost", "message": "the worker running this job stopped responding; run it again"}
+        return self.public(j)
 
     @staticmethod
     def public(j: dict, include_result: bool = True) -> dict:

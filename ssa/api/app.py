@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import time
 import traceback
 
@@ -26,7 +27,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ssa.api import schemas as S
 from ssa.api.handlers import Handlers
-from ssa.api.security import TokenBucketLimiter, api_key_ok, client_ip, new_request_id
+from ssa.api.security import api_key_ok, client_ip, new_request_id
+from ssa.api.shared import rate_limiter
 from ssa.config import PROJECT_ROOT, Settings, get_settings
 from ssa.feedback.store import UnknownRecommendation
 from ssa.service import AlreadyWithdrawn, NotFound
@@ -68,7 +70,11 @@ def create_app(settings: Settings | None = None, service=None, llm=None) -> Fast
     if not s.api_key and not s.dev_mode:
         log.warning("STUDENT_ASSISTANT_API_KEY not set and SSA_DEV_MODE off: protected endpoints return 503")
     h = Handlers(s, service=service, llm=llm)
-    limiter = TokenBucketLimiter(s.rate_limit_per_minute)
+    limiter = rate_limiter(s)
+    workers = os.getenv("WEB_CONCURRENCY", "1")
+    if workers.isdigit() and int(workers) > 1 and s.shared_state == "memory":
+        log.warning(f"WEB_CONCURRENCY={workers} with SHARED_STATE=memory: job polls and rate limits are per worker; "
+                    "set SHARED_STATE=sqlite (docs/DEPLOYMENT.md)")
     app = FastAPI(title="Student Success Assistant API", version="6.0.0", default_response_class=SafeJSONResponse,
                   docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json",
                   description="Early warning, historical-case retrieval, multi-agent support planning, copilot and evaluation over OULAD.")
@@ -102,6 +108,8 @@ def create_app(settings: Settings | None = None, service=None, llm=None) -> Fast
                 raise _Http(503, "API key not configured on server")
             if not api_key_ok(request.headers.get("X-API-Key"), s.api_key):
                 raise _Http(401, "unauthorized")
+        if limiter is None:
+            return
         ok, retry = limiter.allow(client_ip(request, s.trusted_proxy_count))
         if not ok:
             raise _Http(429, "rate limit exceeded", headers={"Retry-After": str(int(retry) + 1)})

@@ -102,8 +102,15 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       within modules: disabled students withdraw more (15.6% vs 10.8%), are under-predicted (12.3%), and have more of
       their withdrawals caught (70% vs 47%). Equalising TPR would flag 90 fewer disabled students; this is for the equity
       office to decide. The gate check is unchanged (warn above 0.15) and now carries the p-value and verdict.
-- [ ] 9. Deployment notes: jobs and rate limits are in-process; document or implement a queue + gateway limits for
+- [x] 9. Deployment notes: jobs and rate limits are in-process; document or implement a queue + gateway limits for
       multi-worker scaling.
+      Done: `SHARED_STATE=sqlite` (`ssa/api/shared.py`) shares job records, rate-limit buckets and recent analyses
+      between the uvicorn workers on one host (`WEB_CONCURRENCY=N`); jobs whose worker died are reported as lost.
+      Checked with 3 workers: 30/30 polls of a job found it (19/30 were 404 with `memory`), and one rate budget was
+      enforced across workers. `RATE_LIMIT_PER_MINUTE=0` hands limits to the gateway; DEPLOYMENT.md has an nginx
+      example, the multi-host options (sticky polls, Redis/Postgres job store, RQ/Celery) and the measured ~1 GB per
+      worker. The image bakes the embedding model (`HF_HOME=/opt/hf`, `HF_HUB_OFFLINE=1`): cold first search at a
+      checkpoint 11-15 s instead of ~49 s.
 After each item: run `python -m pytest`, commit, and summarise what changed.
 
 ### Phase 2: LLM provider is Claude (access available 2026-10-11)

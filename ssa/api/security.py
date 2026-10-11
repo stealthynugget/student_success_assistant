@@ -2,44 +2,20 @@
 
 * API key required on every endpoint except ``/api/health`` unless ``SSA_DEV_MODE=1``
   (v4 shipped with authentication disabled by default). Constant-time comparison.
-* Thread-safe token-bucket rate limiter with bounded memory (LRU eviction). Client identity
-  uses ``X-Forwarded-For`` only when ``TRUSTED_PROXY_COUNT`` > 0 (otherwise spoofable).
-  For multi-worker / multi-host deployments put a shared limiter (e.g. nginx / API gateway /
-  Redis) in front - documented in docs/DEPLOYMENT.md.
+* Token-bucket rate limiting per client (``ssa.api.shared``: in-process, or SQLite shared by the workers on a host).
+  Client identity uses ``X-Forwarded-For`` only when ``TRUSTED_PROXY_COUNT`` > 0 (otherwise spoofable).
+  Across hosts, enforce limits in the gateway and set ``RATE_LIMIT_PER_MINUTE=0`` (docs/DEPLOYMENT.md).
 * CORS only for an explicit allow-list (``*`` is never echoed).
 * Errors return a generic message + request id; stack traces go to the server log only.
 """
 from __future__ import annotations
 
 import hmac
-import threading
-import time
 import uuid
-from collections import OrderedDict
 
+from ssa.api.shared import MemoryRateLimiter
 
-
-class TokenBucketLimiter:
-    def __init__(self, rate_per_minute: int, max_keys: int = 10_000):
-        self.capacity = max(1, rate_per_minute)
-        self.refill = self.capacity / 60.0
-        self.max_keys = max_keys
-        self._buckets: OrderedDict[str, tuple[float, float]] = OrderedDict()
-        self._lock = threading.Lock()
-
-    def allow(self, key: str) -> tuple[bool, float]:
-        now = time.monotonic()
-        with self._lock:
-            tokens, last = self._buckets.pop(key, (float(self.capacity), now))
-            tokens = min(self.capacity, tokens + (now - last) * self.refill)
-            ok = tokens >= 1.0
-            if ok:
-                tokens -= 1.0
-            self._buckets[key] = (tokens, now)
-            while len(self._buckets) > self.max_keys:
-                self._buckets.popitem(last=False)
-            retry_after = 0.0 if ok else (1.0 - tokens) / self.refill
-        return ok, retry_after
+TokenBucketLimiter = MemoryRateLimiter  # kept for callers of the old name
 
 
 def client_ip(req, trusted_proxy_count: int) -> str:

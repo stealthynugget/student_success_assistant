@@ -2,9 +2,43 @@
 
 - **One service.** `uvicorn ssa.api.app:app_factory --factory` serves the API and the built console. Docker builds the
   console in a Node stage and runs as a non-root user with a healthcheck.
-- **Workers.** Background jobs, the recent-recommendation cache and the rate limiter live in the process. Run one worker
-  per container and scale horizontally behind a load balancer with sticky sessions, or move jobs to a queue (RQ/Celery)
-  and rate limiting to the gateway for multi-worker deployments.
+- **Workers and shared state.** Three things are shared between requests: background-job records (the console polls
+  `/api/jobs/{id}`), per-client rate-limit buckets and recent analyses (for on-demand judging). `SHARED_STATE` picks
+  where they live (`ssa/api/shared.py`):
+  - `memory` (default): in the process. Right for one worker per container (`WEB_CONCURRENCY=1`).
+  - `sqlite`: `artifacts/app/shared_state.sqlite3` (WAL), shared by every worker that mounts the same `artifacts/`.
+    Use it with `WEB_CONCURRENCY=N` on one host. A job runs in the worker that accepted it; its record is shared, so a
+    poll can land on any worker. A record that stops updating for 15 minutes is reported as lost (its worker died), and
+    the console offers to run it again. Measured on this machine with 3 workers: 30 of 30 polls of a finished job found
+    it with `sqlite`; 19 of 30 returned 404 with `memory`. The service logs a warning when `WEB_CONCURRENCY` > 1 with
+    `memory`.
+  Each worker loads its own models and case indexes: about 1 GB once all four checkpoints are loaded (measured in the
+  container with the dense channel), so size memory per worker.
+- **Several hosts.** SQLite does not span machines. Keep `SHARED_STATE=sqlite` per host for jobs and either route a
+  client's polls to the host that accepted the job (sticky sessions on the `X-API-Key` or a cookie) or replace
+  `SQLiteJobStore` with a Redis/Postgres store; the interface is two methods (`put`, `get`). For a full queue, the job
+  functions are plain callables and can be moved to RQ or Celery workers unchanged. Enforce rate limits in the gateway
+  and set `RATE_LIMIT_PER_MINUTE=0` in the app, for example with nginx:
+
+  ```nginx
+  limit_req_zone $binary_remote_addr zone=ssa_api:10m rate=2r/s;           # 120 per minute per client
+  limit_req_zone $binary_remote_addr zone=ssa_ai:10m rate=10r/m;           # LLM-backed routes
+  server {
+    location /api/jobs/       { limit_req zone=ssa_ai burst=5 nodelay;  proxy_pass http://ssa; }
+    location /api/copilot/    { limit_req zone=ssa_ai burst=5 nodelay;  proxy_pass http://ssa;
+                                proxy_buffering off; proxy_read_timeout 300s; }   # server-sent events
+    location /api/            { limit_req zone=ssa_api burst=60 nodelay; proxy_pass http://ssa; }
+    location /                { proxy_pass http://ssa; }
+  }
+  ```
+  Set `TRUSTED_PROXY_COUNT=1` behind one proxy so the app sees the real client address. Polling `GET /api/jobs/{id}`
+  matches `/api/jobs/` too; give it its own `location ~ ^/api/jobs/[0-9a-f]+$` under the general zone if the console
+  polls quickly.
+- **Cold start.** The image bakes the sentence-embedding model (`EMBEDDING_MODEL` build arg, cached in `HF_HOME=/opt/hf`),
+  so the first dense search in a new container does not download it, and `HF_HUB_OFFLINE=1` stops run-time Hub calls.
+  Models and indexes still load on first use per checkpoint: the first search at each checkpoint took 11–15 s in a
+  fresh container (about 49 s before, when the model was downloaded), later ones under 0.1 s. `GET /api/ready` reports
+  whether every artifact is present.
 - **Secrets** only in the environment. `.env` is excluded from git, Docker and releases; the quality gate scans for keys.
 - **Auth.** `STUDENT_ASSISTANT_API_KEY` for every route except health; `STUDENT_ASSISTANT_ADMIN_KEY` to apply
   feedback-loop changes. Without a key (and without `SSA_DEV_MODE=1`) protected routes return 503. Put TLS in front.

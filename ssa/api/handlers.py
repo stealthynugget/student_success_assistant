@@ -7,15 +7,14 @@ the handlers directly as well as through FastAPI's TestClient.
 from __future__ import annotations
 
 import json
-import math
 import random
 import threading
-from collections import OrderedDict
 
 from ssa.agents.copilot import Copilot
 from ssa.agents.genai import briefing_evidence, cohort_briefing, note_themes, outreach_variant, understand_query
 from ssa.api import schemas as S
 from ssa.api.jobs import JobManager
+from ssa.api.shared import job_store, jsonable, kv_store
 from ssa.appdb import AppDB
 from ssa.config import Settings, get_settings
 from ssa.evaluation.judge import LLMJudge, analysis_evidence, judge_text
@@ -27,31 +26,7 @@ from ssa.utils import get_logger, read_json
 log = get_logger("ssa.api")
 
 
-def _jsonable(o):
-    """Plain JSON for event streams: numpy scalars/arrays to Python, NaN/inf to null (browsers reject NaN)."""
-    if isinstance(o, dict):
-        return {str(k): _jsonable(v) for k, v in o.items()}
-    if isinstance(o, (list, tuple)):
-        return [_jsonable(v) for v in o]
-    if hasattr(o, "tolist"):
-        return _jsonable(o.tolist())
-    if isinstance(o, float) and not math.isfinite(o):
-        return None
-    return o
-
-
-class _LRU(OrderedDict):
-    def __init__(self, n):
-        super().__init__()
-        self.n = n
-        self._lock = threading.Lock()
-
-    def put(self, k, v):
-        with self._lock:
-            self[k] = v
-            self.move_to_end(k)
-            while len(self) > self.n:
-                self.popitem(last=False)
+_jsonable = jsonable
 
 
 class Handlers:
@@ -60,8 +35,8 @@ class Handlers:
         self.svc = service or StudentSuccessService(self.settings, llm=llm)
         self.store = FeedbackStore(self.settings)
         self.db = AppDB(self.settings)
-        self.jobs = JobManager()
-        self.recent = _LRU(500)  # recommendation_id -> analysis (for on-demand judging)
+        self.jobs = JobManager(job_store(self.settings))
+        self.recent = kv_store(self.settings, "recent_analyses", 500)  # recommendation_id -> analysis (for on-demand judging)
 
     # ---------------------------------------------------------------- helpers
     def _rp(self, inp, checkpoint=None, allow_withdrawn=False):
@@ -187,7 +162,6 @@ class Handlers:
         """Server-sent events for one copilot answer: ``tool_call`` / ``tool_result`` as tools run, ``text`` deltas (unverified
         until ``done``), ``text_reset``, ``revision``, then ``done`` with the full checked result (or ``error``)."""
         import queue
-        import threading
         q: queue.Queue = queue.Queue()
 
         def work():

@@ -86,6 +86,7 @@ class Settings:
     dev_mode: bool = False
     max_request_bytes: int = 512 * 1024
     rate_limit_per_minute: int = 120
+    shared_state: str = "memory"  # memory | sqlite (several workers on one host); see ssa/api/shared.py
     allowed_origins: tuple[str, ...] = field(default_factory=tuple)
     trusted_proxy_count: int = 0
     admin_key: str | None = None
@@ -126,6 +127,10 @@ class Settings:
     @property
     def app_db(self) -> Path:
         return self.artifact_dir / "app" / "app.sqlite3"
+
+    @property
+    def shared_state_db(self) -> Path:
+        return self.artifact_dir / "app" / "shared_state.sqlite3"
 
     # ---- derived paths -------------------------------------------------
     @property
@@ -300,6 +305,7 @@ def get_settings() -> Settings:
         dev_mode=_bool("SSA_DEV_MODE", False),
         max_request_bytes=_int("MAX_REQUEST_BYTES", 512 * 1024),
         rate_limit_per_minute=_int("RATE_LIMIT_PER_MINUTE", 120),
+        shared_state=(os.getenv("SHARED_STATE") or "memory").strip().lower(),
         allowed_origins=origins,
         trusted_proxy_count=_int("TRUSTED_PROXY_COUNT", 0),
         admin_key=os.getenv("STUDENT_ASSISTANT_ADMIN_KEY") or None,
