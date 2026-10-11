@@ -52,8 +52,20 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       descriptors (dense ends up a softer lexical channel), and corpus narratives end with "Final outcome: ..." while
       queries never do. The benchmark uses profile queries, so it does not measure the channel's real job
       (free-text case search); judge it in Phase 2 with the labelled search queries before changing the narratives.*
-- [ ] 4. `cd frontend && npm install && npm run build` (shipped dist/ was built with esbuild), then `docker compose build`
+- [x] 4. `cd frontend && npm install && npm run build` (shipped dist/ was built with esbuild), then `docker compose build`
       and `docker compose up app`; open the console and check every page.
+      *Done 2026-10-11. Vite 5.4 build passes (250 kB JS, 75 kB gzip); package-lock.json committed and the Dockerfile
+      now uses `npm ci`. The image was 10.3 GB because the default Linux torch wheel ships CUDA; the Dockerfile now
+      installs CPU torch first (3.57 GB). The container ran on the host-built artifacts with an override blanking
+      OPENAI_API_KEY. Playwright drove all 9 pages plus a checkpoint switch at 1366 px and 820 px: no console errors,
+      page errors, HTTP errors or horizontal overflow; briefing, computed support plan, case search, copilot and
+      feedback-loop dry run all complete. Known issues: (a) the container resolves Python 3.11 / XGBoost 3.2 / numpy 2.4
+      while the host build used 3.12 / 3.4.1 / 2.5; XGBoost warns when unpickling the host models, so either build
+      artifacts in the container (`docker compose run --rm build`) or pin versions; (b) the MiniLM model is downloaded
+      from the HF Hub on the first dense query (7 s cold start, fails offline) and could be baked into the image (item 9);
+      (c) `npm audit`: esbuild/Vite dev-server advisory GHSA-67mh-4wv8-2f99 (dev only; fixed by the Vite upgrade in
+      item 5); (d) console follow-ups for item 5: the What-if panel says "values fall outside what the model has seen"
+      on an unmodified real record, and the ablation chart labels on Model quality render oversized.*
 - [ ] 5. **Console upgrade** (brief below). Works fully in computed mode; AI-labelled sections show their computed
       fallbacks until Phase 2.
 - [ ] 6. Copilot streaming: add `/api/copilot/stream` (SSE: tool-call events, then answer tokens) and wire it into the

@@ -2,8 +2,8 @@
 # Stage 1: build the React console
 FROM node:20-alpine AS web
 WORKDIR /web
-COPY frontend/package.json ./
-RUN npm install --no-audit --no-fund
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl &
 WORKDIR /app
 COPY requirements-core.txt requirements.txt ./
 ARG INSTALL_EXTRAS=true
-RUN pip install -r requirements-core.txt && if [ "$INSTALL_EXTRAS" = "true" ]; then pip install -r requirements.txt; fi
+# CPU-only torch for the dense channel: the default Linux wheel pulls in ~6 GB of CUDA libraries the service never uses.
+RUN pip install -r requirements-core.txt && if [ "$INSTALL_EXTRAS" = "true" ]; then \
+      pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt; fi
 COPY --chown=ssa:ssa ssa ./ssa
 COPY --chown=ssa:ssa scripts ./scripts
 COPY --chown=ssa:ssa pyproject.toml VERSION ./
