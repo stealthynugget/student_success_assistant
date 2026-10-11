@@ -17,7 +17,7 @@ LLM API access is blocked until later today. Until the user says access is avail
 @frontend/DESIGN.md
 
 ## Commands
-- Backend deps: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
+- Backend deps: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.lock` (exact pins; Linux adds `--extra-index-url https://download.pytorch.org/whl/cpu`; re-pin with `make lock`)
 - Data: the 7 OULAD CSVs go in `data/raw/` (never commit them)
 - Full build without the LLM eval (all checkpoints, ~12 min): `python -m ssa.cli build && python -m ssa.cli report`
   (`make build` also runs `llm-eval`; without a key it only measures computed paths, which is fine)  | single step: `python -m ssa.cli {prepare,train,index,evaluate,llm-eval,quality-gate,report}`

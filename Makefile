@@ -1,8 +1,9 @@
 PY ?= python
 export PYTHONPATH := $(CURDIR)
 
-.PHONY: install build prepare train index evaluate llm-eval feedback gate report test lint api api-dev web-install web-dev web-build demo
-install:      ; $(PY) -m pip install -r requirements.txt
+.PHONY: install lock build prepare train index evaluate llm-eval feedback gate report test lint api api-dev web-install web-dev web-build demo
+install:      ; $(PY) -m pip install -r requirements.lock
+lock:         ; sh scripts/lock_requirements.sh $(PY)
 build:        ; $(PY) -m ssa.cli build && $(PY) -m ssa.cli llm-eval && $(PY) -m ssa.cli report
 prepare:      ; $(PY) -m ssa.cli prepare
 train:        ; $(PY) -m ssa.cli train

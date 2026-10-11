@@ -8,16 +8,18 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Python service (FastAPI) that also serves the console at /
-FROM python:3.11-slim
+FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl && rm -rf /var/lib/apt/lists/* \
  && useradd --create-home --uid 10001 ssa
 WORKDIR /app
-COPY requirements-core.txt requirements.txt ./
+COPY requirements-core.txt requirements.txt requirements.lock ./
 ARG INSTALL_EXTRAS=true
-# CPU-only torch for the dense channel: the default Linux wheel pulls in ~6 GB of CUDA libraries the service never uses.
-RUN pip install -r requirements-core.txt && if [ "$INSTALL_EXTRAS" = "true" ]; then \
-      pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt; fi
+# Exact versions from requirements.lock (same as the development venv, so pickled models load cleanly). The PyTorch CPU
+# index supplies torch==x+cpu: the default Linux wheel pulls in ~6 GB of CUDA libraries the service never uses.
+RUN if [ "$INSTALL_EXTRAS" = "true" ]; then \
+      pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.lock; \
+    else pip install -r requirements-core.txt -c requirements.lock; fi
 COPY --chown=ssa:ssa ssa ./ssa
 COPY --chown=ssa:ssa scripts ./scripts
 COPY --chown=ssa:ssa pyproject.toml VERSION ./
