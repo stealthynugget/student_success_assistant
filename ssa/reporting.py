@@ -19,6 +19,7 @@ def load_all(s: Settings) -> dict:
     m = {n: read_json(s.metrics_dir / f"{n}.json", {}) for n in names}
     for n in ("llm_evaluation", "quality_gate", "checkpoint_summary"):
         m[n] = read_json(s.global_metrics_dir / f"{n}.json", {})
+    m["fairness_by_checkpoint"] = {c: read_json(s.at(c).metrics_dir / "fairness.json", {}) for c in s.checkpoints}
     m["factors"] = read_json(s.analysis_dir / "factor_analysis.json", {})
     m["trends"] = read_json(s.analysis_dir / "trend_analysis.json", {})
     return m
@@ -69,6 +70,50 @@ def _llm_lines(e: dict) -> str:
                      f"{u.get('cached', 0)} were answered from the response cache of earlier runs; {u.get('errors', 0)} errors; new "
                      f"spend ${u.get('estimated_cost_usd', 0):.2f} (spend across runs: `/api/llm/usage`)."]
     return "\n".join(rows)
+
+
+def _fairness_detail_lines(fa: dict, by_cp: dict) -> list[str]:
+    out = ["", "### Across the course", "| Course week | " + " | ".join(fa.get("attributes", {})) + " |",
+           "|---|" + "---|" * len(fa.get("attributes", {}))]
+    for c, f in sorted(by_cp.items()):
+        if not f:
+            continue
+        cells = []
+        for k in fa.get("attributes", {}):
+            v = f.get("attributes", {}).get(k, {})
+            gap, pv = v.get("equal_opportunity_gap"), v.get("gap_null", {}).get("p_value")
+            cells.append("–" if gap is None else f"{_f(gap, 2)} (p {_f(pv, 3)})")
+        out.append(f"| {round(c * 262 / 7)} | " + " | ".join(cells) + " |")
+    out += ["", "Gap and permutation p-value per checkpoint. With 24 tests, a few p-values under 0.05 are expected by chance alone."]
+    for k, v in fa.get("attributes", {}).items():
+        if "verdict" not in v:
+            continue
+        lo, hi = v["lowest_tpr_group"], v["highest_tpr_group"]
+        glo, ghi = v["groups"][lo], v["groups"][hi]
+        out += ["", f"**{k}**: {v['verdict']}. Lowest TPR {lo} {_f(glo['tpr_high'], 2)} (95% CI {_f(glo['tpr_high_ci95'][0], 2)}–"
+                    f"{_f(glo['tpr_high_ci95'][1], 2)}, {glo['positives']} withdrawn); highest {hi} {_f(ghi['tpr_high'], 2)} "
+                    f"(95% CI {_f(ghi['tpr_high_ci95'][0], 2)}–{_f(ghi['tpr_high_ci95'][1], 2)}, {ghi['positives']} withdrawn). "
+                    f"Observed withdrawal rate {_pct(glo['observed_rate'], 1)} vs mean predicted {_pct(glo['mean_predicted'], 1)} ({lo}); "
+                    f"{_pct(ghi['observed_rate'], 1)} vs {_pct(ghi['mean_predicted'], 1)} ({hi})."]
+        prox = []
+        proxies = list(v.get("proxies", {}).items())
+        for g, pr in proxies[1:] if len(v["groups"]) == 2 else proxies:  # two groups: the second mirrors the first
+            feats = ", ".join(f"{d['label'].replace('code_module=', 'module ')} ({d['standardised_mean_difference']:+.2f} SD)"
+                              for d in pr["most_different_inputs"][:3])
+            prox.append(f"{g}: model inputs identify membership with ROC-AUC {_f(pr['membership_auc_from_model_inputs'], 2)}; "
+                        f"most different inputs {feats}")
+        if prox:
+            out.append("Proxies. " + "; ".join(prox) + ".")
+        tr = v.get("threshold_review")
+        if tr and v["gap_null"]["p_value"] < 0.05:
+            out += ["", f"Threshold review (target TPR {_f(tr['target_tpr'], 2)}, "
+                        f"current High cut-off {_f(tr['current_threshold'], 3)}):", "",
+                    "| Group | TPR now | Cut-off for target TPR | Selection rate now → then | PPV now → then | Students flagged |",
+                    "|---|---|---|---|---|---|"]
+            out += [f"| {g} | {_f(r['current_tpr'], 2)} | {_f(r['equalising_threshold'], 3)} | {_pct(r['current_selection_rate'])} → "
+                    f"{_pct(r['selection_rate_at_equalising'])} | {_pct(r['current_ppv'])} → {_pct(r['ppv_at_equalising'])} | "
+                    f"{r['change_in_flagged_students']:+d} |" for g, r in tr["groups"].items()]
+    return out
 
 
 def _selection_lines(p: dict) -> list[str]:
@@ -162,12 +207,19 @@ def model_card(s: Settings | None = None) -> str:
     ] + [f"| {k} | {_f(v['neighbour_vote_auc_poor_outcome'])} | {_f(v['outcome_agreement_at_10'])} | {_f(v['reference_ndcg_at_10_global_ideal'])} |"
          for k, v in r.get("modes", {}).items()] + _typed_search_lines(m.get("text_search_benchmark", {})) + [
         "", "## Fairness audit (High tier, test presentation)",
-        "| Attribute | Equal-opportunity gap (TPR max−min) | Selection-rate ratio | Max calibration gap |", "|---|---|---|---|",
-    ] + [f"| {k} | {_f(v['equal_opportunity_gap'])} | {_f(v['selection_rate_ratio'])} | {_f(v['max_calibration_gap'])} |"
-         for k, v in fa.get("attributes", {}).items()] + [
-        "", "Gaps persist even with sensitive attributes excluded (proxies via engagement/scores and different base rates). "
+        f"Groups count towards a gap only with {fa.get('sufficient_sample_rule', 'a sufficient sample')}. "
+        "Chance gap: the median max−min gap when group labels are shuffled among withdrawn students (1,000 permutations), "
+        "overall and within each module.", "",
+        "| Attribute | Equal-opportunity gap (TPR max−min) | Chance gap | p | p within module | Selection-rate ratio "
+        "| Max calibration gap |",
+        "|---|---|---|---|---|---|---|",
+    ] + [f"| {k} | {_f(v['equal_opportunity_gap'])} | {_f(v.get('gap_null', {}).get('median'))} | "
+         f"{_f(v.get('gap_null', {}).get('p_value'))} | {_f(v.get('gap_null', {}).get('within_module_p_value'))} | "
+         f"{_f(v['selection_rate_ratio'])} | {_f(v['max_calibration_gap'])} |"
+         for k, v in fa.get("attributes", {}).items()] + _fairness_detail_lines(fa, m.get("fairness_by_checkpoint", {})) + [
+        "", "Sensitive attributes are excluded from the model, so remaining gaps come from proxies and different base rates. "
         "They are surfaced as quality-gate warnings and must be reviewed with the institution's equity office before deployment. "
-        "Mitigation options: per-group threshold review, outreach-capacity floors, monitoring by group via the feedback loop.", "",
+        "Per-group cut-offs are shown for that review only; applying them would use a sensitive attribute at decision time.", "",
         "## Early warning across the course (test presentation, students still enrolled at each point)",
         "| Course week | Still enrolled | ROC-AUC | PR-AUC | Base rate | ECE | Outcome macro-F1 |", "|---|---|---|---|---|---|---|",
     ] + [f"| {round(c['approx_week'])} | {c['in_scope']:,} | {_f(c['withdrawal']['roc_auc'])} | {_f(c['withdrawal']['pr_auc'])} | "

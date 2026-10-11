@@ -91,8 +91,17 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       Test mean precision@10/20/30%, blend vs argmax: c15 0.756 vs 0.738, c25 0.837 vs 0.824, c40 0.860 vs 0.861,
       c60 0.889 vs 0.895; every checkpoint keeps about 0.6-0.75 on P(fail or withdraw) plus small weights on the
       actionable signals. Refit alone with `python -m ssa.cli train --only prioritization`. Quality gate passes.
-- [ ] 8. Fairness: region, IMD and disability equal-opportunity gaps 0.16-0.26. Investigate proxies and add a per-group
+- [x] 8. Fairness: region, IMD and disability equal-opportunity gaps 0.16-0.26. Investigate proxies and add a per-group
       threshold review to the fairness report (do not add sensitive attributes to the model).
+      Done (`ssa/evaluation/model_analysis.py`, model card, Insights > Fairness): a group counts towards a gap only with >= 30
+      withdrawn and >= 30 not withdrawn (was 10 withdrawn); per-group TPR with Wilson intervals; a permutation null (group
+      labels shuffled among withdrawn students, overall and within module) with a verdict; proxy analysis (how well the
+      model's inputs identify the group, and which inputs differ most); and a per-group cut-off review (shown, never applied).
+      Findings at week 15: region (0.26) and IMD (0.19) are within chance at these group sizes (p 0.14 and 0.35). Gender
+      (0.08) is beyond chance but explained by module mix (BBB). Disability (0.23, also 0.18 at week 22) is real and holds
+      within modules: disabled students withdraw more (15.6% vs 10.8%), are under-predicted (12.3%), and have more of
+      their withdrawals caught (70% vs 47%). Equalising TPR would flag 90 fewer disabled students; this is for the equity
+      office to decide. The gate check is unchanged (warn above 0.15) and now carries the p-value and verdict.
 - [ ] 9. Deployment notes: jobs and rate limits are in-process; document or implement a queue + gateway limits for
       multi-worker scaling.
 After each item: run `python -m pytest`, commit, and summarise what changed.

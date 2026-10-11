@@ -232,7 +232,8 @@ def quality_gate(run_tests: bool = False) -> dict:
         check("sensitive_attributes_excluded_from_model", fa.get("model_uses_sensitive_attributes") == s.include_sensitive_features)
         for attr, rep in fa.get("attributes", {}).items():
             gap = rep.get("equal_opportunity_gap")
-            check(f"fairness_equal_opportunity_{attr}", gap is None or gap <= 0.15, gap, warn=True)
+            check(f"fairness_equal_opportunity_{attr}", gap is None or gap <= 0.15,
+                  {"gap": gap, "p_value": rep.get("gap_null", {}).get("p_value"), "verdict": rep.get("verdict")}, warn=True)
     llm = read_json(s.global_metrics_dir / "llm_evaluation.json", {})
     if llm and llm.get("agents"):
         det = llm["agents"]["deterministic"]

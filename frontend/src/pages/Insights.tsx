@@ -128,6 +128,23 @@ function Weeks() {
   );
 }
 
+function ThresholdReview({ review }: { review: any }) {
+  return (
+    <>
+      <h3 className="h4">Threshold review</h3>
+      <p className="small muted">The High-tier cut-off each group would need for {fmt.pct(review.target_tpr)} of its withdrawals to be caught (the overall rate),
+        against today's single cut-off of {fmt.pct(review.current_threshold, 1)}. For review with the equity office only: group-specific cut-offs would use a sensitive attribute and are not applied.</p>
+      <div className="table-wrap"><table className="data small"><thead><tr><th scope="col">Group</th><th scope="col" className="num">Caught now</th>
+        <th scope="col" className="num">Cut-off needed</th><th scope="col" className="num">Flagged now → then</th><th scope="col" className="num">Precision now → then</th>
+        <th scope="col" className="num">Change in students flagged</th></tr></thead>
+        <tbody>{Object.entries(review.groups).map(([g, r]: [string, any]) => <tr key={g}><td>{g}</td><td className="num">{fmt.pct(r.current_tpr)}</td>
+          <td className="num">{fmt.pct(r.equalising_threshold, 1)}</td><td className="num">{fmt.pct(r.current_selection_rate)} → {fmt.pct(r.selection_rate_at_equalising)}</td>
+          <td className="num">{fmt.pct(r.current_ppv)} → {fmt.pct(r.ppv_at_equalising)}</td>
+          <td className="num">{r.change_in_flagged_students > 0 ? "+" : ""}{r.change_in_flagged_students}</td></tr>)}</tbody></table></div>
+    </>
+  );
+}
+
 function Fairness() {
   const q = useGet(["metrics", null], "/metrics");
   if (q.error) return <ErrorNote error={q.error as ApiError} />;
@@ -137,18 +154,29 @@ function Fairness() {
   const attrs = Object.entries(f.attributes) as [string, any][];
   return (
     <div className="stack">
-      <p>{f.interpretation}</p>
+      <p>A descriptive audit of the High tier on the test presentation. Each attribute's gap is set against the gap that random group labels
+        would give at the same group sizes, so sampling noise is not mistaken for a group difference.</p>
       <HBars label="Equal-opportunity gap by attribute" max={Math.max(0.3, ...attrs.map(([, v]) => v.equal_opportunity_gap || 0))} format={(v) => v.toFixed(2)}
         items={attrs.map(([k, v]) => { const flag = (v.equal_opportunity_gap || 0) > 0.15; // tier colours mean tier only: flag in words
-          return { label: `${k.replaceAll("_", " ")}${flag ? " (review)" : ""}`, value: v.equal_opportunity_gap || 0, color: flag ? COL.ink : COL.median, strong: flag }; })} />
-      <p className="small muted">Gap in the share of eventual withdrawals caught by the High tier, between the best- and worst-served groups; gaps above 0.15 are marked "review" and drawn darker.
-        The model does not use these attributes; gaps arise through correlated signals and differing base rates. Groups with few withdrawals are shown in grey and are too small to compare reliably.</p>
+          const chance = flag && v.gap_null && v.gap_null.p_value >= 0.05;
+          return { label: `${k.replaceAll("_", " ")}${flag ? (chance ? " (above 0.15, within chance)" : " (review)") : ""}`, value: v.equal_opportunity_gap || 0,
+            color: flag && !chance ? COL.ink : COL.median, strong: flag && !chance }; })} />
+      <p className="small muted">Gap in the share of eventual withdrawals caught by the High tier, between the best- and worst-served groups; gaps above 0.15 that chance does not explain are marked "review" and drawn darker.
+        The model does not use these attributes; gaps arise through correlated signals and differing base rates. Groups shown in grey ({f.sufficient_sample_rule || "too few withdrawals"} not met) are too small to compare reliably.</p>
       {attrs.map(([k, v]) => (
-        <details key={k}><summary>{k.replaceAll("_", " ")} groups</summary>
-          <table className="data small"><thead><tr><th scope="col">Group</th><th scope="col" className="num">Students</th><th scope="col" className="num">Withdrew</th>
-            <th scope="col" className="num">Flagged High</th><th scope="col" className="num">Caught</th><th scope="col" className="num">Precision</th></tr></thead>
-            <tbody>{Object.entries(v.groups).map(([g, x]: [string, any]) => <tr key={g} style={x.sufficient_sample ? {} : { color: "var(--muted)" }}><td>{g}</td><td className="num">{x.n}</td>
-              <td className="num">{fmt.pct(x.observed_rate)}</td><td className="num">{fmt.pct(x.selection_rate_high)}</td><td className="num">{fmt.pct(x.tpr_high)}</td><td className="num">{fmt.pct(x.ppv_high)}</td></tr>)}</tbody></table></details>
+        <details key={k}><summary>{k.replaceAll("_", " ")}: gap {v.equal_opportunity_gap == null ? "not computed" : v.equal_opportunity_gap.toFixed(2)}
+          {v.gap_null ? `, chance alone gives about ${v.gap_null.median.toFixed(2)} (p ${v.gap_null.p_value.toFixed(3)})` : ""}</summary>
+          <div className="stack" style={{ marginTop: 8 }}>
+            {v.verdict && <p className="small">{v.verdict[0].toUpperCase() + v.verdict.slice(1)}.</p>}
+            <div className="table-wrap"><table className="data small"><thead><tr><th scope="col">Group</th><th scope="col" className="num">Students</th><th scope="col" className="num">Withdrew</th>
+              <th scope="col" className="num">Predicted</th><th scope="col" className="num">Flagged High</th><th scope="col" className="num">Caught</th>
+              <th scope="col" className="num">Caught, 95% interval</th><th scope="col" className="num">Precision</th></tr></thead>
+              <tbody>{Object.entries(v.groups).map(([g, x]: [string, any]) => <tr key={g} style={x.sufficient_sample ? {} : { color: "var(--muted)" }}><td>{g}</td><td className="num">{x.n}</td>
+                <td className="num">{fmt.pct(x.observed_rate)}</td><td className="num">{fmt.pct(x.mean_predicted)}</td><td className="num">{fmt.pct(x.selection_rate_high)}</td>
+                <td className="num">{fmt.pct(x.tpr_high)}</td><td className="num">{x.tpr_high_ci95 ? `${fmt.pct(x.tpr_high_ci95[0])} to ${fmt.pct(x.tpr_high_ci95[1])}` : "–"}</td>
+                <td className="num">{fmt.pct(x.ppv_high)}</td></tr>)}</tbody></table></div>
+            {v.threshold_review && v.gap_null?.p_value < 0.05 && <ThresholdReview review={v.threshold_review} />}
+          </div></details>
       ))}
     </div>
   );

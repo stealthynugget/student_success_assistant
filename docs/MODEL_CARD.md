@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-12 04:28 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-12 04:34 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -87,16 +87,60 @@ Queries: 600 in-scope students of 2014J; corpus: earlier presentations, same mod
 | llm | random_within_parsed_filters | 0.459 | n/a | n/a |
 
 ## Fairness audit (High tier, test presentation)
-| Attribute | Equal-opportunity gap (TPR max−min) | Selection-rate ratio | Max calibration gap |
-|---|---|---|---|
-| gender | 0.082 | 0.877 | 0.009 |
-| region | 0.265 | 0.582 | 0.030 |
-| highest_education | 0.140 | 0.593 | 0.038 |
-| imd_band | 0.195 | 0.653 | 0.030 |
-| age_band | 0.048 | 0.804 | 0.018 |
-| disability | 0.232 | 0.708 | 0.034 |
+Groups count towards a gap only with n >= 50, at least 30 withdrawn and 30 not withdrawn. Chance gap: the median max−min gap when group labels are shuffled among withdrawn students (1,000 permutations), overall and within each module.
 
-Gaps persist even with sensitive attributes excluded (proxies via engagement/scores and different base rates). They are surfaced as quality-gate warnings and must be reviewed with the institution's equity office before deployment. Mitigation options: per-group threshold review, outreach-capacity floors, monitoring by group via the feedback loop.
+| Attribute | Equal-opportunity gap (TPR max−min) | Chance gap | p | p within module | Selection-rate ratio | Max calibration gap |
+|---|---|---|---|---|---|---|
+| gender | 0.082 | 0.021 | 0.013 | 0.598 | 0.877 | 0.009 |
+| region | 0.265 | 0.208 | 0.144 | 0.228 | 0.582 | 0.030 |
+| highest_education | 0.043 | 0.048 | 0.575 | 0.937 | 0.799 | 0.018 |
+| imd_band | 0.195 | 0.177 | 0.352 | 0.499 | 0.653 | 0.030 |
+| age_band | 0.048 | 0.022 | 0.174 | 0.259 | 0.804 | 0.018 |
+| disability | 0.232 | 0.034 | 0.001 | 0.001 | 0.708 | 0.034 |
+
+### Across the course
+| Course week | gender | region | highest_education | imd_band | age_band | disability |
+|---|---|---|---|---|---|---|
+| 6 | 0.09 (p 0.001) | 0.25 (p 0.009) | 0.06 (p 0.117) | 0.14 (p 0.471) | 0.09 (p 0.001) | 0.04 (p 0.266) |
+| 9 | 0.01 (p 0.708) | 0.23 (p 0.095) | 0.06 (p 0.203) | 0.19 (p 0.215) | 0.08 (p 0.008) | 0.05 (p 0.188) |
+| 15 | 0.08 (p 0.013) | 0.26 (p 0.144) | 0.04 (p 0.575) | 0.19 (p 0.352) | 0.05 (p 0.174) | 0.23 (p 0.001) |
+| 22 | 0.00 (p 1.000) | 0.21 (p 0.569) | 0.03 (p 0.913) | 0.23 (p 0.513) | 0.02 (p 0.663) | 0.18 (p 0.013) |
+
+Gap and permutation p-value per checkpoint. With 24 tests, a few p-values under 0.05 are expected by chance alone.
+
+**gender**: beyond chance overall, but explained by which modules the groups study. Lowest TPR F 0.45 (95% CI 0.40–0.50, 389 withdrawn); highest M 0.53 (95% CI 0.49–0.58, 554 withdrawn). Observed withdrawal rate 10.9% vs mean predicted 10.0% (F); 11.5% vs 10.7% (M).
+Proxies. M: model inputs identify membership with ROC-AUC 0.82; most different inputs module BBB (-0.99 SD), Assessments due so far (+0.80 SD), Course day of snapshot (+0.78 SD).
+
+Threshold review (target TPR 0.50, current High cut-off 0.141):
+
+| Group | TPR now | Cut-off for target TPR | Selection rate now → then | PPV now → then | Students flagged |
+|---|---|---|---|---|---|
+| F | 0.45 | 0.128 | 22% → 26% | 22% → 21% | +142 |
+| M | 0.53 | 0.149 | 25% → 23% | 24% → 25% | -93 |
+
+**region**: within chance: random group labels give a gap this large at these group sizes. Lowest TPR Ireland 0.36 (95% CI 0.24–0.51, 44 withdrawn); highest North Western Region 0.63 (95% CI 0.52–0.73, 78 withdrawn). Observed withdrawal rate 11.3% vs mean predicted 9.0% (Ireland); 11.7% vs 11.4% (North Western Region).
+Proxies. Ireland: model inputs identify membership with ROC-AUC 0.73; most different inputs How early the student registered (-0.73 SD), Score trajectory (-0.47 SD), Registered after start (+0.47 SD); North Western Region: model inputs identify membership with ROC-AUC 0.55; most different inputs How early the student registered (+0.20 SD), Score percentile in cohort (-0.13 SD), Tutor-marked assignments missed (+0.13 SD).
+
+**highest_education**: within chance: random group labels give a gap this large at these group sizes. Lowest TPR A Level or Equivalent 0.48 (95% CI 0.43–0.53, 390 withdrawn); highest Lower Than A Level 0.53 (95% CI 0.47–0.57, 379 withdrawn). Observed withdrawal rate 10.4% vs mean predicted 10.5% (A Level or Equivalent); 12.5% vs 10.7% (Lower Than A Level).
+Proxies. A Level or Equivalent: model inputs identify membership with ROC-AUC 0.55; most different inputs module GGG (-0.17 SD), Credits studied this term (+0.15 SD), Assessments due so far (+0.14 SD); Lower Than A Level: model inputs identify membership with ROC-AUC 0.63; most different inputs module GGG (+0.32 SD), Due assessments submitted (-0.30 SD), Assessments due so far (-0.30 SD).
+
+**imd_band**: within chance: random group labels give a gap this large at these group sizes. Lowest TPR 90-100% 0.39 (95% CI 0.28–0.50, 70 withdrawn); highest 20-30% 0.58 (95% CI 0.49–0.66, 124 withdrawn). Observed withdrawal rate 10.2% vs mean predicted 9.6% (90-100%); 14.1% vs 11.1% (20-30%).
+Proxies. 90-100%: model inputs identify membership with ROC-AUC 0.53; most different inputs Due assessments submitted (+0.20 SD), Assessments submitted (+0.19 SD), Weighted assessment score (+0.18 SD); 20-30%: model inputs identify membership with ROC-AUC 0.52; most different inputs Inactive weeks (last 3) (+0.16 SD), Weeks with any activity (-0.14 SD), Longest inactive streak (weeks) (+0.13 SD).
+
+**age_band**: within chance: random group labels give a gap this large at these group sizes. Lowest TPR 35-55 0.47 (95% CI 0.41–0.53, 292 withdrawn); highest 0-35 0.52 (95% CI 0.48–0.56, 642 withdrawn). Observed withdrawal rate 11.3% vs mean predicted 9.6% (35-55); 11.2% vs 10.8% (0-35).
+Proxies. 35-55: model inputs identify membership with ROC-AUC 0.68; most different inputs Activity percentile in cohort (+0.44 SD), Share of scheduled materials opened (+0.37 SD), Active-days percentile in cohort (+0.32 SD); 0-35: model inputs identify membership with ROC-AUC 0.68; most different inputs Activity percentile in cohort (-0.47 SD), Share of scheduled materials opened (-0.39 SD), Active-days percentile in cohort (-0.34 SD).
+
+**disability**: beyond chance, also within modules: review. Lowest TPR N 0.47 (95% CI 0.44–0.51, 828 withdrawn); highest Y 0.70 (95% CI 0.62–0.78, 115 withdrawn). Observed withdrawal rate 10.8% vs mean predicted 10.2% (N); 15.6% vs 12.3% (Y).
+Proxies. Y: model inputs identify membership with ROC-AUC 0.58; most different inputs Weighted assessment score (-0.25 SD), module GGG (+0.24 SD), Most recent score (-0.23 SD).
+
+Threshold review (target TPR 0.50, current High cut-off 0.141):
+
+| Group | TPR now | Cut-off for target TPR | Selection rate now → then | PPV now → then | Students flagged |
+|---|---|---|---|---|---|
+| N | 0.47 | 0.134 | 23% → 25% | 22% → 22% | +161 |
+| Y | 0.70 | 0.188 | 33% → 20% | 34% → 39% | -90 |
+
+Sensitive attributes are excluded from the model, so remaining gaps come from proxies and different base rates. They are surfaced as quality-gate warnings and must be reviewed with the institution's equity office before deployment. Per-group cut-offs are shown for that review only; applying them would use a sensitive attribute at decision time.
 
 ## Early warning across the course (test presentation, students still enrolled at each point)
 | Course week | Still enrolled | ROC-AUC | PR-AUC | Base rate | ECE | Outcome macro-F1 |
