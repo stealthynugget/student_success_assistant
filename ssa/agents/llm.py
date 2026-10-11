@@ -79,7 +79,7 @@ class LLMClient:
                 self._ledger = AppDB(self.settings)
             except Exception as exc:  # pragma: no cover
                 log.warning(f"usage ledger unavailable: {exc}")
-        if self.settings.openai_api_key:
+        if self.settings.llm_enabled and self.settings.openai_api_key:
             try:
                 from openai import OpenAI
 
@@ -90,7 +90,7 @@ class LLMClient:
 
     @property
     def available(self) -> bool:
-        return self._client is not None
+        return self.settings.llm_enabled and self._client is not None
 
     def _record(self, rec: CallRecord):
         self.calls.append(rec)

@@ -63,6 +63,7 @@ class Settings:
     enable_text_embeddings: bool = True
 
     # LLM
+    llm_enabled: bool = True  # master switch: when false no LLM request is ever sent, whatever keys are set
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"
     llm_model: str = "gpt-4o-mini"
@@ -180,7 +181,7 @@ class Settings:
 
     @property
     def llm_configured(self) -> bool:
-        return bool(self.openai_api_key)
+        return self.llm_enabled and bool(self.openai_api_key)
 
     def ensure_dirs(self) -> None:
         for d in [
@@ -209,6 +210,7 @@ def get_settings() -> Settings:
         model_engine=os.getenv("MODEL_ENGINE", "auto").lower(),
         embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2"),
         enable_text_embeddings=_bool("ENABLE_TEXT_EMBEDDINGS", True),
+        llm_enabled=_bool("LLM_ENABLED", True),
         openai_api_key=os.getenv("OPENAI_API_KEY") or None,
         openai_base_url=os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1",
         llm_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
