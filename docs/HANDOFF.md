@@ -83,8 +83,14 @@ The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite 
       Claude streaming via the SDK's messages.stream; incremental delivery verified under uvicorn and with a real answer.
       The console shows tool-call cards as tools run, streams the answer marked "checks pending", renders Markdown lists and
       tables safely, and links cited student IDs to their case files.*
-- [ ] 7. Prioritisation: at week 15 the learned weights put 1.0 on P(fail or withdraw). Try a finer/regularised
+- [x] 7. Prioritisation: at week 15 the learned weights put 1.0 on P(fail or withdraw). Try a finer/regularised
       simplex search if a blended ranking is wanted; keep the test comparison honest.
+      Done: 0.05-step grid (53,130 weightings) plus a one-standard-error rule (`PRIORITY_SELECTION=one_se_blend`, default):
+      bootstrap the validation objective and, among weightings within one SE of the best, take the most blended. The test
+      comparison reports both the chosen blend (`learned_weights`) and the plain best-on-validation (`validation_argmax`).
+      Test mean precision@10/20/30%, blend vs argmax: c15 0.756 vs 0.738, c25 0.837 vs 0.824, c40 0.860 vs 0.861,
+      c60 0.889 vs 0.895; every checkpoint keeps about 0.6-0.75 on P(fail or withdraw) plus small weights on the
+      actionable signals. Refit alone with `python -m ssa.cli train --only prioritization`. Quality gate passes.
 - [ ] 8. Fairness: region, IMD and disability equal-opportunity gaps 0.16-0.26. Investigate proxies and add a per-group
       threshold review to the fairness report (do not add sensitive attributes to the model).
 - [ ] 9. Deployment notes: jobs and rate limits are in-process; document or implement a queue + gateway limits for

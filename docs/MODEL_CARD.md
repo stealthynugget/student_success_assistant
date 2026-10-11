@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-12 04:09 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-12 04:28 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -46,11 +46,14 @@ Risk tiers (thresholds learned out-of-fold: Medium ≥ 0.077, High ≥ 0.141):
 Sensitive attributes add essentially nothing, so they are excluded from the model by default.
 
 ## Prioritisation (target: fail or withdraw)
-Weights learned on the validation presentation: `{'p_withdraw': 0.1, 'p_poor': 0.9, 'academic_gap': 0.0, 'engagement_gap': 0.0, 'missed_work': 0.0, 'recent_decline': 0.0}`.
+Weights learned on the validation presentation: `{'p_withdraw': 0.1, 'p_poor': 0.75, 'academic_gap': 0.05, 'engagement_gap': 0.05, 'missed_work': 0.05, 'recent_decline': 0.0}` (exhaustive simplex grid (step 0.05, 53130 weightings) on the validation presentation; rule one_se_blend).
+
+Selection rule `one_se_blend`: the best grid point on validation (`validation_argmax` below) was `{'p_withdraw': 0.05, 'p_poor': 0.9, 'academic_gap': 0.0, 'engagement_gap': 0.05, 'missed_work': 0.0, 'recent_decline': 0.0}`; 58 weightings were within one bootstrap standard error (0.004) of it, and the most blended of those is used. Both are scored once on the test presentation.
 
 | Ranking | Mean precision @10/20/30% | Precision @10% |
 |---|---|---|
-| learned_weights | 0.857 | 98% |
+| learned_weights | 0.860 | 98% |
+| validation_argmax | 0.861 | 98% |
 | v4_hand_formula | 0.762 | 84% |
 | random | 0.349 | 34% |
 | only_p_withdraw | 0.707 | 78% |

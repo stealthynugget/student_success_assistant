@@ -40,6 +40,8 @@ def cmd_train(args):
     from ssa.models.outcome import OutcomeModel
     from ssa.models.prioritization import Prioritizer
     from ssa.models.risk import WithdrawalRiskModel
+    if getattr(args, "only", None) == "prioritization":
+        return _refit_prioritization(args)
     summary = []
     for sc in _checkpoints(args):
         df = load_features(sc)
@@ -57,6 +59,27 @@ def cmd_train(args):
                         "prioritization_precision_at_10": p["test_comparison"]["learned_weights"]["at_capacity"][0]["precision"]})
     if not getattr(args, "checkpoint", None):
         write_json(get_settings().global_metrics_dir / "checkpoint_summary.json", {"checkpoints": summary})
+
+
+def _refit_prioritization(args):
+    """Refit only the prioritiser on the saved risk/outcome models and patch the checkpoint summary."""
+    from ssa.data.pipeline import load_features
+    from ssa.models.outcome import OutcomeModel
+    from ssa.models.prioritization import Prioritizer
+    from ssa.models.risk import WithdrawalRiskModel
+    path = get_settings().global_metrics_dir / "checkpoint_summary.json"
+    summary = read_json(path) or {"checkpoints": []}
+    for sc in _checkpoints(args):
+        df = load_features(sc)
+        p = Prioritizer(sc).fit(df, WithdrawalRiskModel(sc).load(), OutcomeModel(sc).load())
+        tc = p["test_comparison"]
+        log.info(f"[{sc.tag}] prioritisation weights {p['weights']} (argmax {p['selection_detail']['argmax_weights']}); test objective "
+                 f"chosen {tc['learned_weights']['objective_mean_precision']:.3f}, argmax {tc['validation_argmax']['objective_mean_precision']:.3f}")
+        for row in summary["checkpoints"]:
+            if row.get("tag") == sc.tag:
+                row["prioritization_precision_at_10"] = tc["learned_weights"]["at_capacity"][0]["precision"]
+    if summary["checkpoints"]:
+        write_json(path, summary)
 
 
 def cmd_index(args):
@@ -277,7 +300,8 @@ def main(argv=None):
     p = argparse.ArgumentParser(prog="ssa")
     sub = p.add_subparsers(dest="cmd", required=True)
     sp = sub.add_parser("prepare"); sp.add_argument("--checkpoint", type=float); sp.set_defaults(fn=cmd_prepare)  # noqa: E702
-    sp = sub.add_parser("train"); sp.add_argument("--checkpoint", type=float); sp.set_defaults(fn=cmd_train)  # noqa: E702
+    sp = sub.add_parser("train"); sp.add_argument("--checkpoint", type=float); sp.add_argument("--only", choices=["prioritization"])
+    sp.set_defaults(fn=cmd_train)
     sp = sub.add_parser("index"); sp.add_argument("--no-dense", action="store_true"); sp.add_argument("--checkpoint", type=float)
     sp.set_defaults(fn=cmd_index)
     sp = sub.add_parser("evaluate"); sp.add_argument("--queries", type=int, default=600); sp.set_defaults(fn=cmd_evaluate)  # noqa: E702

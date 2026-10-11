@@ -71,6 +71,15 @@ def _llm_lines(e: dict) -> str:
     return "\n".join(rows)
 
 
+def _selection_lines(p: dict) -> list[str]:
+    d = p.get("selection_detail")
+    if not d:
+        return []
+    return ["", f"Selection rule `{d['rule']}`: the best grid point on validation (`validation_argmax` below) was "
+                f"`{d['argmax_weights']}`; {d['n_within_one_se']} weightings were within one bootstrap standard error "
+                f"({_f(d['bootstrap_se'])}) of it, and the most blended of those is used. Both are scored once on the test presentation."]
+
+
 def _typed_search_lines(t: dict) -> list[str]:
     if not t.get("parsers"):
         return []
@@ -141,10 +150,12 @@ def model_card(s: Settings | None = None) -> str:
     ] + [f"| {k} | {_f(v['roc_auc'])} | {_f(v['pr_auc'])} |" for k, v in a.get("variants", {}).items()] + [
         "", "Sensitive attributes add essentially nothing, so they are excluded from the model by default.", "",
         "## Prioritisation (target: fail or withdraw)",
-        f"Weights learned on the validation presentation: `{p.get('weights')}`.", "",
-        "| Ranking | Mean precision @10/20/30% | Precision @10% |", "|---|---|---|",
+        f"Weights learned on the validation presentation: `{p.get('weights')}` ({p.get('selection', 'grid search')}).",
+    ] + _selection_lines(p) + [
+        "", "| Ranking | Mean precision @10/20/30% | Precision @10% |", "|---|---|---|",
     ] + [f"| {k} | {_f(v['objective_mean_precision'])} | {_pct(v['at_capacity'][0]['precision'])} |"
-         for k, v in p.get("test_comparison", {}).items() if k in ("learned_weights", "v4_hand_formula", "only_p_poor", "only_p_withdraw", "random")] + [
+         for k, v in p.get("test_comparison", {}).items()
+         if k in ("learned_weights", "validation_argmax", "v4_hand_formula", "only_p_poor", "only_p_withdraw", "random")] + [
         "", "## Historical-case retrieval",
         f"Queries: {r.get('queries')} in-scope students of {r.get('query_presentation')}; corpus: earlier presentations, same module.", "",
         "| Mode | Neighbour-vote AUC (fail/withdraw) | Outcome agreement@10 | nDCG@10 (global ideal) |", "|---|---|---|---|",
@@ -350,7 +361,7 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
     bar(sl, 0.6, 1.4, 7.6, 5.4, [n for _, n in names], [("Precision @10%", [tc[k]["at_capacity"][0]["precision"] for k, _ in names]),
                                                        ("Precision @20%", [tc[k]["at_capacity"][1]["precision"] for k, _ in names])],
         [TEAL, SLATE], "Share of contacted students who went on to fail or withdraw", fmt='0%', maxv=1.0)
-    text(sl, 8.6, 1.6, 4.3, 5, [f"Learned weights: {', '.join(f'{k} {v:.1f}' for k, v in p['weights'].items() if v)}",
+    text(sl, 8.6, 1.6, 4.3, 5, [f"Learned weights: {', '.join(f'{k} {v:.2f}' for k, v in p['weights'].items() if v)}",
                                 "Signals are cohort-relative so a click means the same in every module.",
                                 "Every ranked student carries reason codes and top risk drivers."], size=15)
 

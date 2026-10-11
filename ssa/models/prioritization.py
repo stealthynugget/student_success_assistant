@@ -8,8 +8,12 @@ validated. Here:
 * Signals are bounded and module-relative (cohort percentiles), so a click count means the
   same thing in every module.
 * Weights are learned on the **validation presentation** by maximising mean precision at
-  advisor capacities of 10/20/30 % (exhaustive search over a simplex grid), then evaluated
+  advisor capacities of 10/20/30 % (exhaustive search over a 0.05-step simplex grid), then evaluated
   once on the untouched test presentation against single-signal baselines and the v4 formula.
+* Selection rule (``PRIORITY_SELECTION``): ``one_se_blend`` (default) bootstraps the validation objective and, among
+  weightings within one standard error of the best, picks the most blended one (highest weight entropy): rankings that
+  are statistically as good but lean on several signals advisors can act on. ``argmax`` takes the single best grid point.
+  Both choices are always reported on the test presentation, so the comparison stays honest.
 """
 from __future__ import annotations
 
@@ -58,6 +62,41 @@ def _objective(y, score) -> float:
     return float(np.mean([at_capacity(y, score, c)["precision"] for c in CAPACITIES]))
 
 
+def _fast_objective(y: np.ndarray, score: np.ndarray, ks: list[int]) -> float:
+    """Same value as ``_objective`` (stable descending sort, k = round(n * capacity)) with one sort for all capacities."""
+    hits = np.cumsum(y[np.argsort(-score, kind="stable")])
+    return float(np.mean([hits[k - 1] / k for k in ks]))
+
+
+def _entropy(w: np.ndarray) -> float:
+    p = w[w > 0]
+    return float(-(p * np.log(p)).sum())
+
+
+def select_weights(R: np.ndarray, y: np.ndarray, step: float = 0.05, rule: str = "one_se_blend", n_boot: int = 200,
+                   seed: int = 0) -> dict:
+    """Grid-search signal weights on validation rows. Returns the argmax weights, the rule's choice and the evidence."""
+    n = len(y)
+    ks = [max(1, int(round(n * c))) for c in CAPACITIES]
+    grid = np.array(list(simplex_grid(R.shape[1], step)))
+    objs = np.array([_fast_objective(y, R @ w, ks) for w in grid])
+    best = int(np.argmax(objs))
+    # bootstrap standard error of the best weighting's objective (resampled validation students)
+    rng = np.random.default_rng(seed)
+    boots = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, n)
+        boots.append(_fast_objective(y[idx], R[idx] @ grid[best], ks))
+    se = float(np.std(boots, ddof=1))
+    chosen = best
+    if rule == "one_se_blend":
+        near = np.where(objs >= objs[best] - se)[0]
+        ent = np.array([_entropy(grid[i]) for i in near])
+        chosen = int(near[np.lexsort((-objs[near], -ent))[0]])  # most blended, then best objective
+    return {"argmax": grid[best], "argmax_objective": float(objs[best]), "chosen": grid[chosen], "chosen_objective": float(objs[chosen]),
+            "bootstrap_se": se, "n_within_one_se": int((objs >= objs[best] - se).sum()), "grid_size": len(grid), "rule": rule, "step": step}
+
+
 def simplex_grid(n: int, step: float = 0.1):
     k = int(round(1 / step))
     for combo in itertools.product(range(k + 1), repeat=n - 1):
@@ -83,18 +122,14 @@ class Prioritizer:
 
         rv, rt = ranked(val), ranked(test)
         yv, yt = val["poor_outcome"].to_numpy(int), test["poor_outcome"].to_numpy(int)
-        best_w, best_obj = None, -1.0
-        Rv = rv[SIGNALS].to_numpy()
-        for w in simplex_grid(len(SIGNALS), 0.1):
-            obj = _objective(yv, Rv @ w)
-            if obj > best_obj + 1e-9:
-                best_w, best_obj = w, obj
-        self.weights = dict(zip(SIGNALS, best_w.round(3).tolist()))
+        sel = select_weights(rv[SIGNALS].to_numpy(), yv, rule=s.priority_selection, seed=s.random_state)
+        best_w, best_obj = sel["chosen"], sel["chosen_objective"]
+        self.weights = dict(zip(SIGNALS, best_w.round(3).tolist(), strict=True))
 
         Rt = rt[SIGNALS].to_numpy()
         v4 = 0.5 * rt["p_withdraw"] + 0.25 * rt["academic_gap"] + 0.15 * rt["engagement_gap"] + 0.10 * rt["recent_decline"]
         rng = np.random.default_rng(s.random_state)
-        candidates = {"learned_weights": Rt @ best_w, "v4_hand_formula": v4.to_numpy(),
+        candidates = {"learned_weights": Rt @ best_w, "validation_argmax": Rt @ sel["argmax"], "v4_hand_formula": v4.to_numpy(),
                       "random": rng.random(len(yt))}
         for sname in SIGNALS:
             candidates[f"only_{sname}"] = rt[sname].to_numpy()
@@ -103,7 +138,11 @@ class Prioritizer:
         self.metadata = {
             "target": "poor_outcome (Fail or Withdrawn)", "population": "in_scope", "weights": self.weights,
             "validation_objective": best_obj, "objective": "mean precision@{10,20,30}% capacity",
-            "selection": "exhaustive simplex grid (step 0.1) on the validation presentation",
+            "selection": f"exhaustive simplex grid (step {sel['step']}, {sel['grid_size']} weightings) on the validation presentation; "
+                         f"rule {sel['rule']}",
+            "selection_detail": {"rule": sel["rule"], "bootstrap_se": sel["bootstrap_se"], "n_within_one_se": sel["n_within_one_se"],
+                                 "argmax_weights": dict(zip(SIGNALS, sel["argmax"].round(3).tolist(), strict=True)),
+                                 "argmax_validation_objective": sel["argmax_objective"]},
             "test_comparison": test_eval, "split": split.info, "signal_labels": SIGNAL_LABELS,
         }
         write_json(s.model_dir / FILE, self.metadata)
@@ -134,7 +173,7 @@ class Prioritizer:
         drivers = {}
         if top_drivers and len(shown):
             expl = risk.explain(cohort.iloc[shown], top_n=3)
-            drivers = {int(i): d for i, d in zip(shown, expl)}
+            drivers = {int(i): d for i, d in zip(shown, expl, strict=True)}
         k = int(np.ceil(len(cohort) * capacity)) if capacity else None
         out = []
         for rank, i in enumerate(shown, 1):

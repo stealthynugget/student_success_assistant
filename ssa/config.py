@@ -57,6 +57,7 @@ class Settings:
     include_sensitive_features: bool = False
     model_engine: str = "auto"  # auto | xgboost | sklearn
     random_state: int = 42
+    priority_selection: str = "one_se_blend"  # one_se_blend | argmax (see ssa.models.prioritization)
 
     # Retrieval
     embedding_model_name: str = "all-MiniLM-L6-v2"
@@ -279,6 +280,7 @@ def get_settings() -> Settings:
         checkpoints=cps,
         include_sensitive_features=_bool("INCLUDE_SENSITIVE_FEATURES", False),
         model_engine=os.getenv("MODEL_ENGINE", "auto").lower(),
+        priority_selection=(os.getenv("PRIORITY_SELECTION") or "one_se_blend").lower(),
         embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2"),
         enable_text_embeddings=_bool("ENABLE_TEXT_EMBEDDINGS", True),
         llm_enabled=_bool("LLM_ENABLED", True),
