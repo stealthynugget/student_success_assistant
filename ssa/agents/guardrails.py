@@ -63,11 +63,12 @@ def sanitize_text(text: str, max_len: int = 500) -> str:
     return re.sub(r"\s+", " ", text).strip()[:max_len]
 
 
-_NUM = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?")
+# "1,702" is one number (thousands separators), not 1 and 702; plain numbers as before.
+_NUM = re.compile(r"(?<![\w.,])-?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d,])|(?<![\w.])-?\d+(?:\.\d+)?")
 
 
 def numbers_in(text: str) -> list[float]:
-    return [float(x) for x in _NUM.findall(text or "")]
+    return [float(x.replace(",", "")) for x in _NUM.findall(text or "")]
 
 
 def _collect_numbers(obj: Any, out: set[float]):
