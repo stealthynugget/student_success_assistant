@@ -18,9 +18,15 @@ downloads from PyPI, npm and Hugging Face are fine). Phase 2 starts only when th
 
 ### Phase 1: now, no LLM API
 The sandbox had no network, so FastAPI, XGBoost, sentence-transformers and Vite were never installed or run.
-- [ ] 1. `pip install -r requirements.txt`, then `python -m pytest`. `tests/test_api.py::test_fastapi_contract` has never
+- [x] 1. `pip install -r requirements.txt`, then `python -m pytest`. `tests/test_api.py::test_fastapi_contract` has never
       run: fix whatever it finds in `ssa/api/app.py` (FastAPI + pydantic v2 were only checked against a stand-in).
       Also start `make api` and smoke-test a few routes with curl, including `/api/docs`.
+      *Done 2026-10-11 (Windows, Python 3.12, FastAPI 0.143, Starlette 1.7, pydantic 2.14, pandas 3.0, numpy 2.5,
+      scikit-learn 1.9, XGBoost 3.4): all 56 tests pass, including `test_fastapi_contract`; no code changes needed.
+      uvicorn smoke test on a synthetic SSA_HOME: health, ready, docs, openapi (3.1, 35 paths), config, overview,
+      students, metrics, copilot (rules) all 200; missing key 401, bad input 400, admin route 403; unbuilt home gives
+      503 with a "build first" message. Notes: Starlette warns that its httpx-based TestClient is deprecated;
+      `ruff check` reports 120 pre-existing style findings (96 are E501), left for a separate cleanup.*
 - [ ] 2. `python -m ssa.cli build && python -m ssa.cli report` with XGBoost installed (MODEL_ENGINE=auto picks it).
       Compare `docs/MODEL_CARD.md` with `docs/reference_run/` (sklearn engine): expect small shifts; explanations switch
       to exact TreeSHAP. Investigate anything that moves by more than ~0.02 ROC-AUC or breaks the quality gate.
