@@ -243,18 +243,24 @@ function WhatIf({ ref_, checkpoint, base }) {
     if (!snap.data) return;
     const s = snap.data.snapshot;
     setV({ weighted_score: s.weighted_score ?? 60, missed_rate: s.missed_rate ?? 0, days_since_last_activity: s.days_since_last_activity ?? 0,
-      clicks_pct: s.clicks_pct ?? 0.5, snap: s });
+      clicks_pct: s.clicks_pct ?? 0.5, snap: s, moved: [] });
     setRes(null);
   }, [snap.data]);
   useEffect(() => {
     if (!v) return;
+    if (!v.moved.length) { setRes(null); return; } // nothing changed yet: the real record's estimate is shown above
     const t = setTimeout(async () => {
       const s = v.snap;
       try {
         setErr(null);
-        const what_if = { weighted_score: v.weighted_score, mean_score: v.weighted_score, last_score: v.weighted_score, no_scores_yet: 0,
-          min_score: Math.min(v.weighted_score, s.min_score ?? v.weighted_score), max_score: Math.max(v.weighted_score, s.max_score ?? v.weighted_score),
-          missed_rate: v.missed_rate, days_since_last_activity: v.days_since_last_activity, clicks_pct: v.clicks_pct };
+        // Send only the signals the user moved; a moved score also sets the score fields it implies.
+        const what_if = {};
+        for (const k of v.moved) {
+          if (k === "weighted_score") Object.assign(what_if, { weighted_score: v.weighted_score, mean_score: v.weighted_score,
+            last_score: v.weighted_score, no_scores_yet: 0, min_score: Math.min(v.weighted_score, s.min_score ?? v.weighted_score),
+            max_score: Math.max(v.weighted_score, s.max_score ?? v.weighted_score) });
+          else what_if[k] = v[k];
+        }
         setRes(await api("/predict-risk", { method: "POST", body: { student: ref_, checkpoint, what_if } }));
       } catch (e) { setErr(e); }
     }, 300);
@@ -265,7 +271,7 @@ function WhatIf({ ref_, checkpoint, base }) {
   const w = res?.withdrawal_risk.withdrawal_risk;
   const slider = (key, label, min, max, step, show) => (
     <label className="field">{label}: <strong>{show(v[key])}</strong>
-      <input type="range" min={min} max={max} step={step} value={v[key]} onChange={(e) => setV({ ...v, [key]: Number(e.target.value) })} /></label>);
+      <input type="range" min={min} max={max} step={step} value={v[key]} onChange={(e) => setV({ ...v, [key]: Number(e.target.value), moved: v.moved.includes(key) ? v.moved : [...v.moved, key] })} /></label>);
   return (
     <Section title="What if" sub="Change a few signals of this real record to see how the estimate responds. Associations, not guaranteed effects.">
       <div className="grid two">
@@ -277,6 +283,7 @@ function WhatIf({ ref_, checkpoint, base }) {
         </div>
         <div className="stack">
           {err && <ErrorNote error={err} />}
+          {!res && !err && <p className="muted">Move a slider to see how the estimate responds.</p>}
           {res && <>
             <div className="stats"><div className="stat"><div className="v">{fmt.pct(w)}</div><div className="l">withdrawal risk with these changes</div></div>
               <div className="stat"><div className="v" style={{ color: w > b ? C.High : C.Low }}>{w > b ? "+" : ""}{fmt.pct(w - b)}</div><div className="l">compared with the real record ({fmt.pct(b)})</div></div></div>

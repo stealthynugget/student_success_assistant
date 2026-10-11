@@ -54,6 +54,14 @@ def _clean(v):
     return v
 
 
+def _same_value(new, stored) -> bool:
+    """True when a what-if value equals the stored snapshot value (numerically, within float noise)."""
+    try:
+        return stored is not None and abs(float(new) - float(stored)) <= 1e-6 * max(1.0, abs(float(stored)))
+    except (TypeError, ValueError):
+        return new == stored
+
+
 @dataclass
 class ResolvedProfile:
     profile: dict
@@ -237,9 +245,10 @@ class StudentSuccessService:
                                         "snapshot_day": int(row["snapshot_day"]), "checkpoint": c})
             prof = {k: _clean(v) for k, v in row.to_dict().items() if k != "_key"}
             if features:
-                changed = {k: v for k, v in features.items() if v is not None}
-                prof.update(changed)
-                ood = [o for o in self._ood(prof, b) if o["field"] in changed]  # only flag what the user changed
+                given = {k: v for k, v in features.items() if v is not None}
+                changed = {k for k, v in given.items() if not _same_value(v, prof.get(k))}
+                prof.update(given)
+                ood = [o for o in self._ood(prof, b) if o["field"] in changed]  # only flag values the user actually changed
                 return ResolvedProfile(prof, "feature_store+overrides", [], ood, 1.0, c)
             return ResolvedProfile(prof, "feature_store", [], [], 1.0, c)
         if not features:

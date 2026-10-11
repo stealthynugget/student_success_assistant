@@ -130,3 +130,25 @@ def test_rate_limiter_token_bucket():
     lim = TokenBucketLimiter(3)
     assert [lim.allow("ip")[0] for _ in range(4)] == [True, True, True, False]
     assert lim.allow("other")[0]
+
+
+WHAT_IF_FIELDS = ("weighted_score", "mean_score", "last_score", "min_score", "max_score", "missed_rate", "days_since_last_activity",
+                  "clicks_pct")
+
+
+def test_what_if_unchanged_record_gives_no_warnings(handlers, service, features):
+    import math
+    rows = features[(features["in_scope"] == 1) & features[list(WHAT_IF_FIELDS)].notna().all(axis=1)]
+    b = service.bundle(None)
+
+    def stored(r):
+        return {k: float(r[k]) for k in WHAT_IF_FIELDS if not math.isnan(float(r[k]))}
+    # prefer a record whose own stored values are already outside the training range: the case that used to warn
+    ood_rows = [r for _, r in rows.iterrows() if service._ood(stored(r), b)]
+    r = ood_rows[0] if ood_rows else rows.iloc[0]
+    ref = {"id_student": int(r["id_student"]), "code_module": r["code_module"], "code_presentation": r["code_presentation"]}
+    same = handlers.predict(S.PredictRequest.model_validate({"student": ref, "what_if": stored(r)}))
+    assert same["input_quality"]["out_of_distribution"] == []
+    # control: a value the user really moved far outside the training range is still flagged
+    moved = handlers.predict(S.PredictRequest.model_validate({"student": ref, "what_if": {"days_since_last_activity": 299}}))
+    assert [o["field"] for o in moved["input_quality"]["out_of_distribution"]] == ["days_since_last_activity"]
