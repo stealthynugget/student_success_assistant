@@ -223,3 +223,17 @@ def test_haiku_long_prompt_tier_pricing(ssa_home):
     assert short == pytest.approx((90_000 * 0.10 + 1_000 * 0.50) / 1e6)
     assert long == pytest.approx((90_000 * 0.50 + 1_000 * 2.50 + 20_000 * 0.05) / 1e6)
     assert estimate_cost(prices, "unknown-model", Usage(1, 1)) is None
+
+
+def test_budget_cap_stops_instead_of_falling_back(ssa_home, monkeypatch):
+    import ssa.agents.llm as L
+    monkeypatch.setitem(L._SPEND, "usd", 0.0)
+    script = Scripted(_msg([_text('{"ok": 1}')]), _msg([_text('{"ok": 2}')]))
+    llm = _client(ssa_home, script, monkeypatch, llm_budget_usd=0.001)
+    assert llm.complete_json("s", "u", feature="agent:risk") == {"ok": 1}  # 1000 in + 200 out on sonnet = $0.004 > cap
+    with pytest.raises(L.LLMBudgetExceeded):
+        try:
+            llm.complete_json("s", "u2", feature="agent:risk")
+        except Exception:  # feature code catches Exception-derived LLM errors; the cap must get past that
+            pytest.fail("budget stop was swallowed by an except Exception handler")
+    assert len(script.requests) == 1

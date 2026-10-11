@@ -11,7 +11,7 @@ import threading
 from collections import OrderedDict
 
 from ssa.agents.copilot import Copilot
-from ssa.agents.genai import cohort_briefing, note_themes, outreach_variant, understand_query
+from ssa.agents.genai import briefing_evidence, cohort_briefing, note_themes, outreach_variant, understand_query
 from ssa.api import schemas as S
 from ssa.api.jobs import JobManager
 from ssa.appdb import AppDB
@@ -116,9 +116,7 @@ class Handlers:
         b = cohort_briefing(self._llm(True), c, rk, [])
         if progress:
             progress("briefing", b)
-        self._maybe_online_eval("cohort_briefing", f"{req.code_module}-{req.code_presentation}", b,
-                                {"cohort": {k: c[k] for k in ("tiers", "expected_withdrawals", "common_high_tier_drivers")},
-                                 "top": rk["ranking"][:12]})
+        self._maybe_online_eval("cohort_briefing", f"{req.code_module}-{req.code_presentation}", b, briefing_evidence(c, rk))
         return {"briefing": b, "cohort": {k: c[k] for k in ("code_module", "code_presentation", "snapshot_week", "tiers", "in_scope")}}
 
     def prioritize(self, req: S.PrioritizeRequestV2):

@@ -123,8 +123,14 @@ def cmd_search_benchmark(args):
 
 
 def cmd_llm_eval(args):
+    from ssa.agents.llm import LLMBudgetExceeded, process_spend_usd
     from ssa.evaluation.offline_eval import run
-    res = run(per_tier=args.per_tier, use_llm=not args.no_llm)
+    try:
+        res = run(per_tier=args.per_tier, use_llm=not args.no_llm)
+    except LLMBudgetExceeded as exc:  # nothing is written: results are only saved at the end of a complete run
+        log.error(f"llm-eval stopped: {exc}. No results written.")
+        raise SystemExit(2) from None
+    log.info(f"llm-eval estimated spend this run: ${process_spend_usd():.2f}")
     print(json.dumps({k: res[k] for k in ("agents", "search", "copilot", "synthesis", "briefing", "outreach")}, indent=2, default=str)[:6000])
 
 

@@ -39,6 +39,19 @@ class LLMRefusal(LLMUnavailable):
     """The model declined (``stop_reason == "refusal"``). Not retried: the caller uses its deterministic fallback."""
 
 
+class LLMBudgetExceeded(BaseException):
+    """LLM_BUDGET_USD reached. A BaseException on purpose: features catch LLM errors and fall back, which would quietly turn
+    the rest of an evaluation run into fallback results; this stops the run instead."""
+
+
+_SPEND = {"usd": 0.0}  # estimated spend of this process, checked against LLM_BUDGET_USD
+_SPEND_LOCK = threading.Lock()
+
+
+def process_spend_usd() -> float:
+    return _SPEND["usd"]
+
+
 class MalformedOutput(ValueError):
     """Unparseable or truncated model output. Retried with a corrective instruction."""
 
@@ -394,6 +407,9 @@ class LLMClient:
                 return hit
         last_exc, previous = None, None
         for attempt in range(self.settings.llm_max_retries + 1):
+            budget = self.settings.llm_budget_usd
+            if budget is not None and _SPEND["usd"] >= budget:
+                raise LLMBudgetExceeded(f"LLM_BUDGET_USD={budget} reached (estimated spend ${_SPEND['usd']:.2f})")
             t0 = time.time()
             try:
                 data, usage, actual = call(attempt, previous)
@@ -410,9 +426,12 @@ class LLMClient:
                     wait = _retry_after(exc)
                     time.sleep(min(20.0, wait if wait is not None else (2 ** attempt) * 0.5 + random.random() * 0.3))
                 continue
+            cost = estimate_cost(self.settings.llm_prices, actual, usage)
+            with _SPEND_LOCK:
+                _SPEND["usd"] += cost or 0.0
             self._record(CallRecord(actual, round(time.time() - t0, 3), False, usage.input_tokens, usage.output_tokens, feature=feature,
                                     cache_read_tokens=usage.cache_read_tokens, cache_write_tokens=usage.cache_write_tokens,
-                                    cost_usd=estimate_cost(self.settings.llm_prices, actual, usage)))
+                                    cost_usd=cost))
             if self._cache is not None:
                 self._cache.put(key, data)
             return data

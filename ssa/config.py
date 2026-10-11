@@ -76,6 +76,7 @@ class Settings:
     llm_model: str = "claude-sonnet-5-5"  # generator for the active provider (main tier)
     judge_model: str = "claude-opus-5-5"  # judge for the active provider; always differs from every generator
     llm_timeout_s: float = 90.0
+    llm_budget_usd: float | None = None  # hard cap on estimated spend per process (e.g. an evaluation run); None = no cap
     llm_max_retries: int = 2
     llm_cache_enabled: bool = True
 
@@ -290,6 +291,7 @@ def get_settings() -> Settings:
         openai_base_url=os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1",
         **_llm_models(provider),
         llm_timeout_s=_float("LLM_TIMEOUT_S", 90.0),
+        llm_budget_usd=_float("LLM_BUDGET_USD", 0.0) or None,
         llm_max_retries=_int("LLM_MAX_RETRIES", 2),
         llm_cache_enabled=_bool("LLM_CACHE_ENABLED", True),
         api_key=os.getenv("STUDENT_ASSISTANT_API_KEY") or None,

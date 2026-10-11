@@ -161,18 +161,23 @@ def understand_query(llm, text: str) -> dict:
 
 
 # ---------------------------------------------------------------- precedent synthesis
-def synthesize_precedents(llm, profile: dict, prediction: dict, similar: dict) -> dict:
+def precedent_evidence(prediction: dict, similar: dict) -> dict:
+    """Evidence for the precedent synthesis; the judge reviews the synthesis against exactly this."""
     cases = similar.get("cases") or []
     stories = [{"case_id": c["case_id"], "presentation": c["code_presentation"], "final_result": c["final_result"],
                 "story": (c.get("story") or {}).get("text"), "shared_signals": c.get("shared_descriptors", [])[:5],
                 **{k: (c.get("story") or {}).get(k) for k in ("withdrawal_week", "weeks_after_checkpoint_to_withdrawal",
                                                              "activity_change_after_checkpoint", "final_coursework_score")}}
                for c in cases]
-    aftermath = similar.get("aftermath") or {}
-    nb = similar.get("outcome_summary") or {}
-    evidence = {"student_risk_tier": prediction["withdrawal_risk"]["risk_tier"],
-                "student_drivers": [d["label"] for d in prediction["withdrawal_risk"]["drivers"][:4]],
-                "precedents": stories, "aftermath_summary": aftermath, "neighbourhood_outcomes": nb}
+    return {"student_risk_tier": prediction["withdrawal_risk"]["risk_tier"],
+            "student_drivers": [d["label"] for d in prediction["withdrawal_risk"]["drivers"][:4]],
+            "precedents": stories, "aftermath_summary": similar.get("aftermath") or {},
+            "neighbourhood_outcomes": similar.get("outcome_summary") or {}}
+
+
+def synthesize_precedents(llm, profile: dict, prediction: dict, similar: dict) -> dict:
+    evidence = precedent_evidence(prediction, similar)
+    stories, aftermath, nb = evidence["precedents"], evidence["aftermath_summary"], evidence["neighbourhood_outcomes"]
     det_parts = []
     if nb:
         det_parts.append(f"Among the {nb.get('n_neighbours')} most similar students from earlier presentations, "
@@ -209,23 +214,29 @@ def synthesize_precedents(llm, profile: dict, prediction: dict, similar: dict) -
 
 
 # ---------------------------------------------------------------- cohort briefing
-def cohort_briefing(llm, cohort: dict, ranking: dict, factors_top: list[dict]) -> dict:
+def briefing_evidence(cohort: dict, ranking: dict) -> dict:
+    """Evidence for the cohort briefing; the judge reviews the briefing against exactly this."""
     top = [{"id_student": r["id_student"], "risk_tier": r["risk_tier"], "withdrawal_risk": r["withdrawal_risk"],
             "p_poor_outcome": r["p_poor_outcome"], "reasons": r["reasons"]} for r in ranking["ranking"][:12]]
     upcoming = sorted([a for a in cohort.get("assessments", []) if a.get("upcoming")], key=lambda a: a["deadline_day"])[:3]
-    evidence = {"module": cohort["code_module"], "presentation": cohort["code_presentation"], "course_week": cohort["snapshot_week"],
+    return {"module": cohort["code_module"], "presentation": cohort["code_presentation"], "course_week": cohort["snapshot_week"],
                 "students_enrolled": cohort["in_scope"], "already_withdrawn": cohort["already_withdrawn"], "tiers": cohort["tiers"],
                 "expected_withdrawals": cohort["expected_withdrawals"], "expected_fail_or_withdraw": cohort["expected_fail_or_withdraw"],
                 "common_high_tier_drivers": cohort["common_high_tier_drivers"][:5],
                 "upcoming_assessments": [{"type": a["assessment_type"], "week": a["deadline_week"], "weight": a["weight"],
                                           "historical_submission_rate": round(a["submission_rate"], 2)} for a in upcoming],
                 "top_priorities": top, "capacity": ranking.get("capacity")}
+
+
+def cohort_briefing(llm, cohort: dict, ranking: dict, factors_top: list[dict]) -> dict:
+    evidence = briefing_evidence(cohort, ranking)
+    top, upcoming = evidence["top_priorities"], evidence["upcoming_assessments"]
     contact = [t["id_student"] for t in top[:5]]
     det = {"headline": f"{cohort['tiers'].get('High', 0)} of {cohort['in_scope']} students are in the High tier at week {cohort['snapshot_week']}.",
            "key_points": [f"Expected withdrawals from now: about {cohort['expected_withdrawals']}.",
                           f"Most common risk drivers among High-tier students: " +
                           ", ".join(d[0] for d in cohort["common_high_tier_drivers"][:3]) + "."] +
-                         ([f"Next assessment: {upcoming[0]['assessment_type']} in week {upcoming[0]['deadline_week']}."] if upcoming else []),
+                         ([f"Next assessment: {upcoming[0]['type']} in week {upcoming[0]['week']}."] if upcoming else []),
            "focus_this_week": ["Contact the top-ranked students before the next deadline.",
                                "Prioritise students with missed work or recent inactivity."],
            "students_to_contact": contact, "source": "deterministic", "checks": []}

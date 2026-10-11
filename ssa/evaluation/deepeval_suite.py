@@ -83,7 +83,11 @@ def run_deepeval(cases: list[dict], settings: Settings | None = None) -> dict:
     if not llm.available:
         return {"status": "not_run: LLM not configured"}
     from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, GEval
-    from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+    from deepeval.test_case import LLMTestCase
+    try:  # DeepEval >= 3.9 renamed the enum; keep older versions working
+        from deepeval.test_case import SingleTurnParams as LLMTestCaseParams
+    except ImportError:  # pragma: no cover
+        from deepeval.test_case import LLMTestCaseParams
 
     model = _gateway_model(llm)
     out_params = [LLMTestCaseParams.ACTUAL_OUTPUT]

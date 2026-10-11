@@ -25,7 +25,7 @@ from sklearn.metrics import cohen_kappa_score
 
 from ssa.agents import guardrails as gr
 from ssa.agents.copilot import Copilot
-from ssa.agents.genai import cohort_briefing, outreach_variant, rule_parse, understand_query
+from ssa.agents.genai import briefing_evidence, cohort_briefing, outreach_variant, precedent_evidence, rule_parse, understand_query
 from ssa.appdb import AppDB
 from ssa.config import Settings, get_settings
 from ssa.data.vocab import presentation_sort_key
@@ -191,8 +191,8 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
                                        {k: det[k] for k in ("actions", "outreach_message", "rationale")})
         ps = res["precedent_synthesis"]
         synth.append({"source": ps["source"], "checks": ps["checks"],
-                      "judge": judge_text(jllm, "precedent_synthesis", ps, {"cases": res["similar_cases"]["cases"],
-                                                                            "aftermath": res["similar_cases"].get("aftermath")}) if jllm and ps["source"] == "llm" else None})
+                      "judge": judge_text(jllm, "precedent_synthesis", ps, precedent_evidence(res, res["similar_cases"]))
+                      if jllm and ps["source"] == "llm" else None})
         rows.append({"ref": ref, "mode": wf["intervention_plan"]["mode"], "plan_source": wf["intervention_plan"]["source"],
                      "violations": wf["guardrails"]["final_plan_violations"],
                      "revised": any(t.get("agent") == "intervention_revision" for t in wf["trace"]),
@@ -238,8 +238,7 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
         except Exception:
             continue
         b = cohort_briefing(gen_llm, c, rk, [])
-        jb = judge_text(jllm, "cohort_briefing", b, {"cohort": {k: c[k] for k in ("tiers", "expected_withdrawals", "common_high_tier_drivers")},
-                                                      "top": rk["ranking"][:12]}) if (jllm and b["source"] == "llm") else None
+        jb = judge_text(jllm, "cohort_briefing", b, briefing_evidence(c, rk)) if (jllm and b["source"] == "llm") else None
         briefs.append({"module": m, "source": b["source"], "checks": b["checks"], "judge": jb})
     bj = [b["judge"] for b in briefs if b["judge"] and b["judge"].get("scores")]
     briefing = {"n": len(briefs), "llm_accepted_rate": float(np.mean([b["source"] == "llm" for b in briefs])) if briefs else None,
