@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-11 13:14 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-11 17:57 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -66,6 +66,17 @@ Queries: 600 in-scope students of 2014J; corpus: earlier presentations, same mod
 | lexical | 0.836 | 0.708 | 0.754 |
 | dense | 0.775 | 0.725 | 0.724 |
 | random | 0.512 | 0.528 | 0.544 |
+
+### Typed search
+40 labelled plain-English queries (templated, paraphrased and behaviour-led); a returned case is relevant when it meets every expected filter and shows every expected behaviour. Hybrid typed search uses its own tuned weights (lexical 1.0, dense 2.0).
+
+| Query parser | Mode | Precision@10 | Filter match@10 | Behaviour match@10 |
+|---|---|---|---|---|
+| rules | lexical | 0.522 | 0.735 | 0.527 |
+| rules | hybrid | 0.622 | 0.860 | 0.668 |
+| rules | dense | 0.634 | 0.875 | 0.674 |
+| rules | random_corpus | 0.071 | n/a | n/a |
+| rules | random_within_parsed_filters | 0.370 | n/a | n/a |
 
 ## Fairness audit (High tier, test presentation)
 | Attribute | Equal-opportunity gap (TPR max−min) | Selection-rate ratio | Max calibration gap |

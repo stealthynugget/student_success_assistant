@@ -60,3 +60,24 @@ def test_index_manifest_mismatch_detected(built, tmp_path):
     (d / "manifest.json").write_text(__import__("json").dumps(m))
     with pytest.raises(RuntimeError):
         HistoricalCaseIndex(built, index_dir=d).load()
+
+
+def test_typed_search_benchmark_runs_and_beats_random(service):
+    from ssa.evaluation.search_queries import text_search_queries, text_tuning_queries
+    from ssa.retrieval.benchmark import run_text_benchmark
+    qs = text_search_queries()
+    assert len(qs) == 40 and all("descriptors" in q and "expected" in q for q in qs)
+    assert not {q["query"] for q in qs} & {q["query"] for q in text_tuning_queries()}  # tuning never sees reported queries
+    res = run_text_benchmark(service.bundle(None).index)
+    m = res["parsers"]["rules"]["modes"]
+    assert {"lexical", "hybrid", "random_corpus", "random_within_parsed_filters"} <= set(m)
+    assert all(0 <= v["precision_at_10"] <= 1 for v in m.values())
+    assert m["hybrid"]["precision_at_10"] > m["random_corpus"]["precision_at_10"]
+
+
+def test_text_weights_apply_only_to_typed_queries(service, monkeypatch):
+    idx = service.bundle(None).index
+    tuned = {"weights": {"lexical": 0.5, "dense": 0.0}, "text_weights": {"lexical": 1.0, "dense": 2.0}}
+    monkeypatch.setattr("ssa.retrieval.hybrid.read_json", lambda p, d=None: tuned if p.name == "fusion_weights.json" else (d or {}))
+    assert idx.fusion_weights()["dense"] == 0.0
+    assert idx.fusion_weights(text_only=True)["dense"] == 2.0

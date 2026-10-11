@@ -261,7 +261,7 @@ class HistoricalCaseIndex:
         idx = np.where(allowed)[0]
         if len(idx) == 0:
             return {"cases": [], "outcome_summary": None, "channels_used": [], "candidates": 0}
-        w = self.fusion_weights()
+        w = self.fusion_weights(text_only=profile is None)
         w.update(weights or {})
 
         ranks: dict[str, np.ndarray] = {}
@@ -319,10 +319,14 @@ class HistoricalCaseIndex:
         return {"cases": cases, "outcome_summary": summary, "channels_used": list(ranks), "fusion_weights": w,
                 "candidates": int(len(idx)), "historical_only_before": before, "query_descriptors": q_tokens}
 
-    def fusion_weights(self) -> dict:
-        """Precedence: advisor-feedback-learned weights > validation-tuned weights > defaults."""
+    def fusion_weights(self, text_only: bool = False) -> dict:
+        """Precedence: advisor-feedback-learned weights > validation-tuned weights > defaults. Typed queries (no query
+        student) use their own tuned ``text_weights`` when present: only the lexical and dense channels rank them."""
         w = dict(DEFAULT_WEIGHTS)
-        w.update(read_json(self.dir / "fusion_weights.json", {}).get("weights", {}))
+        tuned = read_json(self.dir / "fusion_weights.json", {})
+        w.update(tuned.get("weights", {}))
+        if text_only:
+            w.update(tuned.get("text_weights", {}))
         w.update(read_json(self.settings.retrieval_weights_path, {}).get("weights", {}))
         return w
 

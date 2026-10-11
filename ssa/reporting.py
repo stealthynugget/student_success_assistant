@@ -14,7 +14,8 @@ NAVY, TEAL, AMBER, RED, SLATE, PAPER = "1F2A44", "0F766E", "B45309", "B91C1C", "
 
 def load_all(s: Settings) -> dict:
     s = s.at(None)
-    names = ["data_build", "withdrawal_model", "outcome_model", "ablations", "fairness", "prioritization", "retrieval_benchmark"]
+    names = ["data_build", "withdrawal_model", "outcome_model", "ablations", "fairness", "prioritization", "retrieval_benchmark",
+             "text_search_benchmark"]
     m = {n: read_json(s.metrics_dir / f"{n}.json", {}) for n in names}
     for n in ("llm_evaluation", "quality_gate", "checkpoint_summary"):
         m[n] = read_json(s.global_metrics_dir / f"{n}.json", {})
@@ -46,6 +47,21 @@ def _llm_lines(e: dict) -> str:
             f"| Copilot correct answers (rules / AI) | {_pct(co['rules'].get('answer_correct_rate'))} / {_pct(co.get('llm', {}).get('answer_correct_rate'))} |",
             f"| Adversarial copilot prompts handled safely ({rb['mode']}) | {_pct(rb['safe_rate'])} |"]
     return "\n".join(rows)
+
+
+def _typed_search_lines(t: dict) -> list[str]:
+    if not t.get("parsers"):
+        return []
+    tw = t.get("hybrid_text_weights", {})
+    lines = ["", "### Typed search", f"{t['queries']} labelled plain-English queries (templated, paraphrased and behaviour-led); a returned "
+             "case is relevant when it meets every expected filter and shows every expected behaviour. Hybrid typed search uses "
+             f"its own tuned weights (lexical {tw.get('lexical')}, dense {tw.get('dense')}).", "",
+             "| Query parser | Mode | Precision@10 | Filter match@10 | Behaviour match@10 |", "|---|---|---|---|---|"]
+    for parser, res in t["parsers"].items():
+        for mode, v in res["modes"].items():
+            lines.append(f"| {parser} | {mode} | {_f(v.get('precision_at_10'))} | {_f(v.get('filter_match_at_10'))} | "
+                         f"{_f(v.get('behaviour_match_at_10'))} |")
+    return lines
 
 
 def model_card(s: Settings | None = None) -> str:
@@ -111,7 +127,7 @@ def model_card(s: Settings | None = None) -> str:
         f"Queries: {r.get('queries')} in-scope students of {r.get('query_presentation')}; corpus: earlier presentations, same module.", "",
         "| Mode | Neighbour-vote AUC (fail/withdraw) | Outcome agreement@10 | nDCG@10 (global ideal) |", "|---|---|---|---|",
     ] + [f"| {k} | {_f(v['neighbour_vote_auc_poor_outcome'])} | {_f(v['outcome_agreement_at_10'])} | {_f(v['reference_ndcg_at_10_global_ideal'])} |"
-         for k, v in r.get("modes", {}).items()] + [
+         for k, v in r.get("modes", {}).items()] + _typed_search_lines(m.get("text_search_benchmark", {})) + [
         "", "## Fairness audit (High tier, test presentation)",
         "| Attribute | Equal-opportunity gap (TPR max−min) | Selection-rate ratio | Max calibration gap |", "|---|---|---|---|",
     ] + [f"| {k} | {_f(v['equal_opportunity_gap'])} | {_f(v['selection_rate_ratio'])} | {_f(v['max_calibration_gap'])} |"

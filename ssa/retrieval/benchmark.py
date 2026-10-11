@@ -19,6 +19,8 @@ its hybrid retriever). This benchmark is task-grounded and non-circular:
 """
 from __future__ import annotations
 
+import time
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
@@ -27,7 +29,7 @@ from ssa.config import Settings, get_settings
 from ssa.data.vocab import presentation_sort_key
 from ssa.models.features import NUMERIC
 from ssa.retrieval.hybrid import MODES, HistoricalCaseIndex
-from ssa.utils import write_json
+from ssa.utils import read_json, write_json
 
 
 def _ndcg(gains, ideal):
@@ -134,3 +136,112 @@ def run_benchmark(df: pd.DataFrame, index: HistoricalCaseIndex, n_queries: int =
     }
     write_json(s.metrics_dir / "retrieval_benchmark.json", result)
     return result
+
+
+# --------------------------------------------------------------------------- typed (free-text) search
+TEXT_MODES = ("lexical", "dense", "hybrid")
+TEXT_DENSE_GRID = (0.0, 0.25, 0.5, 1.0, 2.0, 4.0)  # dense weight relative to lexical = 1 (RRF order depends only on the ratio)
+
+
+def _parsers(llm=None) -> dict:
+    from ssa.agents.genai import rule_parse, understand_query
+    out = {"rules": rule_parse}
+    if llm is not None:
+        out["llm"] = lambda q: understand_query(llm, q)
+    return out
+
+
+def _text_relevance(index: HistoricalCaseIndex, q: dict, token_sets: list[set]) -> tuple[np.ndarray, np.ndarray]:
+    """Per corpus document: (meets every expected filter, shows every expected behaviour)."""
+    filt_ok = index._allowed(q["expected"], None, None)
+    desc_ok = np.ones(len(token_sets), dtype=bool)
+    for group in q.get("descriptors") or []:
+        g = set(group)
+        desc_ok &= np.array([bool(ts & g) for ts in token_sets])
+    return filt_ok, desc_ok
+
+
+def _score_text_queries(index: HistoricalCaseIndex, queries: list[dict], parse, modes: dict, k: int) -> dict:
+    """modes: name -> (mode, weights|None). Returns per-mode metrics plus the two exact random baselines."""
+    index._ensure()
+    token_sets = [set(t) for t in index.tokens]
+    key_pos = {int(ck): i for i, ck in enumerate(index.meta["enrollment_key"].to_numpy())}
+    acc = {m: {"p": [], "f": [], "d": [], "empty": 0} for m in modes}
+    acc_kind: dict[str, dict[str, list]] = {}
+    base_corpus, base_filtered, parsed_exact = [], [], 0
+    for q in queries:
+        interp = parse(q["query"])
+        pf, pd_ = interp["filters"] or None, interp.get("descriptors") or None
+        filt_ok, desc_ok = _text_relevance(index, q, token_sets)
+        rel = filt_ok & desc_ok
+        allowed = index._allowed(pf, None, None)
+        base_corpus.append(float(rel.mean()))
+        base_filtered.append(float(rel[allowed].mean()) if allowed.any() else 0.0)
+        parsed_exact += int(interp["filters"] == q["expected"])
+        for name, (mode, weights) in modes.items():
+            try:
+                res = index.search(text=q["query"], filters=pf, top_k=k, mode=mode, weights=weights, extra_tokens=pd_)
+                docs = np.array([key_pos[c["case_id"]] for c in res["cases"]], dtype=int)
+            except ValueError:
+                docs = np.array([], dtype=int)
+            if len(docs) == 0:
+                acc[name]["empty"] += 1
+                p = f = d = 0.0
+            else:
+                p, f, d = float(rel[docs].mean()), float(filt_ok[docs].mean()), float(desc_ok[docs].mean())
+            acc[name]["p"].append(p)
+            acc[name]["f"].append(f)
+            if q.get("descriptors"):
+                acc[name]["d"].append(d)
+            acc_kind.setdefault(q.get("kind", "other"), {}).setdefault(name, []).append(p)
+    out = {name: {f"precision_at_{k}": float(np.mean(a["p"])), f"filter_match_at_{k}": float(np.mean(a["f"])),
+                  f"behaviour_match_at_{k}": float(np.mean(a["d"])) if a["d"] else None, "empty_results": a["empty"]}
+           for name, a in acc.items()}
+    out["random_corpus"] = {f"precision_at_{k}": float(np.mean(base_corpus))}
+    out["random_within_parsed_filters"] = {f"precision_at_{k}": float(np.mean(base_filtered))}
+    by_kind = {kind: {name: float(np.mean(v)) for name, v in d.items()} for kind, d in acc_kind.items()}
+    return {"modes": out, "precision_by_query_kind": by_kind, "parser_exact_filter_match": parsed_exact / max(len(queries), 1)}
+
+
+def tune_text_weights(index: HistoricalCaseIndex, settings: Settings | None = None, k: int = 10) -> dict:
+    """Choose the dense:lexical fusion ratio for typed queries on a separate templated tuning set (rule parser).
+    Stored next to the profile weights; adopted only if it beats lexical alone on the tuning set."""
+    from ssa.evaluation.search_queries import text_tuning_queries
+    s = settings or get_settings()
+    index._ensure()
+    if index.dense is None:
+        return {"status": "skipped", "reason": "dense channel not built"}
+    grid = [{"lexical": 1.0, "dense": dw} for dw in TEXT_DENSE_GRID]
+    modes = {f"w{i}": ("hybrid", w) for i, w in enumerate(grid)}
+    res = _score_text_queries(index, text_tuning_queries(), _parsers()["rules"], modes, k)["modes"]
+    scored = sorted(((res[f"w{i}"][f"precision_at_{k}"], -w["dense"], w) for i, w in enumerate(grid)), key=lambda x: (-x[0], -x[1]))
+    best_p, _, best = scored[0]
+    lexical_only = res["w0"][f"precision_at_{k}"]
+    path = s.index_dir / "fusion_weights.json"
+    doc = read_json(path, {})
+    doc["text_weights"] = best
+    doc["text_tuning"] = {"queries": "text_tuning_queries(): 30 templated (seed 101) + 10 tuning-only paraphrases; disjoint from the reported set",
+                          "objective": f"precision@{k}", "parser": "rules", "lexical_only": lexical_only, "best": best_p,
+                          "grid": [{"weights": w, f"precision_at_{k}": p} for p, _, w in scored]}
+    write_json(path, doc)
+    return {"status": "tuned", "weights": best, "precision": best_p, "lexical_only": lexical_only}
+
+
+def run_text_benchmark(index: HistoricalCaseIndex, settings: Settings | None = None, llm=None, k: int = 10) -> dict:
+    """Typed-search benchmark on the ~40 labelled plain-English queries, per parser (rules, and LLM when given)."""
+    from ssa.evaluation.search_queries import text_search_queries
+    index._ensure()
+    queries = text_search_queries()
+    modes = {"lexical": ("lexical", None), "hybrid": ("hybrid", None)}
+    if index.dense is not None:
+        modes["dense"] = ("dense", None)
+    out = {"queries": len(queries), "k": k, "corpus": "all indexed enrolments (typed search has no query student)",
+           "relevance": "a returned case is relevant when it meets every expected filter and shows every expected behaviour",
+           "hybrid_text_weights": index.fusion_weights(text_only=True),
+           "notes": ["random_corpus = a random case from the whole corpus; random_within_parsed_filters = a random case among "
+                     "those passing the parser's filters (isolates what the ranking adds beyond filtering)."],
+           "parsers": {}}
+    for name, parse in _parsers(llm).items():
+        t0 = time.time()
+        out["parsers"][name] = {**_score_text_queries(index, queries, parse, modes, k), "seconds": round(time.time() - t0, 1)}
+    return out

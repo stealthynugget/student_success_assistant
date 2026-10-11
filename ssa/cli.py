@@ -62,7 +62,7 @@ def cmd_train(args):
 def cmd_index(args):
     from ssa.data.pipeline import load_features
     from ssa.models.risk import WithdrawalRiskModel
-    from ssa.retrieval.benchmark import tune_fusion_weights
+    from ssa.retrieval.benchmark import tune_fusion_weights, tune_text_weights
     from ssa.retrieval.hybrid import HistoricalCaseIndex
     for sc in _checkpoints(args):
         df = load_features(sc)
@@ -70,7 +70,9 @@ def cmd_index(args):
         idx = HistoricalCaseIndex(sc)
         man = idx.build(df, importance=risk.art.importance, with_dense=not args.no_dense)
         tuned = tune_fusion_weights(df, idx, settings=sc, n_queries=200 if not sc.is_primary else 300)
-        log.info(f"[{sc.tag}] index {man['n_docs']:,} docs, dense={man['dense_channel']}, fusion={tuned.get('weights')}")
+        text = tune_text_weights(idx, settings=sc)
+        log.info(f"[{sc.tag}] index {man['n_docs']:,} docs, dense={man['dense_channel']}, fusion={tuned.get('weights')}, "
+                 f"text={text.get('weights')}")
 
 
 def cmd_evaluate(args):
@@ -89,6 +91,35 @@ def cmd_evaluate(args):
     b = run_benchmark(df, HistoricalCaseIndex(s).load(), n_queries=args.queries, settings=s)
     log.info(f"retrieval: hybrid vote-AUC(poor) {b['modes']['hybrid']['neighbour_vote_auc_poor_outcome']:.3f} vs random "
              f"{b['modes']['random']['neighbour_vote_auc_poor_outcome']:.3f}")
+    _text_benchmark(s, llm=None)
+
+
+def _text_benchmark(s, llm=None) -> dict:
+    from ssa.retrieval.benchmark import run_text_benchmark
+    from ssa.retrieval.hybrid import HistoricalCaseIndex
+    res = run_text_benchmark(HistoricalCaseIndex(s).load(), settings=s, llm=llm)
+    write_json(s.metrics_dir / "text_search_benchmark.json", res)
+    for parser, r in res["parsers"].items():
+        m = r["modes"]
+        log.info(f"typed search ({parser} parser) precision@10: " + ", ".join(f"{k} {v['precision_at_10']:.3f}" for k, v in m.items()))
+    return res
+
+
+def cmd_search_benchmark(args):
+    """Tune typed-search fusion weights (optional) and run the typed-search benchmark on existing indexes."""
+    from ssa.retrieval.benchmark import tune_text_weights
+    from ssa.retrieval.hybrid import HistoricalCaseIndex
+    if args.tune:
+        for sc in _checkpoints(args):
+            log.info(f"[{sc.tag}] text weights: {tune_text_weights(HistoricalCaseIndex(sc).load(), settings=sc)}")
+    s = get_settings().at(None)
+    llm = None
+    if args.llm:
+        from ssa.agents.llm import LLMClient
+        llm = LLMClient(s)
+        if not llm.available:
+            raise SystemExit("--llm requested but the LLM is not configured or LLM_ENABLED=false")
+    _text_benchmark(s, llm=llm)
 
 
 def cmd_llm_eval(args):
@@ -244,6 +275,8 @@ def main(argv=None):
     sp = sub.add_parser("index"); sp.add_argument("--no-dense", action="store_true"); sp.add_argument("--checkpoint", type=float)
     sp.set_defaults(fn=cmd_index)
     sp = sub.add_parser("evaluate"); sp.add_argument("--queries", type=int, default=600); sp.set_defaults(fn=cmd_evaluate)  # noqa: E702
+    sp = sub.add_parser("search-benchmark"); sp.add_argument("--tune", action="store_true"); sp.add_argument("--llm", action="store_true")
+    sp.add_argument("--checkpoint", type=float); sp.set_defaults(fn=cmd_search_benchmark)
     sp = sub.add_parser("llm-eval"); sp.add_argument("--per-tier", type=int, default=8); sp.add_argument("--no-llm", action="store_true")
     sp.set_defaults(fn=cmd_llm_eval)
     sp = sub.add_parser("feedback-loop"); sp.add_argument("--apply", action="store_true"); sp.add_argument("--approved-by")

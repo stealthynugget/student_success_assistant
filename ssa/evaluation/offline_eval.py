@@ -17,8 +17,6 @@ Sections (each reports deterministic metrics; LLM-dependent metrics run when an 
 from __future__ import annotations
 
 import json
-import random
-
 import time
 
 import numpy as np
@@ -30,10 +28,10 @@ from ssa.agents.copilot import Copilot
 from ssa.agents.genai import cohort_briefing, outreach_variant, rule_parse, understand_query
 from ssa.appdb import AppDB
 from ssa.config import Settings, get_settings
-from ssa.data import vocab
 from ssa.data.vocab import presentation_sort_key
 from ssa.evaluation.deepeval_suite import case_from_result, run_deepeval
 from ssa.evaluation.judge import LLMJudge, judge_text, pairwise_preference
+from ssa.evaluation.search_queries import PARAPHRASES, labelled_queries
 from ssa.service import NotFound, StudentSuccessService
 from ssa.utils import write_json
 
@@ -52,51 +50,7 @@ def golden_set(svc: StudentSuccessService, per_tier: int = 8, seed: int = 11) ->
 
 
 # --------------------------------------------------------------------- search set
-def labelled_queries(n: int = 60, seed: int = 5) -> list[dict]:
-    rng = random.Random(seed)
-    out = []
-    regions = {r: r.replace(" Region", "") for r in vocab.REGIONS}
-    for _ in range(n):
-        f, parts = {}, []
-        if rng.random() < 0.7:
-            m = rng.choice(vocab.MODULES)
-            f["code_module"] = m
-            parts.append(f"in {m}")
-        if rng.random() < 0.35:
-            r = rng.choice(list(regions))
-            f["region"] = r
-            parts.append(f"from {regions[r]}")
-        if rng.random() < 0.3:
-            f["num_of_prev_attempts"] = {"min": 1}
-            parts.append("who are repeating the module")
-        if rng.random() < 0.3:
-            c = rng.choice([60, 90, 120])
-            f["studied_credits"] = {"min": float(c + 1)}
-            parts.append(f"studying more than {c} credits")
-        if rng.random() < 0.4:
-            o, phrase = rng.choice([("Withdrawn", "who dropped out"), ("Fail", "who failed"), ("Pass", "who passed")])
-            f["final_result"] = o
-            parts.append(phrase)
-        behaviour = rng.choice(["with declining engagement", "with low scores", "who missed assessments", "who submit late", ""])
-        rng.shuffle(parts)
-        out.append({"query": ("students " + " ".join(parts) + " " + behaviour).strip(), "expected": f})
-    return out
-
-
-PARAPHRASES = [  # hand-written, phrased differently from the rule patterns
-    {"query": "learners on module DDD who quit partway and were juggling a big credit load (over 120)",
-     "expected": {"code_module": "DDD", "final_result": "Withdrawn", "studied_credits": {"min": 121.0}}},
-    {"query": "people retaking GGG that went quiet online", "expected": {"code_module": "GGG", "num_of_prev_attempts": {"min": 1}}},
-    {"query": "Scottish students in CCC who did not make it to the end", "expected": {"code_module": "CCC", "region": "Scotland",
-                                                                                         "final_result": "Withdrawn"}},
-    {"query": "students in the Welsh cohort of EEE who ended up failing", "expected": {"code_module": "EEE", "region": "Wales",
-                                                                                         "final_result": "Fail"}},
-    {"query": "BBB folks attempting it for the first time who got a distinction", "expected": {"code_module": "BBB",
-                                                                                                 "num_of_prev_attempts": {"max": 0},
-                                                                                                 "final_result": "Distinction"}},
-    {"query": "anyone in FFF with a postgraduate background who struggled and left",
-     "expected": {"code_module": "FFF", "highest_education": "Post Graduate Qualification", "final_result": "Withdrawn"}},
-]
+# labelled_queries / PARAPHRASES live in ssa.evaluation.search_queries (shared with the typed-search benchmark)
 
 
 def _filter_scores(pred: dict, exp: dict) -> tuple[int, int, int]:
