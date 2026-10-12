@@ -11,6 +11,7 @@ export interface Config {
   features: Record<string, string>;
   llm: { configured: boolean; enabled: boolean; provider: string; model: string; fast_model: string; judge_model: string; online_eval_sample_rate: number };
   dense_retrieval: string | null;
+  split?: { method?: string; train?: string[]; validation?: string[]; test?: string[] };
 }
 
 interface Store {

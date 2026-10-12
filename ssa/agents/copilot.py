@@ -13,6 +13,7 @@ import time
 
 from ssa.agents import guardrails as gr
 from ssa.agents.llm import LLMUnavailable
+from ssa.config import course_week
 from ssa.data import vocab
 
 SYSTEM = (
@@ -124,7 +125,7 @@ class Copilot:
             return {"assessments": [{k: r[k] for k in ("id_assessment", "code_presentation", "assessment_type", "deadline_week", "weight",
                                                        "submission_rate", "mean_score", "non_submission_auc_for_poor_outcome")} for r in rows[:6]]}
         if name == "model_performance":
-            return {"checkpoints": [{"week": c["approx_week"], "roc_auc": round(c["withdrawal"]["roc_auc"], 3),
+            return {"checkpoints": [{"week": course_week(c["checkpoint"]), "roc_auc": round(c["withdrawal"]["roc_auc"], 3),
                                      "pr_auc": round(c["withdrawal"]["pr_auc"], 3), "calibration_error": round(c["withdrawal"]["ece_10"], 3),
                                      "base_rate": round(c["withdrawal"]["positive_rate"], 3)} for c in s.checkpoint_metrics().get("checkpoints", [])]}
         raise ValueError(f"unknown tool {name}")

@@ -49,7 +49,7 @@ python -m ssa.cli report              # regenerate docs/MODEL_CARD.md and the de
 | Area | What it does |
 |---|---|
 | Data | All 7 tables: demographics, registrations, tutor- vs computer-marked assessments, VLE clicks by activity type, the planned teaching schedule, and complete historical records (whole-course activity, withdrawal week, coursework and exam results) |
-| Checkpoints | Separate calibrated models, indexes and rankings at ~week 6, 9, 15 and 22; the console's course clock switches between them |
+| Checkpoints | Separate calibrated models, indexes and rankings at weeks 5, 9, 15 and 22; the console's course clock switches between them |
 | Risk | Withdrawal model (students still enrolled only), four-class outcome model, learned Medium/High tiers, TreeSHAP drivers |
 | Retrieval | Supervised behavioural kNN + BM25 over descriptive signals + dense narrative embeddings, weighted RRF; vectors in LanceDB with metadata pre-filtering (course, region, education, age band, credits, previous attempts); earlier cohorts only; "what happened next" stories |
 | Prioritisation | Weights learned for precision at advisor capacity (one-standard-error blend), reason codes |

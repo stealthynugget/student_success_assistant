@@ -11,18 +11,21 @@ const rate = (v: unknown) => (v == null ? "not run" : fmt.pct(v));
 
 export default function Quality() {
   const [tab, setTab] = useState("risk");
-  const { checkpoint } = useStore();
+  const { checkpoint, config } = useStore();
+  const primary = config?.checkpoints.find((c) => c.primary);
+  const primaryWeek = primary ? fmt.week(primary.checkpoint) : null;
   const m = useQuery({ queryKey: ["metrics", checkpoint], queryFn: ({ signal }) => api("/metrics", { query: { checkpoint }, signal }) });
   const d: any = m.data;
   return (
     <>
-      <div className="page-head"><div><h1>Model quality</h1><div className="sub">How well each part works, measured on a later presentation the models never saw.</div></div></div>
+      <div className="page-head"><div><h1>Model quality</h1><div className="sub">How well each part works, measured on a later presentation the models never saw.{checkpoint != null &&
+        ` Risk models and prioritisation are shown for week ${fmt.week(checkpoint)} on the course clock.`}</div></div></div>
       <TabSet label="Model quality" value={tab} onChange={setTab} tabs={[["risk", "Risk models"], ["retrieval", "Similar cases"], ["ranking", "Prioritisation"],
         ["llm", "AI features"], ["online", "Live reviews"], ["human", "Human review"], ["usage", "AI usage and cost"], ["gate", "Release checks"]]}>
         {m.error && <ErrorNote error={m.error as ApiError} onRetry={() => m.refetch()} />}
         {!d && !m.error && ["risk", "retrieval", "ranking", "gate"].includes(tab) && <Loading lines={6} />}
         {d && tab === "risk" && <Risk m={d} />}
-        {d && tab === "retrieval" && <Retrieval r={d.retrieval_benchmark} />}
+        {d && tab === "retrieval" && <Retrieval r={d.retrieval_benchmark} week={fmt.week(d.checkpoint)} primaryWeek={primaryWeek} />}
         {d && tab === "ranking" && <Ranking p={d.prioritization} />}
         {tab === "llm" && <LlmEval />}
         {tab === "online" && <Online />}
@@ -73,12 +76,13 @@ function Risk({ m }: { m: any }) {
   );
 }
 
-function Retrieval({ r }: { r: any }) {
-  if (!r) return <Empty title="Retrieval benchmark not run">Run python -m ssa.cli evaluate on the server.</Empty>;
+function Retrieval({ r, week, primaryWeek }: { r: any; week: number; primaryWeek: number | null }) {
+  if (!r) return <Empty title={`The similar-case benchmark is measured at week ${primaryWeek ?? "-"}`}>
+    Move the course clock to week {primaryWeek ?? "-"} to see it. If it is missing there too, run python -m ssa.cli evaluate on the server.</Empty>;
   const modes = Object.keys(r.modes);
   return (
     <div className="stack">
-      <p>{r.queries} students from {r.query_presentation} were matched against earlier presentations of the same module. A good matcher finds past students whose real outcomes predict this student's outcome.</p>
+      <p>As of week {week}: {r.queries} students from {r.query_presentation} were matched against earlier presentations of the same module. A good matcher finds past students whose real outcomes predict this student's outcome.</p>
       <GroupedBars label="Retrieval quality by matching method" categories={modes} max={1} format={(v) => v.toFixed(2)}
         series={[{ name: "Neighbour-vote AUC (fail or withdraw)", color: COL.ink, values: modes.map((m) => r.modes[m].neighbour_vote_auc_poor_outcome) },
           { name: "Outcome agreement at 10", color: "var(--ink-2)", values: modes.map((m) => r.modes[m].outcome_agreement_at_10) },
@@ -129,7 +133,7 @@ function LlmEval() {
         {ag.judge.mean_scores && <HBars label="Mean judge scores out of 10" max={10} format={(v) => v.toFixed(1)}
           items={Object.entries(ag.judge.mean_scores).map(([k, v]) => ({ label: k.replaceAll("_", " "), value: v as number }))} />}
         {ag.deepeval.aggregate ? <table className="data"><thead><tr><th scope="col">DeepEval metric</th><th scope="col" className="num">Mean (95% CI)</th><th scope="col" className="num">Pass rate</th></tr></thead>
-          <tbody>{Object.entries(ag.deepeval.aggregate).map(([k, v]: [string, any]) => <tr key={k}><td>{k}</td>
+          <tbody>{Object.entries(ag.deepeval.aggregate).map(([k, v]: [string, any]) => <tr key={k}><td>{k.replace(/Metric$/, "").replace(/([a-z])([A-Z])/g, "$1 $2")}</td>
             <td className="num">{v.mean.toFixed(2)} ({v.ci95[0].toFixed(2)} to {v.ci95[1].toFixed(2)})</td><td className="num">{rate(v.pass_rate)}</td></tr>)}</tbody></table>
           : <p className="small muted">DeepEval: {ag.deepeval.status}</p>}
       </Block>

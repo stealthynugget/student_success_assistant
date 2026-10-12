@@ -286,7 +286,7 @@ export function SeriesLines({ series, markers = [], height = 280, label, yLabel 
           <YAxis {...AXIS} width={44} />
           <Tooltip content={<Tip />} cursor={{ stroke: "var(--ink)", strokeDasharray: "3 3" }} />
           {markers.map((m, i) => <ReferenceLine key={i} x={m.x} stroke={m.color} strokeDasharray="4 3"
-            label={{ value: m.label, position: i % 2 ? "insideTopLeft" : "insideTopRight", fill: "var(--ink)", fontSize: 12 }} />)}
+            label={{ value: m.label, position: i % 2 || m.x < 3 ? "insideTopLeft" : "insideTopRight", dy: i % 2 ? 0 : 14, fill: "var(--ink)", fontSize: 12 }} />)}
           {series.map((s) => <Line key={s.key} dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={s.width ?? 2.2} dot={false} isAnimationActive={!reduce} />)}
         </LineChart>
       </ResponsiveContainer>

@@ -20,7 +20,7 @@ import pandas as pd
 
 from ssa.agents.llm import LLMClient
 from ssa.agents.workflow import SupportWorkflow
-from ssa.config import Settings, get_settings
+from ssa.config import Settings, course_week, get_settings
 from ssa.data import vocab
 from ssa.data.pipeline import load_course_level, load_features, load_weekly
 from ssa.models.features import FRIENDLY, NUMERIC, SENSITIVE
@@ -33,7 +33,6 @@ from ssa.utils import read_json
 KEY_SIGNALS = ["weighted_score", "missed_rate", "total_clicks", "days_since_last_activity", "engagement_momentum",
                "assessments_due", "active_days"]
 HIDDEN = set(SENSITIVE) | {"_key", "final_result", "withdrawn", "poor_outcome", "date_unregistration", "withdrawn_before_start"}
-AVG_COURSE_DAYS = 262
 
 
 class NotFound(LookupError):
@@ -186,7 +185,7 @@ class StudentSuccessService:
         return self._course
 
     def checkpoint_list(self) -> list[dict]:
-        return [{"checkpoint": c, "tag": self.settings.at(c).tag, "approx_week": int(round(c * AVG_COURSE_DAYS / 7)),
+        return [{"checkpoint": c, "tag": self.settings.at(c).tag, "approx_week": course_week(c),
                  "primary": abs(c - self.settings.primary_checkpoint) < 1e-9,
                  "available": (self.settings.at(c).model_dir / "withdrawal_model.joblib").exists()} for c in self.settings.checkpoints]
 
@@ -218,6 +217,9 @@ class StudentSuccessService:
                     "model": self.settings.llm_model, "fast_model": self.settings.fast_model, "judge_model": self.settings.judge_model,
                     "online_eval_sample_rate": self.settings.online_eval_sample_rate},
             "dense_retrieval": b.index.manifest.get("dense_channel") if b.index.ready else None,
+            # Which presentations the models learned from, were tuned on, and never saw (scores there are out-of-sample).
+            "split": {k: v for k, v in read_json(b.settings.metrics_dir / "withdrawal_model.json", {}).get("split", {}).items()
+                      if k in ("method", "train", "validation", "test")},
         }
 
     # -------------------------------------------------------------- lookup

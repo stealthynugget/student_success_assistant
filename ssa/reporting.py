@@ -6,7 +6,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from ssa.config import PROJECT_ROOT, Settings, get_settings
+from ssa.config import PROJECT_ROOT, Settings, course_week, get_settings
 from ssa.utils import read_json
 
 NAVY, TEAL, AMBER, RED, SLATE, PAPER = "1F2A44", "0F766E", "B45309", "B91C1C", "64748B", "FBFBF9"
@@ -311,7 +311,7 @@ def model_card(s: Settings | None = None) -> str:
         "Per-group cut-offs are shown for that review only; applying them would use a sensitive attribute at decision time.", "",
         "## Early warning across the course (test presentation, students still enrolled at each point)",
         "| Course week | Still enrolled | ROC-AUC | PR-AUC | Base rate | ECE | Outcome macro-F1 |", "|---|---|---|---|---|---|---|",
-    ] + [f"| {round(c['approx_week'])} | {c['in_scope']:,} | {_f(c['withdrawal']['roc_auc'])} | {_f(c['withdrawal']['pr_auc'])} | "
+    ] + [f"| {course_week(c['checkpoint'])} | {c['in_scope']:,} | {_f(c['withdrawal']['roc_auc'])} | {_f(c['withdrawal']['pr_auc'])} | "
          f"{_f(c['withdrawal']['positive_rate'])} | {_f(c['withdrawal']['ece_10'])} | {_f(c['outcome_macro_f1'])} |"
          for c in m["checkpoint_summary"].get("checkpoints", [])] + [
         "", "## AI features (offline evaluation)", _llm_lines(m["llm_evaluation"]), *_ragas_lines(m.get("ragas_eval", {})),
@@ -468,11 +468,11 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
     if cps:
         sl = slide("How early can we tell?", notes="Separate calibrated models at four points in the course; each is tested on the later, "
                    "untouched presentation using only what was known at that point.")
-        bar(sl, 0.6, 1.4, 7.4, 5.4, [f"week {round(c['approx_week'])}" for c in cps],
+        bar(sl, 0.6, 1.4, 7.4, 5.4, [f"week {course_week(c['checkpoint'])}" for c in cps],
             [("ROC-AUC", [c["withdrawal"]["roc_auc"] for c in cps]), ("PR-AUC", [c["withdrawal"]["pr_auc"] for c in cps]),
              ("Base rate", [c["withdrawal"]["positive_rate"] for c in cps])], [NAVY, "4C4BC2", "9AA2B1"], "Withdrawal model by course week", maxv=1.0)
         text(sl, 8.4, 1.6, 4.5, 5, ["Later points see more evidence but fewer students remain to help.",
-                                    f"Week {round(cps[0]['approx_week'])}: {cps[0]['in_scope']:,} still enrolled; week {round(cps[-1]['approx_week'])}: {cps[-1]['in_scope']:,}.",
+                                    f"Week {course_week(cps[0]['checkpoint'])}: {cps[0]['in_scope']:,} still enrolled; week {course_week(cps[-1]['checkpoint'])}: {cps[-1]['in_scope']:,}.",
                                     "The console's course clock switches every view between these points."], size=15)
 
     sl = slide("What is associated with failing or withdrawing",

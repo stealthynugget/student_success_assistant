@@ -87,7 +87,8 @@ function Results({ data }: { data: any }) {
     <div className="stack">
       <div className="grid two">
         <div className="stack">
-          <h2 className="h3">{fmt.int(data.candidates)} students matched the filters; the closest {data.cases.length} are shown</h2>
+          <h2 className="h3">{data.applied_filters ? `${fmt.int(data.candidates)} students matched the filters` : `Searched all ${fmt.int(data.candidates)} historical students`};
+            the closest {data.cases.length} are shown</h2>
           {nb && <><Stacked label="Outcomes among the closest matches" parts={OUTCOMES.map((k) => ({ label: k, value: nb.counts[k] || 0, color: COL[k] }))} />
             <p className="small">Among the closest {nb.n_neighbours}: {fmt.pct(nb.fail_or_withdrawn_rate)} failed or withdrew (95% interval {fmt.pct(nb.fail_or_withdrawn_ci95[0])} to {fmt.pct(nb.fail_or_withdrawn_ci95[1])}).</p></>}
           <p className="small muted">Matching used: {data.channels_used.join(" and ")}.
@@ -103,7 +104,7 @@ function Results({ data }: { data: any }) {
           <tr key={c.case_id} className={hl === c.case_id ? "hl" : undefined} tabIndex={0} onMouseEnter={() => setHl(c.case_id)} onMouseLeave={() => setHl(null)}
             onFocus={() => setHl(c.case_id)} onBlur={() => setHl(null)}>
             <td>{c.case_id}</td><td>{c.code_module} {c.code_presentation}</td><td><strong style={{ color: COL[c.final_result] }}>{c.final_result}</strong></td>
-            <td className="small">score {fmt.num(c.snapshot.weighted_score, 0)}, missed {fmt.pct(c.snapshot.missed_rate)}, activity percentile {fmt.pct(c.snapshot.clicks_pct)}</td>
+            <td className="small">{c.snapshot.weighted_score == null ? "no marks yet" : `score ${fmt.num(c.snapshot.weighted_score, 0)}`}, missed {fmt.pct(c.snapshot.missed_rate)}, activity percentile {fmt.pct(c.snapshot.clicks_pct)}</td>
             <td className="small">{c.story?.text}</td>
             <td className="small">{c.metadata.region}, {c.metadata.highest_education}, {c.metadata.age_band}, {c.snapshot.studied_credits} credits, {c.snapshot.num_of_prev_attempts} previous</td></tr>))}</tbody>
       </table></div>

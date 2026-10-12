@@ -6,6 +6,8 @@ import { useStore } from "../store";
 import { Empty, ErrorNote, Generated, Loading, Section } from "../ui";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+const evidence = (e: Record<string, unknown> = {}) => Object.entries(e)
+  .map(([k, v]) => `${k.replaceAll("_", " ")} ${typeof v === "number" ? v.toLocaleString("en-GB") : JSON.stringify(v)}`).join(", ");
 const PROPOSALS: Record<string, string> = { action_catalog_ranking: "Re-rank support actions by advisor acceptance",
   retrieval_fusion_weights: "Re-weight how similar students are matched", risk_recalibration: "Recalibrate risk on real outcomes" };
 
@@ -45,19 +47,20 @@ export default function Feedback() {
         </div>)}
 
       <Section id="proposals" title="Proposed improvements" sub="Each learner needs enough feedback before it proposes a change."
-        actions={<><button onClick={() => runLoop(false)} disabled={run.status === "running"}>Recalculate proposals</button>
+        actions={<><button onClick={() => runLoop(false)} disabled={run.status === "running" || !settings.admin}>Recalculate proposals</button>
           <button className="primary" onClick={() => runLoop(true)} disabled={run.status === "running" || !settings.admin}>Apply ready changes</button></>}>
         {run.status === "error" && <ErrorNote error={run.error} />}
-        {!settings.admin && <p className="small muted">Applying changes needs the admin key; add it in Settings.</p>}
+        {!settings.admin && <p className="small muted">Recalculating and applying changes need the admin key; add it in Settings.</p>}
         {plan.isLoading && !p && <Loading />}
         {p ? (
           <div className="stack">
             <table className="data"><thead><tr><th scope="col">Change</th><th scope="col">Status</th><th scope="col">Evidence</th></tr></thead>
               <tbody>{p.proposals.map((x: any) => <tr key={x.type}><td>{PROPOSALS[x.type] || x.type}</td>
-                <td>{x.status.replaceAll("_", " ")}</td><td className="small muted">{JSON.stringify(x.evidence)}</td></tr>)}</tbody></table>
+                <td>{x.status.replaceAll("_", " ")}</td><td className="small muted">{evidence(x.evidence)}</td></tr>)}</tbody></table>
             {p.monitors?.length > 0 && <><h3 className="h4">Monitors</h3><ul>{p.monitors.map((x: any, i: number) => (
               <li key={i}>{x.type.replaceAll("_", " ")}{x.tier ? ` (${x.tier})` : ""}: {x.status}{x.action ? `. ${x.action}` : ""}</li>))}</ul></>}
             {p.applied?.length > 0 && <p>Applied in this run: {p.applied.join(", ")}.</p>}
+            {p.generated_at && <p className="small muted">Calculated {new Date(p.generated_at).toLocaleString("en-GB")} from {fmt.int(p.feedback_rows ?? 0)} pieces of feedback.</p>}
           </div>
         ) : !plan.isLoading && <p className="muted">No proposals yet. Recalculate after some feedback arrives.</p>}
       </Section>

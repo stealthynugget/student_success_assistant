@@ -12,7 +12,7 @@
 <g id="clust1" class="cluster">
 <title>cluster_data</title>
 <path fill="white" stroke="#e2e8f0" d="M846,-266C846,-266 1268,-266 1268,-266 1274,-266 1280,-272 1280,-278 1280,-278 1280,-706.06 1280,-706.06 1280,-712.06 1274,-718.06 1268,-718.06 1268,-718.06 846,-718.06 846,-718.06 840,-718.06 834,-712.06 834,-706.06 834,-706.06 834,-278 834,-278 834,-272 840,-266 846,-266"/>
-<text text-anchor="middle" x="1057" y="-705.26" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#475569">Offline build: python &#45;m ssa.cli build &#160;(per checkpoint: weeks ~6, 9, 15, 22)</text>
+<text text-anchor="middle" x="1057" y="-705.26" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#475569">Offline build: python &#45;m ssa.cli build &#160;(per checkpoint: weeks 5, 9, 15, 22)</text>
 </g>
 <g id="clust2" class="cluster">
 <title>cluster_online</title>

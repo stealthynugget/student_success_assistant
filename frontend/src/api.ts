@@ -129,5 +129,6 @@ export const fmt = {
   pct: (v: unknown, d = 0) => (isNum(v) ? `${(100 * v).toFixed(d)}%` : "-"),
   num: (v: unknown, d = 1) => (isNum(v) ? Number(v).toFixed(d) : "-"),
   int: (v: unknown) => (isNum(v) ? Math.round(v).toLocaleString("en-GB") : "-"),
-  week: (cp: number, len = 262) => Math.round((cp * len) / 7),
+  // Course week of a checkpoint: the pipeline's snapshot day (max(7, round(length * checkpoint))) // 7.
+  week: (cp: number, len = 262) => Math.floor(Math.max(7, Math.round(cp * len)) / 7),
 };

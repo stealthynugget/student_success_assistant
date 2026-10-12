@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, settings, type ApiError } from "../api";
+import { api, fmt, settings, type ApiError } from "../api";
 import { useStore } from "../store";
 import { ErrorNote } from "../ui";
 
@@ -33,11 +33,11 @@ export default function Settings() {
       {r && <section className="section stack" style={{ maxWidth: 720 }} aria-labelledby="status-h">
         <h2 id="status-h">Service status</h2>
         <table className="data"><tbody>{Object.entries(r.checks).map(([k, v]) => <tr key={k}><td>{k.replaceAll("_", " ")}</td><td>{v ? "Ready" : "Missing: run the build"}</td></tr>)}
-          <tr><td>Course checkpoints</td><td>{r.checkpoints.filter((c: any) => c.available).map((c: any) => `week ${c.approx_week}`).join(", ")}</td></tr>
+          <tr><td>Course checkpoints</td><td>{r.checkpoints.filter((c: any) => c.available).map((c: any) => `week ${fmt.week(c.checkpoint)}`).join(", ")}</td></tr>
           <tr><td>Historical cases indexed</td><td>{r.index?.n_docs?.toLocaleString("en-GB") ?? "-"}</td></tr>
           <tr><td>AI drafting</td><td>{r.llm_configured ? `${r.llm_provider === "anthropic" ? "Claude" : r.llm_provider}: ${r.fast_model} (search, outreach), ${r.llm_model} (plans, copilot), judged by ${r.judge_model}`
             : "Not connected. Everything works with computed text; set ANTHROPIC_API_KEY on the server for AI drafting."}</td></tr>
-          {config && <tr><td>Meaning-based search</td><td>{config.dense_retrieval || "unknown"}</td></tr>}
+          {config && <tr><td>Meaning-based search</td><td>{config.dense_retrieval === "built" ? "On: typed searches also match by meaning" : config.dense_retrieval || "Off: keyword and profile matching only"}</td></tr>}
         </tbody></table>
         <p className="small"><a href={`${settings.base}/api/docs`} target="_blank" rel="noreferrer">Open the API documentation</a></p>
       </section>}

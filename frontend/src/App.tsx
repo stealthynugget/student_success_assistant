@@ -7,8 +7,8 @@ import { motion } from "motion/react";
 import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "./api";
-import { studentPath, useStore } from "./store";
+import { api, fmt } from "./api";
+import { studentPath, useStore, type Config } from "./store";
 import { BrandMark, ErrorNote, Loading, PageBoundary } from "./ui";
 // Pages load on demand (route-level code splitting).
 const CaseFinder = lazy(() => import("./pages/CaseFinder"));
@@ -45,6 +45,16 @@ function useTheme(): [Theme, () => void] {
 }
 
 // ---------------------------------------------------------------- course clock
+// Scores on presentations the models were trained or tuned on are in-sample; say so where a presentation is chosen.
+function splitNote(config: Config, p: string) {
+  const s = config.split;
+  if (s?.method !== "temporal") return "";
+  if (s.test?.includes(p)) return " (held out)";
+  if (s.validation?.includes(p)) return " (tuning)";
+  if (s.train?.includes(p)) return " (training)";
+  return "";
+}
+
 function CourseClock() {
   const { config, module, setModule, presentation, setPresentation, checkpoint, setCheckpoint } = useStore();
   const cohort = useQuery({
@@ -56,7 +66,9 @@ function CourseClock() {
   const weeks = Math.ceil(lengthDays / 7);
   const W = 1000, l = 16, r = 16;
   const x = (w: number) => l + (w / weeks) * (W - l - r);
-  const stops = config.checkpoints.filter((c) => c.available).map((c) => ({ ...c, week: Math.round((c.checkpoint * lengthDays) / 7) }));
+  const snapWeek: number | undefined = cohort.data?.snapshot_week;
+  const stops = config.checkpoints.filter((c) => c.available).map((c) => ({ ...c,
+    week: snapWeek != null && checkpoint != null && Math.abs(c.checkpoint - checkpoint) < 1e-6 ? snapWeek : fmt.week(c.checkpoint, lengthDays) }));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const deadlines: any[] = (cohort.data?.assessments || []).filter((a: any) => a.deadline_week !== null);
   const current = stops.find((s) => checkpoint != null && Math.abs(s.checkpoint - checkpoint) < 1e-6);
@@ -70,7 +82,7 @@ function CourseClock() {
         <div className="clock-title" aria-live="polite">{module} {presentation}{current ? `, as of week ${current.week}` : ""}</div>
         <label>Module <select value={module} onChange={(e) => setModule(e.target.value)}>{config.modules.map((m) => <option key={m}>{m}</option>)}</select></label>
         <label>Presentation <select value={presentation} onChange={(e) => setPresentation(e.target.value)}>
-          {(config.presentations_by_module[module] || []).map((p) => <option key={p}>{p}</option>)}</select></label>
+          {(config.presentations_by_module[module] || []).map((p) => <option key={p} value={p}>{p}{splitNote(config, p)}</option>)}</select></label>
       </div>
       <div className="ribbon">
         <svg viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" role="group" aria-label="Course timeline: choose the point in the course to look at">
@@ -135,10 +147,10 @@ function Palette({ open, setOpen, toggleTheme }: { open: boolean; setOpen: (v: b
         {config && <Command.Group heading="Course clock">
           {config.modules.map((m) => <Command.Item key={m} value={`module ${m}`} onSelect={() => run(() => setModule(m))}><Clock aria-hidden="true" />Switch to module {m}</Command.Item>)}
           {(config.presentations_by_module[module] || []).map((p) => (
-            <Command.Item key={p} value={`presentation ${p}`} onSelect={() => run(() => setPresentation(p))}><Clock aria-hidden="true" />Switch to presentation {p}</Command.Item>))}
+            <Command.Item key={p} value={`presentation ${p}`} onSelect={() => run(() => setPresentation(p))}><Clock aria-hidden="true" />Switch to presentation {p}{splitNote(config, p)}</Command.Item>))}
           {config.checkpoints.filter((c) => c.available).map((c) => (
-            <Command.Item key={c.tag} value={`week ${c.approx_week} checkpoint`} onSelect={() => run(() => setCheckpoint(c.checkpoint))}>
-              <CalendarClock aria-hidden="true" />Look at week {Math.round(c.approx_week)}</Command.Item>))}
+            <Command.Item key={c.tag} value={`week ${fmt.week(c.checkpoint)} checkpoint`} onSelect={() => run(() => setCheckpoint(c.checkpoint))}>
+              <CalendarClock aria-hidden="true" />Look at week {fmt.week(c.checkpoint)}</Command.Item>))}
         </Command.Group>}
         <Command.Group heading="Actions">
           <Command.Item value="toggle theme dark light" onSelect={() => run(toggleTheme)}><Contrast aria-hidden="true" />Switch theme</Command.Item>

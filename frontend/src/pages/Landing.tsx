@@ -7,7 +7,7 @@ import { animate, motion, useInView, useMotionValueEvent, useReducedMotion, useS
 import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { siClaude, siFastapi, siHuggingface, siLangchain, siPython, siReact } from "simple-icons";
-import { api } from "../api";
+import { api, fmt } from "../api";
 import { DitherField } from "../landing/DitherField";
 import { useStore } from "../store";
 import { BrandMark } from "../ui";
@@ -129,7 +129,7 @@ function Numbers({ metrics, config }: { metrics: any; config: any }) {
       <Reveal><h2 id="num-h">One honest dataset, read at four points in the course.</h2></Reveal>
       <div className="lp-numbers">
         <Reveal><div className="v"><Count value={atPrimary?.in_scope} format={int} /></div>
-          <div className="l">students still enrolled at week {primary ? Math.round(primary.approx_week) : 15}, all modules</div></Reveal>
+          <div className="l">students still enrolled at week {primary ? fmt.week(primary.checkpoint) : 15}, all modules</div></Reveal>
         <Reveal delay={0.08}><div className="v"><Count value={metrics?.data_build?.records} format={int} /></div>
           <div className="l">enrolments in the dataset, each with its complete record</div></Reveal>
         <Reveal delay={0.16}><div className="v"><Count value={config?.modules?.length} format={int} /></div>
@@ -153,7 +153,7 @@ function CourseClock({ metrics }: { metrics: any }) {
   useMotionValueEvent(scrollYProgress, "change", (p) => {
     if (!cps.length || !labelRef.current) return;
     const i = Math.min(cps.length - 1, Math.round(p * (cps.length - 1)));
-    labelRef.current.textContent = `week ${Math.round(cps[i].approx_week)}`;
+    labelRef.current.textContent = `week ${fmt.week(cps[i].checkpoint)}`;
   });
   return (
     <section className="lp-sec" id="clock" aria-labelledby="clock-h">
@@ -165,14 +165,14 @@ function CourseClock({ metrics }: { metrics: any }) {
             <div className="line" />
             {Array.from({ length: COURSE_WEEKS + 1 }).filter((_, w) => w % 2 === 0).map((_, i) => <div key={i} className="tick" style={{ left: `${at(i * 2)}%` }} />)}
             {cps.map((c) => <div key={c.tag} className="stop" style={{ left: `${at(c.approx_week)}%` }} />)}
-            <motion.div className="marker" style={{ left: reduce ? `${first}%` : left }}><span ref={labelRef}>{cps.length ? `week ${Math.round(cps[0].approx_week)}` : ""}</span></motion.div>
+            <motion.div className="marker" style={{ left: reduce ? `${first}%` : left }}><span ref={labelRef}>{cps.length ? `week ${fmt.week(cps[0].checkpoint)}` : ""}</span></motion.div>
           </div>
         </div>
         <div className="lp-weeks" ref={weeksRef}>
           {cps.length === 0 && <div className="lp-week"><h3>Course checkpoints</h3><p className="lead">Connect the console to the service to see each checkpoint.</p></div>}
           {cps.map((c, i) => (
             <Reveal key={c.tag} className="lp-week" delay={i * 0.05}>
-              <h3>Week {Math.round(c.approx_week)} of the course</h3>
+              <h3>Week {fmt.week(c.checkpoint)} of the course</h3>
               <div className="big">{int(c.in_scope)}</div>
               <div className="muted">students still enrolled and scored</div>
               <dl>

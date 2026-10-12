@@ -16,6 +16,12 @@ from functools import lru_cache
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+AVG_COURSE_DAYS = 262
+
+
+def course_week(checkpoint: float, length_days: int = AVG_COURSE_DAYS) -> int:
+    """Course week of a checkpoint, by the same rule as the pipeline's snapshot day (snapshot_day // 7)."""
+    return max(7, int(round(length_days * checkpoint))) // 7
 
 if os.getenv("SSA_DISABLE_DOTENV", "").lower() not in {"1", "true", "yes"}:
     try:  # optional convenience for local development only (tests disable it)

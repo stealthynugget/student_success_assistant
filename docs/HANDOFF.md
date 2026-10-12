@@ -134,19 +134,7 @@ per-call usage and cost in the ledger). Models: haiku-5-5 (fast), sonnet-5-5 (ma
       parser: 0.52 / 0.62 / 0.63), so the text fusion weights (tuned with the rules parser) should be tuned per parser.
       Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
       `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
-      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
-      hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
-      Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
-      `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
-      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
-      hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
-      Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
-      `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
-      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
-      hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
-      Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
-      `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
-      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
+      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 5) for the rules parser; LLM-parsed
       hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
 - [x] 12. `ONLINE_EVAL_SAMPLE_RATE=0.1` through the API (29 analyses, 8 copilot questions): live reviews hold sampled copilot
       (2, both PASS) and analysis (1, PASS 9.3) judgements; usage and cost view populated per feature and serving model.
@@ -222,7 +210,7 @@ Phase 2 (once access is back):
     "query: "/"passage: " prefixes). The index manifest records model and prefixes and queries always use them, so an older
     index keeps working with its own model. All four indexes re-encoded; fusion and per-parser text weights re-tuned.
     Typed search (rules parser) hybrid precision@10 0.622 -> 0.737; LLM parser unchanged (lexical-only); profile hybrid at
-    week 15 unchanged (dense weight still 0), so the AI evaluation stays valid; week 6 now gives dense weight 0.5. Docker
+    week 15 unchanged (dense weight still 0), so the AI evaluation stays valid; week 5 now gives dense weight 0.5. Docker
     bakes e5 (`EMBEDDING_MODEL` build arg); verified offline in the container. `evaluate` now includes the LLM parser in
     the typed-search benchmark when an LLM is configured (it used to overwrite those rows with rules-only results).
   - *Hugging Face cache moved* from E: (removable drive) to `D:\huggingface\hub` (user-level `HF_HOME`; the machine-level
@@ -236,3 +224,24 @@ Phase 2 (once access is back):
   and outcome macro-F1 -0.003 to -0.022. Rolled back (artifacts restored byte-for-byte from a backup; code reverted). The
   current scores look close to the ceiling for this honest protocol. Kept: index builds now reuse dense vectors of
   unchanged narratives (a rebuild after a model change takes seconds instead of ~10 minutes per checkpoint).
+- **Final console check (2026-10-12).** Every page driven against the live API and read against its code. Fixed:
+  - *Week labels* disagreed (course clock "wk 6", This week "week 5", landing 23 vs console 22). One rule now everywhere,
+    `ssa.config.course_week` / `fmt.week`: the pipeline's snapshot day // 7 (weeks 5, 9, 15, 22); the clock uses the
+    cohort's own snapshot week. Model card, deck, README, DECISIONS and the architecture diagram follow it.
+  - *Presentation roles*: `/api/config` returns the temporal split; the clock and palette mark presentations as training,
+    tuning or held out (scores on training presentations are in-sample).
+  - *Case file*: precedents now use the same 6 cases as the support plan (the plan's "what happened next" summary had been
+    shown next to 8 different cases); What-if shows withdrawal risk and fail-or-withdraw together (re-engagement can shift
+    probability from Fail to Withdrawn, so withdrawal risk alone looked backwards), no tier colours on the delta, "no marks
+    yet" when the record has no scores.
+  - *This week*: upcoming assessments no longer show submission rates or AUCs (those come from after the selected week);
+    "High priority tier" renamed to the withdrawal-risk tier it is.
+  - *Copilot*: `?q=` (case file, landing) asks once and clears the URL; Retry drops the failed turn instead of duplicating it;
+    rule-based answers are no longer labelled as AI while streaming.
+  - *Insights / Model quality*: Fairness follows the course clock; signal and engagement analyses say they are for week 15;
+    the similar-case benchmark explains it is measured at week 15 only; the test presentation is read from the split;
+    DeepEval metric names are readable; a clipped chart label fixed.
+  - *Case finder*: "Searched all N" when no filter is set; "no marks yet" instead of "score -".
+  - *Feedback loop*: recalculating also needs the admin key (the route always required it), so the button is disabled
+    without it; evidence shown as text, with when and from how much feedback the proposals were calculated.
+  - HANDOFF had one paragraph repeated four times; removed.

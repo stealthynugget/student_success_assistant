@@ -9,6 +9,13 @@ import { COL, GroupedBars, HBars, SeriesLines } from "../viz";
 const useGet = (key: unknown[], path: string, query?: Record<string, any>) =>
   useQuery({ queryKey: key, queryFn: ({ signal }) => api(path, { query, signal }) });
 
+// The signal and engagement analyses are computed once, at the primary checkpoint (they do not follow the course clock).
+function usePrimaryWeek() {
+  const { config } = useStore();
+  const c = config?.checkpoints.find((x) => x.primary);
+  return c ? fmt.week(c.checkpoint) : null;
+}
+
 export default function Insights() {
   const [tab, setTab] = useState("signals");
   return (
@@ -28,6 +35,7 @@ export default function Insights() {
 
 function Signals() {
   const q = useGet(["factors"], "/insights/factors");
+  const wk = usePrimaryWeek();
   const [sel, setSel] = useState(0);
   if (q.error) return <ErrorNote error={q.error as ApiError} />;
   if (!q.data) return <Loading lines={6} />;
@@ -38,7 +46,7 @@ function Signals() {
     <div className="grid two">
       <div className="stack">
         <h2 className="h3">Biggest gaps in fail-or-withdraw rates</h2>
-        <p className="small muted">Difference between the best and worst fifth of students on each signal, among {fmt.int(d.n)} historical students still enrolled at the checkpoint (base rate {fmt.pct(d.base_rates.poor_outcome)}). Select a signal to see its fifths.</p>
+        <p className="small muted">Difference between the best and worst fifth of students on each signal, among {fmt.int(d.n)} historical students still enrolled at week {wk ?? "-"} (base rate {fmt.pct(d.base_rates.poor_outcome)}). Select a signal to see its fifths.</p>
         <div className="table-wrap"><table className="data">
           <thead><tr><th scope="col">Signal</th><th scope="col" className="num">Rate gap</th><th scope="col" className="num">Rank correlation</th></tr></thead>
           <tbody>{f.slice(0, 14).map((x: any, i: number) => (
@@ -62,6 +70,7 @@ function Signals() {
 
 function Engagement() {
   const { module } = useStore();
+  const wk = usePrimaryWeek();
   const q = useGet(["course-trends", module], "/trends/course", { code_module: module });
   if (q.error) return <ErrorNote error={q.error as ApiError} />;
   if (!q.data) return <Loading />;
@@ -74,7 +83,7 @@ function Engagement() {
       <SeriesLines label="Weekly activity by final outcome" yLabel="mean clicks per student"
         series={order.map((k) => ({ key: k, name: k, values: d.weekly_mean_clicks_by_outcome[k], color: COL[k] }))}
         markers={Object.entries(d.first_week_below_60pct_of_pass).filter(([, w]) => w != null).map(([k, w]) => ({ x: w as number, label: `${k} diverge`, color: COL[k] }))} />
-      <p className="muted">Students who eventually withdrew fall below 60% of passing students' activity from week {d.first_week_below_60pct_of_pass.Withdrawn ?? "-"}; those who eventually failed from week {d.first_week_below_60pct_of_pass.Fail ?? "-"}. Students who had already left at the checkpoint are excluded.</p>
+      <p className="muted">Students who eventually withdrew fall below 60% of passing students' activity from week {d.first_week_below_60pct_of_pass.Withdrawn ?? "-"}; those who eventually failed from week {d.first_week_below_60pct_of_pass.Fail ?? "-"}. Students who had already left by week {wk ?? "-"} are excluded.</p>
     </div>
   );
 }
@@ -91,14 +100,14 @@ function Assessments() {
       <div className="stack">
         <h2 className="h3">How strongly missing each assessment marks later failure or withdrawal</h2>
         <HBars label="Non-submission AUC per assessment" max={1} format={(v) => v.toFixed(2)}
-          items={rows.map((a: any) => ({ label: `${a.assessment_type} week ${a.deadline_week}`, value: a.non_submission_auc_for_poor_outcome || 0.5,
+          items={rows.map((a: any) => ({ label: `${a.assessment_type} ${a.deadline_week != null ? `week ${a.deadline_week}` : a.id_assessment}`, value: a.non_submission_auc_for_poor_outcome || 0.5,
             color: a.assessment_type === "TMA" ? COL.ink : COL.median }))} />
         <p className="small muted">{d.note}</p>
       </div>
       <div className="table-wrap"><table className="data">
         <thead><tr><th scope="col">Assessment</th><th scope="col" className="num">Week</th><th scope="col" className="num">Weight</th><th scope="col" className="num">Submitted</th>
           <th scope="col" className="num">Mean score</th><th scope="col" className="num">Late</th><th scope="col" className="num">Score AUC</th></tr></thead>
-        <tbody>{rows.map((a: any) => <tr key={a.id_assessment}><td>{a.assessment_type} {a.id_assessment}</td><td className="num">{a.deadline_week}</td><td className="num">{a.weight}</td>
+        <tbody>{rows.map((a: any) => <tr key={a.id_assessment}><td>{a.assessment_type} {a.id_assessment}</td><td className="num">{a.deadline_week ?? "-"}</td><td className="num">{a.weight}</td>
           <td className="num">{fmt.pct(a.submission_rate)}</td><td className="num">{fmt.num(a.mean_score, 0)}</td><td className="num">{fmt.pct(a.late_rate)}</td>
           <td className="num">{a.score_auc_for_poor_outcome ? a.score_auc_for_poor_outcome.toFixed(2) : "-"}</td></tr>)}</tbody></table></div>
     </div>
@@ -106,6 +115,8 @@ function Assessments() {
 }
 
 function Weeks() {
+  const { config } = useStore();
+  const test = config?.split?.test?.join(" and ");
   const q = useGet(["checkpoint-metrics"], "/insights/checkpoints");
   if (q.error) return <ErrorNote error={q.error as ApiError} />;
   if (!q.data) return <Loading />;
@@ -114,16 +125,16 @@ function Weeks() {
     <div className="grid two">
       <div className="stack">
         <h2 className="h3">How early can we tell?</h2>
-        <GroupedBars label="Withdrawal model quality at each checkpoint" categories={cps.map((c: any) => `week ${Math.round(c.approx_week)}`)} max={1} format={(v) => v.toFixed(2)}
+        <GroupedBars label="Withdrawal model quality at each checkpoint" categories={cps.map((c: any) => `week ${fmt.week(c.checkpoint)}`)} max={1} format={(v) => v.toFixed(2)}
           series={[{ name: "ROC-AUC", color: COL.ink, values: cps.map((c: any) => c.withdrawal.roc_auc) },
             { name: "PR-AUC", color: "var(--ink-2)", values: cps.map((c: any) => c.withdrawal.pr_auc) },
             { name: "Share who later withdraw", color: COL.median, values: cps.map((c: any) => c.withdrawal.positive_rate) }]} />
       </div>
       <div className="table-wrap"><table className="data"><thead><tr><th scope="col">Week</th><th scope="col" className="num">Still enrolled</th><th scope="col" className="num">ROC-AUC</th>
         <th scope="col" className="num">Calibration error</th><th scope="col" className="num">Outcome macro-F1</th><th scope="col" className="num">Precision at 10%</th></tr></thead>
-        <tbody>{cps.map((c: any) => <tr key={c.tag}><td>{Math.round(c.approx_week)}</td><td className="num">{fmt.int(c.in_scope)}</td><td className="num">{c.withdrawal.roc_auc.toFixed(3)}</td>
+        <tbody>{cps.map((c: any) => <tr key={c.tag}><td>{fmt.week(c.checkpoint)}</td><td className="num">{fmt.int(c.in_scope)}</td><td className="num">{c.withdrawal.roc_auc.toFixed(3)}</td>
           <td className="num">{c.withdrawal.ece_10.toFixed(3)}</td><td className="num">{c.outcome_macro_f1.toFixed(3)}</td><td className="num">{fmt.pct(c.prioritization_precision_at_10)}</td></tr>)}</tbody></table>
-        <p className="small muted">Later checkpoints see more evidence, but fewer students remain to help. Each row is scored on the untouched 2014J presentation.</p></div>
+        <p className="small muted">Later checkpoints see more evidence, but fewer students remain to help. Each row is scored on {test ? `the untouched ${test} presentation` : "the untouched test presentation"}.</p></div>
     </div>
   );
 }
@@ -146,7 +157,8 @@ function ThresholdReview({ review }: { review: any }) {
 }
 
 function Fairness() {
-  const q = useGet(["metrics", null], "/metrics");
+  const { checkpoint } = useStore();
+  const q = useGet(["metrics", checkpoint], "/metrics", { checkpoint });
   if (q.error) return <ErrorNote error={q.error as ApiError} />;
   if (!q.data) return <Loading />;
   const f = (q.data as any).fairness;
@@ -154,7 +166,7 @@ function Fairness() {
   const attrs = Object.entries(f.attributes) as [string, any][];
   return (
     <div className="stack">
-      <p>A descriptive audit of the High tier on the test presentation. Each attribute's gap is set against the gap that random group labels
+      <p>A descriptive audit of the High tier on the test presentation, as of week {fmt.week((q.data as any).checkpoint)} on the course clock. Each attribute's gap is set against the gap that random group labels
         would give at the same group sizes, so sampling noise is not mistaken for a group difference.</p>
       <HBars label="Equal-opportunity gap by attribute" max={Math.max(0.3, ...attrs.map(([, v]) => v.equal_opportunity_gap || 0))} format={(v) => v.toFixed(2)}
         items={attrs.map(([k, v]) => { const flag = (v.equal_opportunity_gap || 0) > 0.15; // tier colours mean tier only: flag in words

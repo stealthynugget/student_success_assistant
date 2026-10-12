@@ -17,6 +17,15 @@ def test_config_and_overview(handlers):
     assert [c["checkpoint"] for c in cfg["checkpoints"]] == [0.25, 0.4]
     ov = handlers.overview()
     assert ov["totals"]["in_scope"] > 0 and ov["presentations"]
+    assert set(cfg["split"]) >= {"train", "test"}  # the console labels presentations by their role
+
+
+def test_course_week_matches_cohort_snapshot_week(handlers):
+    """Every page and the report name a checkpoint's week with one rule: the pipeline's snapshot day // 7."""
+    from ssa.config import course_week
+    assert [course_week(c) for c in (0.15, 0.25, 0.4, 0.6)] == [5, 9, 15, 22]
+    c = handlers.cohort("AAA", "2014J", 0.4)
+    assert course_week(0.4, c["course_length_days"]) == c["snapshot_week"]
 
 
 def test_students_list_sorted_and_filtered(handlers):

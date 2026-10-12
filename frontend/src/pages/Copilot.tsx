@@ -99,25 +99,36 @@ function Tools({ tools, final }: { tools: ToolCard[]; final: boolean }) {
 
 export default function Copilot() {
   const { module, presentation, checkpoint, config } = useStore();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [q, setQ] = useState(params.get("q") || "");
+  const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<ApiError | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const ctl = useRef<AbortController | null>(null);
   useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [turns.length]);  // newer browsers return a Promise
   useEffect(() => () => ctl.current?.abort(), []);
+  // Arriving with ?q= (from a case file or the landing page) asks that question once, then clears it from the URL.
+  const asked = useRef(false);
+  useEffect(() => {
+    const initial = params.get("q")?.trim();
+    if (!initial || asked.current || checkpoint == null) return;
+    const t = setTimeout(() => { asked.current = true; setParams({}, { replace: true }); ask(initial); }); // timer: survives StrictMode's remount
+    return () => clearTimeout(t);
+  }, [checkpoint]); // eslint-disable-line react-hooks/exhaustive-deps
   const suggestions = [`Who should I contact first in ${module} ${presentation}?`, `Give me an overview of ${module} ${presentation}`,
     `Which assessments matter most in ${module}?`, "Which factors are most associated with withdrawal?", "How accurate is the withdrawal model?"];
 
   const update = (fn: (t: Turn) => Turn) => setTurns((ts) => ts.map((t, i) => (i === ts.length - 1 ? fn(t) : t)));
-  const ask = async (text?: string) => {
+  // retry: drop the failed question and its answer first, so neither is sent as history nor shown twice
+  const ask = async (text?: string, retry = false) => {
     const question = (text ?? q).trim();
     if (!question || busy) return;
     setQ(""); setErr(null); setBusy(true);
-    const history = turns.filter((t) => t.status !== "error").map((t) => ({ role: t.role, content: t.content })).slice(-10);
-    setTurns((ts) => [...ts, { role: "user", content: question }, { role: "assistant", content: "", status: "streaming", tools: [] }]);
+    const base = retry ? turns.slice(0, -2) : turns;
+    const history = base.flatMap((t, i) => (t.role === "user" && base[i + 1]?.status === "done" ? [t, base[i + 1]] : []))
+      .map((t) => ({ role: t.role, content: t.content })).slice(-10);
+    setTurns([...base, { role: "user", content: question }, { role: "assistant", content: "", status: "streaming", tools: [] }]);
     ctl.current = new AbortController();
     try {
       await streamCopilot({ question, history, checkpoint, use_llm: true }, (e) => {
@@ -148,7 +159,7 @@ export default function Copilot() {
           <div key={i} className="msg assistant">
             <Tools tools={t.tools || []} final={t.status === "done"} />
             {(t.content || t.status === "done") && (
-              <Generated source={t.meta?.source ?? "llm"} title="Copilot" pending={t.status === "streaming"}
+              <Generated source={t.meta?.source ?? (config?.llm.configured ? "llm" : "rules")} title="Copilot" pending={t.status === "streaming"}
                 extra={t.status === "streaming" ? <span style={{ fontWeight: 400 }}>writing, checks pending</span>
                   : t.revised ? <span style={{ fontWeight: 400 }}>revised after the grounding check</span> : null}>
                 <Answer text={t.content} ids={citable(t.tools || [])} />{t.status === "streaming" && <span className="caret" aria-hidden="true" />}
@@ -163,11 +174,11 @@ export default function Copilot() {
         ))}
         <div ref={end} />
       </div>
-      {err && <ErrorNote error={err} onRetry={() => { const last = [...turns].reverse().find((t) => t.role === "user"); if (last) ask(last.content); }} />}
+      {err && <ErrorNote error={err} onRetry={() => { const last = turns[turns.length - 2]; if (last?.role === "user") ask(last.content, true); }} />}
       <form className="row section" onSubmit={(e) => { e.preventDefault(); ask(); }}>
         <label className="visually-hidden" htmlFor="copilot-q">Your question</label>
         <input id="copilot-q" style={{ flex: 1, minWidth: 240 }} value={q} onChange={(e) => setQ(e.target.value)} maxLength={1500}
-          placeholder={`e.g. Tell me about student 59272 in ${module} ${presentation}`} />
+          placeholder={`e.g. How many students in ${module} ${presentation} have stopped submitting work?`} />
         <button className="primary" type="submit" disabled={busy || !q.trim()}><ArrowUp aria-hidden="true" />Ask</button>
         {turns.length > 0 && <button type="button" onClick={() => { ctl.current?.abort(); setTurns([]); setBusy(false); }}><RotateCcw aria-hidden="true" />Start over</button>}
       </form>

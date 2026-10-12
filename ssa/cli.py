@@ -13,7 +13,7 @@ import time
 import warnings
 from pathlib import Path
 
-from ssa.config import PROJECT_ROOT, get_settings
+from ssa.config import PROJECT_ROOT, course_week, get_settings
 from ssa.utils import get_logger, read_json, write_json
 
 log = get_logger("ssa.cli")
@@ -52,7 +52,7 @@ def cmd_train(args):
         o = outcome.fit(df)
         log.info(f"[{sc.tag}] outcome: macro-F1 {o['test']['macro_f1']:.3f}")
         p = Prioritizer(sc).fit(df, risk, outcome)
-        summary.append({"checkpoint": sc.cutoff_fraction, "tag": sc.tag, "approx_week": round(sc.cutoff_fraction * 262 / 7, 1),
+        summary.append({"checkpoint": sc.cutoff_fraction, "tag": sc.tag, "approx_week": course_week(sc.cutoff_fraction),
                         "in_scope": int((df["in_scope"] == 1).sum()), "withdrawal": m["test"], "thresholds": m["thresholds"],
                         "outcome_macro_f1": o["test"]["macro_f1"],
                         "p_poor_auc": o["poor_outcome_from_p_fail_plus_p_withdrawn_test"]["roc_auc"],

@@ -44,7 +44,7 @@ export default function Today() {
         <>
           <div className="stats">
             <Stat value={<CountUp value={c.in_scope} format={fmt.int} />} label={`students still enrolled at week ${c.snapshot_week}`} />
-            <Stat value={<CountUp value={c.tiers.High} format={fmt.int} />} label="in the High priority tier" tone="high" />
+            <Stat value={<CountUp value={c.tiers.High} format={fmt.int} />} label="in the High withdrawal-risk tier" tone="high" />
             <Stat value={<CountUp value={c.expected_withdrawals} format={(v) => fmt.num(v, 0)} />} label="withdrawals expected from now on (sum of calibrated risks)" />
             <Stat value={<CountUp value={c.expected_fail_or_withdraw} format={(v) => fmt.num(v, 0)} />} label="expected to fail or withdraw" />
             <Stat value={<CountUp value={c.already_withdrawn} format={fmt.int} />} label="already left before this week (not scored)" />
@@ -88,7 +88,7 @@ export default function Today() {
               <p className="small muted">Calibrated probability of withdrawing after week {c.snapshot_week}. Tier cut-offs ({fmt.pct(c.thresholds.medium)} and {fmt.pct(c.thresholds.high)}) were learned on earlier presentations.</p>
             </section>
             <section className="stack" aria-labelledby="drivers-h">
-              <h2 className="h3" id="drivers-h">What drives High priority here</h2>
+              <h2 className="h3" id="drivers-h">What drives High withdrawal risk here</h2>
               {c.common_high_tier_drivers.length ? (
                 <div className="bars-h">
                   {c.common_high_tier_drivers.map(([label, n]: [string, number]) => (
@@ -113,12 +113,13 @@ export default function Today() {
               <h2 className="h3" id="ass-h">Assessments</h2>
               <div className="table-wrap"><table className="data">
                 <thead><tr><th scope="col">Type</th><th scope="col" className="num">Week</th><th scope="col" className="num">Weight</th>
-                  <th scope="col" className="num">Usually submitted</th><th scope="col" className="num">Missing it signals risk</th></tr></thead>
+                  <th scope="col" className="num">Submitted</th><th scope="col" className="num">Missing it signals risk</th></tr></thead>
                 <tbody>{c.assessments.filter((a: any) => a.assessment_type !== "Exam").map((a: any) => (
                   <tr key={a.id_assessment} style={a.upcoming ? {} : { color: "var(--muted)" }}>
                     <td>{a.assessment_type}{a.upcoming ? <strong> upcoming</strong> : ""}</td><td className="num">{a.deadline_week ?? "-"}</td><td className="num">{a.weight}</td>
-                    <td className="num">{fmt.pct(a.submission_rate)}</td><td className="num">{a.non_submission_auc_for_poor_outcome ? a.non_submission_auc_for_poor_outcome.toFixed(2) : "-"}</td></tr>))}</tbody></table></div>
-              <p className="small muted">The last column is an AUC from this presentation's complete records: 0.5 means no signal; higher means missing it more strongly marks students who later failed or withdrew.</p>
+                    {a.upcoming ? <td className="num" colSpan={2}>not yet due</td> : <>
+                      <td className="num">{fmt.pct(a.submission_rate)}</td><td className="num">{a.non_submission_auc_for_poor_outcome ? a.non_submission_auc_for_poor_outcome.toFixed(2) : "-"}</td></>}</tr>))}</tbody></table></div>
+              <p className="small muted">For assessments already due. The last column is an AUC from this presentation's records: 0.5 means no signal; higher means missing it more strongly marks students who later failed or withdrew. Upcoming assessments show no figures, since they would come from after this week.</p>
             </section>
           </div>
         </>

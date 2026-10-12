@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-12 18:35 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-12 20:27 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -178,7 +178,7 @@ Sensitive attributes are excluded from the model, so remaining gaps come from pr
 ## Early warning across the course (test presentation, students still enrolled at each point)
 | Course week | Still enrolled | ROC-AUC | PR-AUC | Base rate | ECE | Outcome macro-F1 |
 |---|---|---|---|---|---|---|
-| 6 | 27,157 | 0.686 | 0.316 | 0.179 | 0.017 | 0.397 |
+| 5 | 27,157 | 0.686 | 0.316 | 0.179 | 0.017 | 0.397 |
 | 9 | 26,241 | 0.700 | 0.289 | 0.150 | 0.011 | 0.454 |
 | 15 | 25,204 | 0.726 | 0.263 | 0.113 | 0.009 | 0.485 |
 | 22 | 23,926 | 0.773 | 0.176 | 0.058 | 0.008 | 0.531 |

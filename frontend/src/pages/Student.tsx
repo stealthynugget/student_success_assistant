@@ -45,7 +45,7 @@ export default function Student() {
   const ok = !!pred.data;
   const trend = q("trend", "/trends/student", { student: ref, checkpoint }, ok);
   const timeline = q("timeline", "/students/timeline", { student: ref }, ok);
-  const similar = q("similar", "/retrieve-similar", { student: ref, top_k: 8, checkpoint, understand: false }, ok);
+  const similar = q("similar", "/retrieve-similar", { student: ref, top_k: 6, checkpoint, understand: false }, ok);
   const [analysis, setAnalysis] = useState<{ status: string; steps?: StepState[]; data?: any; error?: ApiError }>({ status: "idle" });
   useEffect(() => { setAnalysis({ status: "idle" }); }, [ref, checkpoint]);
   const active = useScrollSpy(OUTLINE.map(([k]) => k));
@@ -322,8 +322,9 @@ function WhatIf({ ref_, checkpoint, base }: { ref_: any; checkpoint: number | nu
     return () => clearTimeout(t);
   }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!v || !base) return null;
-  const b = base.withdrawal_risk.withdrawal_risk;
-  const w = res?.withdrawal_risk.withdrawal_risk;
+  const b = base.withdrawal_risk.withdrawal_risk, bp = base.outcome_prediction.p_poor_outcome;
+  const w = res?.withdrawal_risk.withdrawal_risk, wp = res?.outcome_prediction.p_poor_outcome;
+  const delta = (x: number) => `${x >= 0.005 ? "+" : ""}${fmt.pct(x)}`;
   const slider = (key: string, label: string, min: number, max: number, step: number, show: (x: number) => string) => (
     <label className="field">{label}: <strong>{show(v[key])}</strong>
       <input type="range" min={min} max={max} step={step} value={v[key]}
@@ -332,7 +333,8 @@ function WhatIf({ ref_, checkpoint, base }: { ref_: any; checkpoint: number | nu
     <Section id="whatif" title="What if" sub="Change a few signals of this real record to see how the estimate responds. Associations, not guaranteed effects.">
       <div className="grid two">
         <div className="stack">
-          {slider("weighted_score", "Weighted assessment score", 0, 100, 1, (x) => x.toFixed(0))}
+          {slider("weighted_score", "Weighted assessment score", 0, 100, 1,
+            (x) => (v.snap.weighted_score == null && !v.moved.includes("weighted_score") ? "no marks yet" : x.toFixed(0)))}
           {slider("missed_rate", "Share of due work missed", 0, 1, 0.05, (x) => fmt.pct(x))}
           {slider("days_since_last_activity", "Days since last online activity", 0, v.snap.snapshot_day || 100, 1, (x) => String(x))}
           {slider("clicks_pct", "Activity compared with cohort (percentile)", 0, 1, 0.05, (x) => fmt.pct(x))}
@@ -341,10 +343,12 @@ function WhatIf({ ref_, checkpoint, base }: { ref_: any; checkpoint: number | nu
           {err && <ErrorNote error={err} />}
           {!res && !err && <p className="muted">Move a slider to see how the estimate responds.</p>}
           {res && <>
-            <div className="stats"><div className="stat"><div className="v">{fmt.pct(w)}</div><div className="l">withdrawal risk with these changes</div></div>
-              <div className="stat"><div className="v" style={{ color: w > b ? COL.High : COL.Low }}>{w > b ? "+" : ""}{fmt.pct(w - b)}</div>
-                <div className="l">compared with the real record ({fmt.pct(b)})</div></div></div>
-            <Tier tier={res.withdrawal_risk.risk_tier} />
+            <div className="stats">
+              <div className="stat"><div className="v">{fmt.pct(w)}</div><div className="l">withdrawal risk with these changes ({delta(w - b)} on the real record's {fmt.pct(b)})</div></div>
+              <div className="stat"><div className="v">{fmt.pct(wp)}</div><div className="l">chance of failing or withdrawing ({delta(wp - bp)} on {fmt.pct(bp)})</div></div></div>
+            <p className="small muted">The two models can move in different directions: a change that makes failing less likely can leave a student
+              no less likely to withdraw. Read them together.</p>
+            <div className="row small">Withdrawal tier with these changes <Tier tier={res.withdrawal_risk.risk_tier} /></div>
             {res.input_quality.out_of_distribution.length > 0 && <div className="note warn">Some changed values fall outside what the model has seen: {res.input_quality.out_of_distribution.map((x: any) => x.label).join(", ")}.</div>}
           </>}
         </div>

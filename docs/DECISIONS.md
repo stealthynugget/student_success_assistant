@@ -6,7 +6,7 @@ Each decision lists what was chosen, what else was considered, and why. Measured
 | # | Decision | Alternatives considered | Why | Evidence |
 |---|---|---|---|---|
 | 1 | Score only students still enrolled at each checkpoint; evaluate on a later presentation (temporal split) | random split over all students | v4's 0.90 AUC came from scoring students who had already left; a random split leaks the future | Model card: data and population; `docs/AUDIT_FIXES.md` |
-| 2 | Four checkpoints (weeks ~6, 9, 15, 22), one model bundle each | one model at one week | advisors need warnings early, and accuracy and base rates change through the course | Model card: early warning across the course |
+| 2 | Four checkpoints (weeks 5, 9, 15, 22), one model bundle each | one model at one week | advisors need warnings early, and accuracy and base rates change through the course | Model card: early warning across the course |
 | 3 | Gradient-boosted trees (XGBoost), calibrated, TreeSHAP explanations | logistic regression (kept as baseline), neural nets | best ranking on tabular features, exact per-student explanations, fast on CPU | Model card: withdrawal model, ablations |
 | 4 | Sensitive attributes excluded from the model; used only for the fairness audit and filters | include them for accuracy | they add essentially nothing to accuracy and would make the scores harder to defend | Model card: ablation "full_with_sensitive", fairness audit |
 | 5 | Learned prioritisation with a one-standard-error rule | the v4 hand formula; best grid point only | weights fitted for precision at advisor capacity; the 1-SE rule prefers a blend that uses actionable signals when it is statistically as good | Model card: prioritisation |
