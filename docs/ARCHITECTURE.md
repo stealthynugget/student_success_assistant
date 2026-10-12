@@ -16,7 +16,7 @@ assessment analytics, engagement trends) are built once.
 | Withdrawal model | `ssa.models.risk` | `artifacts/models/withdrawal_model.joblib` (engine, Platt calibrator, tier thresholds, reference stats) |
 | Outcome model | `ssa.models.outcome` | `outcome_model.joblib` (class-weighted GBM, prior correction, temperature) |
 | Prioritiser | `ssa.models.prioritization` | `prioritization.json` (weights learned on validation) |
-| Case index | `ssa.retrieval.hybrid` | `artifacts/index/` (vectors, descriptors, narratives, manifest, tuned fusion weights) |
+| Case index | `ssa.retrieval.hybrid`, `ssa.retrieval.vector_store` | `artifacts/checkpoints/<c>/index/`: `vectors.lance` (LanceDB table: behavioural + dense vectors with filterable metadata), descriptors and narratives, manifest, tuned fusion weights |
 | Evaluation | `ssa.evaluation.*`, `ssa.retrieval.benchmark` | `artifacts/metrics/*.json`, `artifacts/analysis/*.json` |
 | Quality gate | `ssa.cli.quality_gate` | `artifacts/metrics/quality_gate.json` (thresholds, not file existence) |
 | Reports | `ssa.reporting` | `docs/MODEL_CARD.md`, `docs/Student_Success_Assistant_10min.pptx` |

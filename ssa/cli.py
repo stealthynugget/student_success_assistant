@@ -87,6 +87,10 @@ def cmd_index(args):
     from ssa.models.risk import WithdrawalRiskModel
     from ssa.retrieval.benchmark import tune_fusion_weights, tune_text_weights
     from ssa.retrieval.hybrid import HistoricalCaseIndex
+    if getattr(args, "migrate_vectors", False):
+        for sc in _checkpoints(args):
+            log.info(f"[{sc.tag}] {HistoricalCaseIndex(sc).migrate_vectors(remove_arrays=True)}")
+        return
     for sc in _checkpoints(args):
         df = load_features(sc)
         risk = WithdrawalRiskModel(sc).load()
@@ -304,6 +308,7 @@ def main(argv=None):
     sp = sub.add_parser("train"); sp.add_argument("--checkpoint", type=float); sp.add_argument("--only", choices=["prioritization"])
     sp.set_defaults(fn=cmd_train)
     sp = sub.add_parser("index"); sp.add_argument("--no-dense", action="store_true"); sp.add_argument("--checkpoint", type=float)
+    sp.add_argument("--migrate-vectors", action="store_true", help="move existing .npy vectors into the vector database")
     sp.set_defaults(fn=cmd_index)
     sp = sub.add_parser("evaluate"); sp.add_argument("--queries", type=int, default=600); sp.set_defaults(fn=cmd_evaluate)  # noqa: E702
     sp = sub.add_parser("search-benchmark"); sp.add_argument("--tune", action="store_true"); sp.add_argument("--llm", action="store_true")

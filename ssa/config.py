@@ -62,6 +62,7 @@ class Settings:
     # Retrieval
     embedding_model_name: str = "all-MiniLM-L6-v2"
     enable_text_embeddings: bool = True
+    vector_store: str = "lancedb"  # lancedb (embedded vector database) | numpy; see ssa/retrieval/vector_store.py
 
     # LLM
     llm_enabled: bool = True  # master switch: when false no LLM request is ever sent, whatever keys are set
@@ -288,6 +289,7 @@ def get_settings() -> Settings:
         priority_selection=(os.getenv("PRIORITY_SELECTION") or "one_se_blend").lower(),
         embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2"),
         enable_text_embeddings=_bool("ENABLE_TEXT_EMBEDDINGS", True),
+        vector_store=(os.getenv("VECTOR_STORE") or "lancedb").strip().lower(),
         llm_enabled=_bool("LLM_ENABLED", True),
         llm_provider=provider,
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY") or None,

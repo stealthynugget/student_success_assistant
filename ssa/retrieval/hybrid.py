@@ -14,6 +14,10 @@ Channels
 Fusion is weighted Reciprocal Rank Fusion; weights can be learned from advisor feedback
 (``artifacts/feedback/retrieval_weights.json``).
 
+Storage: both vector channels live in a vector database (LanceDB, embedded, one table per checkpoint index with the
+filterable metadata; ``VECTOR_STORE=numpy`` keeps plain arrays). Searches run there with the metadata filter pushed
+down as a pre-filter and exact kNN; the lexical channel (BM25) stays in memory. See ``ssa/retrieval/vector_store.py``.
+
 Guards
 ------
 * ``historical_only`` (default): when the query belongs to presentation P, only presentations
@@ -30,6 +34,7 @@ import json
 import os
 import shutil
 import time
+from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +45,8 @@ from ssa.config import Settings, get_settings
 from ssa.data.vocab import presentation_sort_key
 from ssa.evaluation.metrics import wilson_interval
 from ssa.retrieval.descriptors import build_corpus_text, descriptor_tokens, narrative, parse_query
+from ssa.retrieval.vector_store import Filter as VectorFilter
+from ssa.retrieval.vector_store import LanceVectorStore, NumpyVectorStore, VectorStore, filter_sql
 from ssa.utils import get_logger, read_json, write_json
 
 log = get_logger("ssa.retrieval")
@@ -62,6 +69,7 @@ FILTERABLE = {"code_module", "code_presentation", "region", "highest_education",
               "studied_credits", "num_of_prev_attempts", "final_result"}
 DEFAULT_WEIGHTS = {"behavioural": 1.0, "lexical": 0.5, "dense": 0.5}
 MODES = ("hybrid", "behavioural", "lexical", "dense")
+LANCE_DIR_NAME = "vectors.lance"
 
 
 class BM25:
@@ -94,13 +102,13 @@ class HistoricalCaseIndex:
         self.settings = settings or get_settings()
         self.dir = Path(index_dir or self.settings.index_dir)
         self.meta: pd.DataFrame | None = None
-        self.vectors: np.ndarray | None = None
-        self.dense: np.ndarray | None = None
+        self.store: VectorStore | None = None
         self.bm25: BM25 | None = None
         self.tokens: list[list[str]] = []
         self.scaler: dict = {}
         self.manifest: dict = {}
         self._encoder = None
+        self._qcache: OrderedDict[str, np.ndarray] = OrderedDict()
 
     # ------------------------------------------------------------------ build
     @staticmethod
@@ -139,10 +147,9 @@ class HistoricalCaseIndex:
         if tmp.exists():
             shutil.rmtree(tmp)
         tmp.mkdir(parents=True)
-        np.save(tmp / "vectors.npy", Z.astype(np.float32))
-        if dense is not None:
-            np.save(tmp / "dense.npy", dense.astype(np.float32))
         meta = corpus[[c for c in META_COLUMNS if c in corpus]].copy()
+        arrays = {"behavioural": Z.astype(np.float32), **({"dense": dense.astype(np.float32)} if dense is not None else {})}
+        backend = self._write_vectors(tmp, meta, arrays)
         meta["tokens"] = [" ".join(t) for t in tokens]
         meta["narrative"] = texts
         meta.to_csv(tmp / "meta.csv.gz", index=False, compression="gzip")
@@ -152,7 +159,7 @@ class HistoricalCaseIndex:
         manifest = {"index_version": INDEX_VERSION, "built_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "n_docs": int(len(meta)),
                     "presentations": sorted(meta["code_presentation"].unique().tolist(), key=presentation_sort_key),
                     "dense_channel": dense_status, "embedding_model": self.settings.embedding_model_name if dense is not None else None,
-                    "vector_checksum": digest, "supervised_feature_weights": bool(importance),
+                    "vector_checksum": digest, "vector_store": backend, "supervised_feature_weights": bool(importance),
                     "build_seconds": round(time.time() - t0, 1)}
         write_json(tmp / "manifest.json", manifest)
         # atomic swap
@@ -165,6 +172,37 @@ class HistoricalCaseIndex:
         self.load()
         log.info(f"index built: {manifest['n_docs']:,} docs, dense={dense_status}")
         return manifest
+
+    def _write_vectors(self, directory: Path, meta: pd.DataFrame, arrays: dict[str, np.ndarray]) -> str:
+        if self.settings.vector_store == "lancedb":
+            LanceVectorStore.write(directory, meta, arrays)
+            return "lancedb"
+        NumpyVectorStore.write(directory, arrays)
+        return "numpy"
+
+    def migrate_vectors(self, remove_arrays: bool = False) -> dict:
+        """Move an index built with ``.npy`` arrays into the vector database without re-encoding anything."""
+        if LanceVectorStore.exists(self.dir):
+            return {"status": "already in the vector database", "dir": str(self.dir)}
+        arrays = NumpyVectorStore.load(self.dir).arrays
+        if not arrays:
+            raise FileNotFoundError(f"no vector arrays to migrate in {self.dir}")
+        meta = pd.read_csv(self.dir / "meta.csv.gz", low_memory=False)
+        tmp = self.dir / f".{LANCE_DIR_NAME}.tmp-{os.getpid()}"
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        tmp.mkdir()
+        LanceVectorStore.write(tmp, meta, arrays)
+        os.replace(tmp / LANCE_DIR_NAME, self.dir / LANCE_DIR_NAME)
+        shutil.rmtree(tmp, ignore_errors=True)
+        man = read_json(self.dir / "manifest.json")
+        man["vector_store"] = "lancedb"
+        write_json(self.dir / "manifest.json", man)
+        if remove_arrays:
+            for f in ("vectors.npy", "dense.npy"):
+                (self.dir / f).unlink(missing_ok=True)
+        self.meta = None  # reload on next use
+        return {"status": "migrated", "dir": str(self.dir), "channels": sorted(arrays), "rows": int(len(meta))}
 
     @staticmethod
     def _scale(X, med, iqr, w):
@@ -179,6 +217,20 @@ class HistoricalCaseIndex:
             self._encoder = SentenceTransformer(self.settings.embedding_model_name)
         return np.asarray(self._encoder.encode(texts, batch_size=256, normalize_embeddings=True, show_progress_bar=False))
 
+    def _encode_query(self, text: str) -> np.ndarray:
+        """Query embeddings are cached: tuning and benchmarks re-rank the same query under many fusion weightings."""
+        with _LOAD_LOCK:
+            hit = self._qcache.get(text)
+            if hit is not None:
+                self._qcache.move_to_end(text)
+                return hit
+        v = self._encode([text])[0]
+        with _LOAD_LOCK:
+            self._qcache[text] = v
+            while len(self._qcache) > 2048:
+                self._qcache.popitem(last=False)
+        return v
+
     # ------------------------------------------------------------------- load
     def load(self):
         """Load atomically: all attributes are assigned together under a lock, so concurrent
@@ -190,18 +242,32 @@ class HistoricalCaseIndex:
             manifest = read_json(man)
             if manifest.get("index_version") != INDEX_VERSION:
                 raise RuntimeError(f"index version {manifest.get('index_version')} != {INDEX_VERSION}; rebuild the index")
-            vectors = np.load(self.dir / "vectors.npy")
             meta = pd.read_csv(self.dir / "meta.csv.gz", low_memory=False)
-            if len(meta) != len(vectors) or len(meta) != manifest["n_docs"]:
+            store = self._open_store()
+            if len(meta) != manifest["n_docs"] or store.count() != len(meta):
                 raise RuntimeError("index files are inconsistent with manifest")
             tokens = [str(t).split() for t in meta["tokens"].fillna("")]
-            dpath = self.dir / "dense.npy"
-            self.manifest, self.vectors, self.scaler, self.tokens = manifest, vectors, read_json(self.dir / "scaler.json"), tokens
+            self.manifest, self.store, self.scaler, self.tokens = manifest, store, read_json(self.dir / "scaler.json"), tokens
             self.bm25 = BM25(tokens)
-            self.dense = np.load(dpath) if dpath.exists() else None
             self._pres_rank = meta["code_presentation"].map(lambda p: presentation_sort_key(p)).tolist()
             self.meta = meta  # assigned last: readiness flag for _ensure()
         return self
+
+    def _open_store(self) -> VectorStore:
+        want_lance = self.settings.vector_store == "lancedb"
+        if LanceVectorStore.exists(self.dir) and (want_lance or not (self.dir / "vectors.npy").exists()):
+            return LanceVectorStore(self.dir)
+        if (self.dir / "vectors.npy").exists():
+            if want_lance:
+                log.warning(f"index at {self.dir} still uses .npy arrays; move it into the vector database with "
+                            "`python -m ssa.cli index --migrate-vectors`")
+            return NumpyVectorStore.load(self.dir)
+        raise FileNotFoundError(f"no vectors in {self.dir}; run `python -m ssa.cli index`")
+
+    @property
+    def has_dense(self) -> bool:
+        self._ensure()
+        return self.store.has("dense")
 
     @property
     def ready(self) -> bool:
@@ -263,13 +329,16 @@ class HistoricalCaseIndex:
             return {"cases": [], "outcome_summary": None, "channels_used": [], "candidates": 0}
         w = self.fusion_weights(text_only=profile is None, parser=parser)
         w.update(weights or {})
+        flt = VectorFilter(allowed, filter_sql(filters, exclude, before)
+                           if self.store.backend == "lancedb" else None)
 
         ranks: dict[str, np.ndarray] = {}
-        distances = None
+        qv, dist_of = None, {}
         if profile is not None and mode in ("hybrid", "behavioural"):
             qv = self.query_vector(profile)
-            distances = np.sqrt(((self.vectors[idx] - qv) ** 2).sum(1))
-            ranks["behavioural"] = idx[np.argsort(distances, kind="stable")]
+            docs, dist = self.store.search("behavioural", qv, flt, candidate_pool)
+            ranks["behavioural"] = docs
+            dist_of = {int(d): float(x) for d, x in zip(docs, dist, strict=True)}
         q_tokens = []
         if mode in ("hybrid", "lexical"):
             q_tokens = (descriptor_tokens(profile, include_outcome=False) if profile is not None else []) + (parse_query(text) if text else [])
@@ -277,12 +346,11 @@ class HistoricalCaseIndex:
             if q_tokens:
                 sc = self.bm25.scores(q_tokens)[idx]
                 ranks["lexical"] = idx[np.argsort(-sc, kind="stable")]
-        if mode in ("hybrid", "dense") and self.dense is not None and (text or profile is not None):
+        if mode in ("hybrid", "dense") and self.store.has("dense") and (text or profile is not None):
             q_text = (text or "") + (" " + narrative(profile, include_outcome=False) if profile is not None else "")
             try:
-                qe = self._encode([q_text.strip()])[0]
-                sc = self.dense[idx] @ qe
-                ranks["dense"] = idx[np.argsort(-sc, kind="stable")]
+                qe = self._encode_query(q_text.strip())
+                ranks["dense"] = self.store.search("dense", qe, flt, candidate_pool)[0]
             except Exception as exc:
                 log.warning(f"dense query failed: {exc}")
         if not ranks:
@@ -297,7 +365,10 @@ class HistoricalCaseIndex:
         ordered = sorted(fused, key=lambda d: -fused[d])
         top = ordered[:top_k]
         q_set = set(q_tokens)
-        dist_of = {int(d): float(x) for d, x in zip(idx, distances)} if distances is not None else {}
+        missing = [int(d) for d in top if qv is not None and int(d) not in dist_of]
+        if missing:  # a fused top case outside the behavioural candidates: compute its distance directly
+            V = self.store.vectors("behavioural", missing)
+            dist_of.update({d: float(np.sqrt(((v - qv) ** 2).sum())) for d, v in zip(missing, V, strict=True)})
         cases = []
         for d in top:
             row = self.meta.iloc[d]

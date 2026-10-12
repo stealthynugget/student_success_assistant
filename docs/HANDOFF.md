@@ -140,6 +140,14 @@ per-call usage and cost in the ledger). Models: haiku-5-5 (fast), sonnet-5-5 (ma
       `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
       lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
       hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
+      Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
+      `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
+      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
+      hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
+      Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
+      `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
+      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
+      hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
 - [x] 12. `ONLINE_EVAL_SAMPLE_RATE=0.1` through the API (29 analyses, 8 copilot questions): live reviews hold sampled copilot
       (2, both PASS) and analysis (1, PASS 9.3) judgements; usage and cost view populated per feature and serving model.
 - [x] 13. `python -m ssa.cli report` regenerated the model card (AI section now lists synthesis, briefing, outreach, DeepEval,
@@ -180,3 +188,12 @@ Phase 1 (now):
 Phase 2 (once access is back):
 > LLM API access is now available and the keys are in .env. Read docs/HANDOFF.md and do Phase 2 items 10-13 in order.
 > Report the evaluation results and any prompt or code changes before regenerating the report.
+
+## Later additions (2026-10-12)
+- **Vector database.** The case-index vectors (behavioural features and MiniLM narrative embeddings) moved from `.npy`
+  arrays to LanceDB (`ssa/retrieval/vector_store.py`; one embedded table per checkpoint with the filterable metadata and
+  bitmap/B-tree scalar indexes). Filters, earlier-presentations-only and self-exclusion run as a pre-filter in the
+  database; kNN is exact. Checked against the NumPy scan on 1,800 sampled searches over the four checkpoints: identical
+  top 10 and outcome mix in all of them (ties to 1e-5 now break by index position in both backends; the stored c40
+  benchmark moved by at most 5e-4). Search latency about 40 ms vs 31 ms. `VECTOR_STORE=numpy` keeps arrays;
+  `python -m ssa.cli index --migrate-vectors` converts an existing index without re-encoding.

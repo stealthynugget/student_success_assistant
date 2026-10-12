@@ -99,7 +99,7 @@ def tune_fusion_weights(df: pd.DataFrame, index: HistoricalCaseIndex, n_queries:
     if len(pres) < 3:
         return {"status": "skipped", "reason": "needs >= 3 presentations"}
     grid = [{"behavioural": 1.0, "lexical": lw, "dense": dw} for lw in (0.0, 0.25, 0.5, 1.0, 2.0)
-            for dw in ((0.0, 0.5, 1.0) if index.dense is not None else (0.0,))]
+            for dw in ((0.0, 0.5, 1.0) if index.has_dense else (0.0,))]
     specs = [(f"w{i}", "hybrid", w) for i, w in enumerate(grid)]
     res, _, _ = _evaluate(df, index, pres[-2], specs, n_queries, k, seed)
     def objective(r):
@@ -117,7 +117,7 @@ def run_benchmark(df: pd.DataFrame, index: HistoricalCaseIndex, n_queries: int =
     s = settings or get_settings()
     index._ensure()
     pres = sorted(df.loc[df["in_scope"] == 1, "code_presentation"].unique(), key=presentation_sort_key)
-    modes = [m for m in MODES if m != "dense" or index.dense is not None]
+    modes = [m for m in MODES if m != "dense" or index.has_dense]
     specs = [(m, m, None) for m in modes] + [("random", "random", None)]
     out, y_w, y_p = _evaluate(df, index, pres[-1], specs, n_queries, k, seed)
     result = {
@@ -210,7 +210,7 @@ def tune_text_weights(index: HistoricalCaseIndex, settings: Settings | None = No
     from ssa.evaluation.search_queries import text_tuning_queries
     s = settings or get_settings()
     index._ensure()
-    if index.dense is None:
+    if not index.has_dense:
         return {"status": "skipped", "reason": "dense channel not built"}
     grid = [{"lexical": 1.0, "dense": dw} for dw in TEXT_DENSE_GRID]
     modes = {f"w{i}": ("hybrid", w) for i, w in enumerate(grid)}
@@ -240,7 +240,7 @@ def run_text_benchmark(index: HistoricalCaseIndex, settings: Settings | None = N
     index._ensure()
     queries = text_search_queries()
     base_modes = {"lexical": ("lexical", None), "hybrid": ("hybrid", None)}
-    if index.dense is not None:
+    if index.has_dense:
         base_modes["dense"] = ("dense", None)
     out = {"queries": len(queries), "k": k, "corpus": "all indexed enrolments (typed search has no query student)",
            "relevance": "a returned case is relevant when it meets every expected filter and shows every expected behaviour",
