@@ -12,3 +12,5 @@ httpx>=0.27,<1
 python-dotenv>=1.0,<2
 # Vector database for the case index (embedded; exact filtered kNN). VECTOR_STORE=numpy falls back to arrays.
 lancedb>=0.40,<1
+# Agent orchestration: the support workflow as a LangGraph state graph (WORKFLOW_ENGINE=python: reference orchestrator)
+langgraph>=1.2,<2

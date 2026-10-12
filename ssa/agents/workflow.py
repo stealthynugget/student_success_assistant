@@ -238,6 +238,25 @@ class SupportWorkflow:
                 on_step(name, out)
             return out
 
+        engine = self._engine()
+        if engine == "langgraph":
+            from ssa.agents.graph import run_graph
+            mode, plan = run_graph(self, st, step)
+        else:
+            mode, plan = self._run_python(st, step)
+        return self._finalize(st, profile, risk, mode, plan, t0, engine)
+
+    def _engine(self) -> str:
+        want = getattr(self.settings, "workflow_engine", "langgraph") if self.settings is not None else "langgraph"
+        if want == "langgraph":
+            try:
+                import langgraph  # noqa: F401
+            except ImportError:  # optional dependency: the reference orchestrator gives the same result
+                return "python"
+        return want
+
+    def _run_python(self, st: dict, step) -> tuple[str, dict]:
+        """Reference orchestrator (WORKFLOW_ENGINE=python); ssa.agents.graph runs the same steps as a LangGraph graph."""
         st["performance"] = step("performance", lambda: self.performance_agent(st))
         st["risk_analysis"] = step("risk", lambda: self.risk_agent(st))
         mode = self.route(st)
@@ -261,6 +280,9 @@ class SupportWorkflow:
             plan = self._deterministic_plan(st, mode)
             final_violations = self._validate_plan(plan, st)
             st["trace"].append({"agent": "deterministic_planner", "violations": final_violations})
+        return mode, plan
+
+    def _finalize(self, st: dict, profile: dict, risk: dict, mode: str, plan: dict, t0: float, engine: str) -> dict:
         policy = POLICY[risk["risk_tier"]]
         actions = [{"id": i, "text": ACTIONS_BY_ID[i].text, "channel": ACTIONS_BY_ID[i].channel} for i in plan["action_ids"]]
         intervention = {
@@ -279,5 +301,5 @@ class SupportWorkflow:
             "guardrails": {"final_plan_violations": self._validate_plan(plan, st),
                            "sensitive_attributes_sent_to_llm": False, "evidence_only": True},
             "trace": st["trace"], "llm_usage": self.llm.usage_summary() if self.llm else {"calls": 0},
-            "seconds": round(time.time() - t0, 3),
+            "orchestration": engine, "seconds": round(time.time() - t0, 3),
         }

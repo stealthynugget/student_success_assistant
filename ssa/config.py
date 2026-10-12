@@ -62,6 +62,7 @@ class Settings:
     # Retrieval
     embedding_model_name: str = "all-MiniLM-L6-v2"
     enable_text_embeddings: bool = True
+    workflow_engine: str = "langgraph"  # langgraph | python (reference orchestrator, same results)
     vector_store: str = "lancedb"  # lancedb (embedded vector database) | numpy; see ssa/retrieval/vector_store.py
 
     # LLM
@@ -216,6 +217,8 @@ class Settings:
 
     def effort_for(self, feature: str) -> str:
         fast, main, judge = self.claude_effort
+        if feature.startswith("ragas"):  # short claim-verification prompts: the judge model at low effort
+            return fast
         return judge if feature.startswith(("judge", "deepeval")) else fast if feature in FAST_FEATURES else main
 
     def ensure_dirs(self) -> None:
@@ -290,6 +293,7 @@ def get_settings() -> Settings:
         embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2"),
         enable_text_embeddings=_bool("ENABLE_TEXT_EMBEDDINGS", True),
         vector_store=(os.getenv("VECTOR_STORE") or "lancedb").strip().lower(),
+        workflow_engine=(os.getenv("WORKFLOW_ENGINE") or "langgraph").strip().lower(),
         llm_enabled=_bool("LLM_ENABLED", True),
         llm_provider=provider,
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY") or None,
