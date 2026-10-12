@@ -4,7 +4,7 @@ import {
   User, Users, type LucideIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api, fmt } from "./api";
@@ -61,10 +61,22 @@ function CourseClock() {
     queryKey: ["cohort", module, presentation, checkpoint], enabled: !!(config && presentation && checkpoint),
     queryFn: ({ signal }) => api("/cohort", { query: { code_module: module, code_presentation: presentation, checkpoint }, signal }),
   });
+  // Draw in real pixels at the ribbon's measured width (a stretched viewBox turns dots into ovals when the page is zoomed).
+  const ribbon = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(1000);
+  useLayoutEffect(() => {
+    const el = ribbon.current;
+    if (!el) return;
+    const measure = () => setW(Math.max(320, Math.round(el.getBoundingClientRect().width)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [config]);
   if (!config) return null;
   const lengthDays: number = cohort.data?.course_length_days || 262;
   const weeks = Math.ceil(lengthDays / 7);
-  const W = 1000, l = 16, r = 16;
+  const l = 16, r = 16;
   const x = (w: number) => l + (w / weeks) * (W - l - r);
   const snapWeek: number | undefined = cohort.data?.snapshot_week;
   const stops = config.checkpoints.filter((c) => c.available).map((c) => ({ ...c,
@@ -84,8 +96,8 @@ function CourseClock() {
         <label>Presentation <select value={presentation} onChange={(e) => setPresentation(e.target.value)}>
           {(config.presentations_by_module[module] || []).map((p) => <option key={p} value={p}>{p}{splitNote(config, p)}</option>)}</select></label>
       </div>
-      <div className="ribbon">
-        <svg viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" role="group" aria-label="Course timeline: choose the point in the course to look at">
+      <div className="ribbon" ref={ribbon}>
+        <svg width={W} height={56} viewBox={`0 0 ${W} 56`} role="group" aria-label="Course timeline: choose the point in the course to look at">
           <line x1={x(0)} x2={x(weeks)} y1="30" y2="30" stroke="var(--ink)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
           {Array.from({ length: weeks + 1 }).map((_, w) => (
             <line key={w} x1={x(w)} x2={x(w)} y1="26" y2="34" stroke="var(--muted)" vectorEffect="non-scaling-stroke" />

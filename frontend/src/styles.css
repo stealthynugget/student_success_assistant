@@ -108,6 +108,8 @@ small, .small { font-size: 13px; }
 .clock-row { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap; }
 .clock-row label { display: flex; align-items: center; gap: var(--s2); font-size: 12px; color: var(--muted); font-family: var(--mono); }
 .clock-title { font-weight: 500; font-size: 15px; margin-right: auto; letter-spacing: -0.01em; }
+/* Same measure as .content (1320px including its side padding), so the clock lines up with the page on wide or zoomed-out screens. */
+.clock-row, .ribbon { max-width: calc(1320px - 2 * var(--s6)); }
 .ribbon { margin-top: var(--s2); position: relative; }
 .ribbon svg { display: block; width: 100%; height: 56px; overflow: visible; }
 .ribbon .labels { font-family: var(--mono); font-size: 11px; }
