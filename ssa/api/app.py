@@ -75,7 +75,7 @@ def create_app(settings: Settings | None = None, service=None, llm=None) -> Fast
     if workers.isdigit() and int(workers) > 1 and s.shared_state == "memory":
         log.warning(f"WEB_CONCURRENCY={workers} with SHARED_STATE=memory: job polls and rate limits are per worker; "
                     "set SHARED_STATE=sqlite (docs/DEPLOYMENT.md)")
-    app = FastAPI(title="Student Success Assistant API", version="6.0.0", default_response_class=SafeJSONResponse,
+    app = FastAPI(title="Uplift: Student Success Assistant API", version="6.0.0", default_response_class=SafeJSONResponse,
                   docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json",
                   description="Early warning, historical-case retrieval, multi-agent support planning, copilot and evaluation over OULAD.")
     app.state.handlers = h

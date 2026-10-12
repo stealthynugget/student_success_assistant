@@ -233,7 +233,7 @@ export default function App() {
       <a className="skip" href="#main">Skip to content</a>
       <nav className="rail" aria-label="Main">
         <NavLink to="/" className="brand"><BrandMark className="mark" />
-          <div><strong>Student support</strong><span>OULAD early warning</span></div></NavLink>
+          <div><strong>Uplift</strong><span>Student success</span></div></NavLink>
         {NAV.map(([to, label, Icon]) => (
           <NavLink key={to} to={to} className="nav" aria-current={(page === to.slice(1) || (to === "/students" && page === "students")) ? "page" : undefined}>
             <Icon aria-hidden="true" />{label}</NavLink>

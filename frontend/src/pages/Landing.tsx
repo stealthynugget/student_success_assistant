@@ -51,7 +51,7 @@ function Nav() {
   return (
     <header className="lp-nav">
       <div className="lp-frame">
-        <Link to="/" className="lp-brand"><BrandMark />Student support</Link>
+        <Link to="/" className="lp-brand"><BrandMark />Uplift</Link>
         <nav className="lp-links" aria-label="Page">
           <a href="#product">Product</a><a href="#clock">Course clock</a><a href="#evaluation">Evaluation</a>
           <a href="/api/docs" target="_blank" rel="noreferrer">API</a>
@@ -291,7 +291,7 @@ function Close() {
         </div>
       </section>
       <footer className="lp-foot">
-        <span className="lp-brand"><BrandMark />Student support</span>
+        <span className="lp-brand"><BrandMark />Uplift</span>
         <span>Built on the Open University Learning Analytics Dataset.</span>
         <nav aria-label="Footer">
           <Link to="/today">Console</Link><a href="/api/docs" target="_blank" rel="noreferrer">API docs</a>
@@ -306,7 +306,7 @@ export default function Landing() {
   const { config } = useStore();
   const metrics = useQuery({ queryKey: ["metrics", null], queryFn: ({ signal }) => api("/metrics", { signal }), retry: 0 });
   const trends = useQuery({ queryKey: ["trends-course", "BBB"], queryFn: ({ signal }) => api("/trends/course", { query: { code_module: "BBB" }, signal }), retry: 0 });
-  useEffect(() => { document.title = "Student support: early warning for module teams"; return () => { document.title = "Student support console"; }; }, []);
+  useEffect(() => { document.title = "Uplift: student success assistant for module teams"; return () => { document.title = "Uplift console"; }; }, []);
   return (
     <div className="lp">
       <a className="skip" href="#lp-main">Skip to content</a>

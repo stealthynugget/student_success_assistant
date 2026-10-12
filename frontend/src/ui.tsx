@@ -197,13 +197,14 @@ export function TabSet({ tabs, value, onChange, label, children }: { tabs: [stri
   );
 }
 
-/** The course clock as a mark: a timeline with ticks and the marker on the point in the course you are looking at. */
+/** Uplift's mark: a weekly-activity line dips, then climbs from the yellow diamond, the point in the course where support
+ *  happens (the clock's yellow and deadline diamond), over the course clock's tick baseline. */
 export function BrandMark({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <rect x="8" y="3" width="8" height="7" rx="1" fill="var(--marker)" />
-      <line x1="2" y1="16" x2="22" y2="16" stroke="currentColor" strokeWidth="1.6" />
-      {[2, 7, 12, 17, 22].map((x) => <line key={x} x1={x} y1="13.5" x2={x} y2="18.5" stroke="currentColor" strokeWidth="1.2" />)}
+      <path d="M1.5 21.5H22.5M1.5 19.75V21.5M8.5 19.75V21.5M15.5 19.75V21.5M22.5 19.75V21.5" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+      <path d="M1.5 8.5L4.5 7.5L8.5 15L12 11.5L14.5 12.5L22.5 3" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="miter" />
+      <rect x="6.25" y="12.75" width="4.5" height="4.5" rx="0.3" transform="rotate(45 8.5 15)" fill="var(--marker)" />
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-# Student Success Assistant (v6)
+# Uplift: Student Success Assistant (v6)
 
 OULAD early-warning and student-support microservice: FastAPI backend (`ssa/`) + React console (`frontend/`).
 Built in a claude.ai conversation; work now continues here. Read `docs/HANDOFF.md` first for history, what was

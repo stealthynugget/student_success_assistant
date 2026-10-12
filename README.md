@@ -1,4 +1,4 @@
-# Student Success Assistant — v6
+# Uplift — Student Success Assistant (v6)
 
 An early-warning and student-support microservice built on the complete Open University Learning Analytics Dataset
 (OULAD). At several points in a course it finds students **who are still enrolled** and likely to withdraw or fail,

@@ -239,7 +239,7 @@ def model_card(s: Settings | None = None) -> str:
     tiers = w["test_tiers"]
     cap = {c["fraction"]: c for c in w["test_capacity"]}
     lines = [
-        "# Model card — Student Success Assistant v5", "",
+        "# Model card — Uplift, the Student Success Assistant (v6)", "",
         f"_Generated {time.strftime('%Y-%m-%d %H:%M')} from `artifacts/metrics/*.json` by `python -m ssa.cli report`. "
         f"Engine: **{w.get('engine')}**. Evidence profile: **{q.get('profile', 'unknown')}** "
         f"(quality gate {'passed' if q.get('passed') else 'NOT passed'})._", "",
@@ -407,7 +407,7 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
     t = w["test"]
     pa = w["population_audit"]
 
-    sl = slide("AI-powered Student Success Assistant", dark=True,
+    sl = slide("Uplift: an AI-powered Student Success Assistant", dark=True,
                notes="Ten-minute walkthrough: the problem, how the system works, honest evidence, and how it stays safe and improves.")
     text(sl, 0.6, 2.2, 12, 2, ["Early warning, comparable historical cases and supportive action plans for advisors",
                                 f"OULAD · {d['records']:,} enrolments · evidence profile: {q.get('profile')} · quality gate "

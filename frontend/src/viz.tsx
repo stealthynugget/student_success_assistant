@@ -141,7 +141,8 @@ export function RiskTrail({ points, current, height = 150 }: { points: TrailPoin
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data} margin={{ top: 12, right: 16, bottom: 4, left: 0 }}>
           <CartesianGrid vertical={false} />
-          <XAxis dataKey="week" type="number" domain={["dataMin - 1", "dataMax + 1"]} {...AXIS} tickFormatter={(w) => `wk ${w}`} allowDecimals={false} />
+          <XAxis dataKey="week" type="number" domain={["dataMin - 1", "dataMax + 1"]} {...AXIS} tickFormatter={(w) => `wk ${w}`} allowDecimals={false}
+            ticks={data.map((d) => d.week)} />
           <YAxis {...AXIS} width={44} domain={[0, (max: number) => Math.min(1, Math.max(0.3, max * 1.3))]} tickFormatter={(v) => fmt.pct(v)} />
           <Tooltip content={<Tip fmtV={(v) => fmt.pct(v)} />} />
           <Line dataKey="risk" name="Withdrawal risk" stroke="var(--ink)" strokeWidth={2} dot={dot} activeDot={false} isAnimationActive={!reduce} />

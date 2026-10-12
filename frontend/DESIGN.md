@@ -1,5 +1,8 @@
 # Console design plan
 
+**Name.** Uplift, the Student Success Assistant. The mark: weekly activity dips, then turns upward at a yellow diamond,
+the point in the course where support happens (the same yellow and diamond as the course clock), over a hairline baseline.
+
 **Subject.** A support workbench for Open University module teams: tutors, student-support advisors and module leads.
 **Primary job.** Decide who to contact this week, understand why, and send the right message — with evidence.
 
