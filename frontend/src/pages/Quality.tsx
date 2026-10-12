@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, CircleAlert, TriangleAlert } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, fmt, runJob, type ApiError } from "../api";
 import { useStore } from "../store";
-import { Empty, ErrorNote, Loading, TabSet } from "../ui";
+import { Empty, ErrorNote, Loading, TabSet, Tier } from "../ui";
 import { COL, GroupedBars, HBars, Reliability } from "../viz";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -178,13 +178,14 @@ function HumanReview() {
         <div className="stat"><div className="v">{ag.verdict_agreement != null ? fmt.pct(ag.verdict_agreement) : "–"}</div><div className="l">same verdict as the AI judge</div></div>
         <div className="stat"><div className="v">{ag.verdict_cohen_kappa != null ? ag.verdict_cohen_kappa.toFixed(2) : "–"}</div><div className="l">Cohen's kappa (chance-corrected)</div></div>
       </div>
-      {ag.status && <p className="small muted">{ag.status === "insufficient overlap" ? `Agreement needs at least 5 rated cases (${ag.n} so far).` : ag.status}.</p>}
+      {ag.status && <p className="small muted">{ag.status === "insufficient overlap" ? `Agreement needs at least 5 rated cases (${ag.n} so far).`
+        : ag.status === "no human labels provided" ? "No ratings yet." : `${ag.status}.`}</p>}
       <div className="table-wrap"><table className="data">
         <caption className="visually-hidden">Evaluation cases to rate</caption>
         <thead><tr><th scope="col">Student</th><th scope="col">Course</th><th scope="col">Tier</th><th scope="col">Plan by</th><th scope="col">Your rating</th><th scope="col"></th></tr></thead>
         <tbody>{d.cases.map((c: any) => (
           <tr key={`${c.id_student}-${c.code_module}`} className={open?.id_student === c.id_student && open?.code_module === c.code_module ? "hl" : undefined}>
-            <td>{c.id_student}</td><td>{c.code_module} {c.code_presentation}</td><td>{c.tier}</td><td>{c.plan_source?.startsWith("llm") ? "AI" : "Computed"}</td>
+            <td>{c.id_student}</td><td>{c.code_module} {c.code_presentation}</td><td><Tier tier={c.tier} /></td><td>{c.plan_source?.startsWith("llm") ? "AI" : "Computed"}</td>
             <td>{c.label ? `${c.label.verdict === "PASS" ? "Pass" : "Needs review"}, ${c.label.overall}/10` : "–"}</td>
             <td><button className="ghost" onClick={() => setOpen(c)}>{c.label ? "Re-rate" : "Rate"}</button></td></tr>))}</tbody>
       </table></div>
@@ -194,7 +195,10 @@ function HumanReview() {
 }
 
 function RateCase({ c, onSaved }: { c: any; onSaved: () => void }) {
-  const { notify } = useStore();
+  const { notify, config } = useStore();
+  const box = useRef<HTMLElement>(null);
+  useEffect(() => { box.current?.scrollIntoView({ behavior: "smooth", block: "start" }); box.current?.focus(); }, []);
+  const aiOn = !!config?.llm.configured;
   const [res, setRes] = useState<{ status: string; data?: any; error?: ApiError }>({ status: "idle" });
   const [verdict, setVerdict] = useState(c.label?.verdict || "PASS");
   const [overall, setOverall] = useState<number>(c.label?.overall ?? 7);
@@ -217,10 +221,12 @@ function RateCase({ c, onSaved }: { c: any; onSaved: () => void }) {
   const wf = res.data?.workflow;
   const plan = wf?.intervention_plan;
   return (
-    <section className="panel stack" aria-labelledby="rate-h">
+    <section className="panel stack" aria-labelledby="rate-h" ref={box} tabIndex={-1}>
       <h3 className="h4" id="rate-h">Rate student {c.id_student} in {c.code_module} {c.code_presentation}</h3>
-      {res.status === "idle" && <div><button className="primary" onClick={load}>Show the analysis and plan</button>
-        <p className="small muted">Loads the same AI draft the evaluation scored (from the response cache when unchanged).</p></div>}
+      {res.status === "idle" && (aiOn ? <div><button className="primary" onClick={load}>Show the analysis and plan</button>
+        <p className="small muted">Loads the same AI draft the evaluation scored (from the response cache when unchanged).</p></div>
+        : <p className="muted">AI drafting is not connected, so this would show a computed plan instead of the AI draft that was evaluated.
+          Connect AI (Settings) to rate this case.</p>)}
       {res.status === "loading" && <Loading lines={4} label="Loading the analysis" />}
       {res.error && <ErrorNote error={res.error} />}
       {wf && <>

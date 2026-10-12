@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-12 07:27 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-12 09:32 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -85,6 +85,39 @@ Queries: 600 in-scope students of 2014J; corpus: earlier presentations, same mod
 | llm | dense | 0.714 | 0.978 | 0.671 |
 | llm | random_corpus | 0.071 | n/a | n/a |
 | llm | random_within_parsed_filters | 0.459 | n/a | n/a |
+
+### Retrieval strategy: documents, top-K and context
+One document per enrolment, no chunking: each case is one record (snapshot features, discretised descriptors and a ~60-word narrative), and splitting it would separate the signals from the outcome they lead to. Each channel ranks the eligible cases and fusion reads the top 200 of each (weighted RRF, k = 60). The agents and the precedent synthesis get the 6 closest cases as stories (what happened after this point), and outcome statistics use the 50 nearest. Sensitivity on 300 students of 2014J (hybrid):
+
+| Setting | Neighbour-vote AUC (fail/withdraw) | Neighbour-vote AUC (withdrawal) | Outcome agreement |
+|---|---|---|---|
+| k=3 | 0.784 | 0.530 | 0.713 |
+| k=6 | 0.821 | 0.581 | 0.717 |
+| k=10 | 0.832 | 0.574 | 0.707 |
+| k=20 | 0.838 | 0.582 | 0.707 |
+| k=50 | 0.840 | 0.664 | 0.698 |
+| k=6 random | 0.435 | 0.601 | 0.508 |
+| pool=50 | 0.831 | 0.593 | 0.706 |
+| pool=100 | 0.824 | 0.565 | 0.703 |
+| pool=200 | 0.832 | 0.574 | 0.707 |
+| pool=500 | 0.831 | 0.582 | 0.707 |
+| rrf_k=10 | 0.834 | 0.619 | 0.711 |
+| rrf_k=30 | 0.832 | 0.606 | 0.709 |
+| rrf_k=60 | 0.832 | 0.574 | 0.707 |
+| rrf_k=100 | 0.833 | 0.564 | 0.710 |
+
+More neighbours make better outcome estimates (hence 50 for the outcome mix); a handful of concrete stories keeps the context readable and the prompt short (hence 6). Pool depth and the RRF constant hardly matter here.
+
+## Embedding model evaluation (dense narrative channel)
+Same 25,204 case narratives (checkpoint 0.4), encoded on CPU by each model. Typed search: 40 labelled queries, hybrid ratio tuned per model on separate tuning queries. Precedents: dense-only neighbours of 300 test students. Current model: all-MiniLM-L6-v2.
+
+| Model | Params (M) | Dims | Index MB | Encode docs/s | Query ms | Typed llm: dense / hybrid P@10 | Typed rules: dense / hybrid P@10 | Precedents vote-AUC (fail/withdraw) |
+|---|---|---|---|---|---|---|---|---|
+| all-MiniLM-L6-v2 | 22.7 | 384 | 36.9 | 77.0 | 49.8 | 0.714 / 0.862 | 0.634 / 0.622 | 0.750 |
+| all-mpnet-base-v2 | 109.5 | 768 | 73.8 | 13.1 | 109.0 | 0.669 / 0.862 | 0.567 / 0.637 | 0.730 |
+| bge-small-en-v1.5 | 33.4 | 384 | 36.9 | 45.5 | 58.3 | 0.772 / 0.862 | 0.697 / 0.719 | 0.777 |
+| e5-small-v2 | 33.4 | 384 | 36.9 | 47.5 | 49.4 | 0.802 / 0.862 | 0.729 / 0.737 | 0.832 |
+| gte-small | 33.4 | 384 | 36.9 | 8.9 | 49.0 | 0.807 / 0.862 | 0.732 / 0.739 | 0.769 |
 
 ## Fairness audit (High tier, test presentation)
 Groups count towards a gap only with n >= 50, at least 30 withdrawn and 30 not withdrawn. Chance gap: the median max−min gap when group labels are shuffled among withdrawn students (1,000 permutations), overall and within each module.
@@ -177,7 +210,27 @@ DeepEval (claude-opus-5-5; mean score, 95% bootstrap CI, pass rate):
 | No protected-attribute reasoning | 0.97 | 0.95–0.99 | 100% |
 | Supportive and non-punitive | 0.90 | 0.90–0.90 | 100% |
 
-Models: claude-haiku-5-5 (search, outreach, note themes), claude-sonnet-5-5 (agents, copilot, synthesis, briefing), claude-opus-5-5 (judge, A/B, DeepEval). Last evaluation run: 613 calls, of which 603 were answered from the response cache of earlier runs; 0 errors; new spend $0.20 (spend across runs: `/api/llm/usage`).
+Models: claude-haiku-5-5 (search, outreach, note themes), claude-sonnet-5-5 (agents, copilot, synthesis, briefing), claude-opus-5-5 (judge, A/B, DeepEval). Last evaluation run: 613 calls, of which 613 were answered from the response cache of earlier runs; 0 errors; new spend $0.00 (spend across runs: `/api/llm/usage`).
+
+### RAGAS (retrieval-augmented features)
+Evaluator: claude-opus-5-5 (judge tier, never the generator), via the project's LLM client. Faithfulness = share of the response's claims supported by the retrieved context; hallucination rate = 1 - faithfulness. Precedent synthesis is scored on its factual sections; its advice is scored by the judge and DeepEval. Copilot answers are scored whole, so explanations of what a metric means count as unsupported.
+
+| Feature | Cases | Faithfulness | Hallucination rate | Fully supported | Response groundedness | Context relevance |
+|---|---|---|---|---|---|---|
+| copilot | 10 | 0.834 | 16.7% | 0% | 0.900 | 1.000 |
+| precedent_synthesis | 22 | 0.964 | 3.6% | 41% | 0.920 | 1.000 |
+
+### LLM selection: the same features on each tier
+Production: search understanding on claude-haiku-5-5, precedent synthesis on claude-sonnet-5-5, judge claude-opus-5-5. Same prompts, schemas, effort and code checks; only the model changes. Cost and latency per live call (from the usage ledger where this run was answered from cache).
+
+| Feature | Model | Quality | Passes code checks | Cost per call | Median latency |
+|---|---|---|---|---|---|
+| Search understanding | claude-haiku-5-5 | filter F1 0.890, exact 75% | 97% | $0.0003 | 2.06 s |
+| Search understanding | claude-sonnet-5-5 | filter F1 0.877, exact 75% | 100% | $0.0053 | 2.38 s |
+| Search understanding | claude-opus-5-5 | filter F1 0.876, exact 75% | 100% | $0.0109 | 3.31 s |
+| Precedent synthesis | claude-haiku-5-5 | judge pass 38%, faithfulness 7.12 | 80% | $0.0008 | 7.41 s |
+| Precedent synthesis | claude-sonnet-5-5 | judge pass 100%, faithfulness 8.33 | 90% | $0.0095 | 5.21 s |
+| Precedent synthesis | claude-opus-5-5 | judge pass 70%, faithfulness 7.7 (self-judged) | 100% | $0.0208 | 7.09 s |
 
 ## Limitations
 - Associations, not causes. Drivers explain the model, not the student.
