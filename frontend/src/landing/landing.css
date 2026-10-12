@@ -137,7 +137,8 @@
 
 /* agents flow */
 .lp-flow { margin-top: 56px; position: relative; }
-.lp-flow svg.wire { position: absolute; left: 0; right: 0; top: 23px; width: 100%; height: 2px; overflow: visible; }
+.lp-flow .wire { position: absolute; left: 24px; right: calc((100% - 5 * 16px) / 6 - 24px); top: 24px; height: 1px; background: var(--field);
+  transform-origin: left center; }
 .lp-flow ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; position: relative; }
 .lp-flow li .node { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid var(--ink); border-radius: var(--r); background: var(--paper);
   transition: background-color .3s var(--ease), color .3s var(--ease); }
@@ -151,7 +152,7 @@
 .lp-legend { display: flex; gap: 20px; margin-top: 18px; font: 12px var(--mono); color: var(--muted); }
 .lp-legend i { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--ink); margin-right: 8px; vertical-align: -1px; border-radius: var(--r); }
 .lp-legend i.ai { border-color: var(--ai); }
-@media (max-width: 960px) { .lp-flow ol { grid-template-columns: 1fr 1fr; row-gap: 32px; } .lp-flow svg.wire { display: none; } }
+@media (max-width: 960px) { .lp-flow ol { grid-template-columns: 1fr 1fr; row-gap: 32px; } .lp-flow .wire { display: none; } }
 
 /* evaluation (editorial numbers) */
 .lp-eval { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(32px, 6vw, 88px); margin-top: 48px; }

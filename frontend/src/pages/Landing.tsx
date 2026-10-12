@@ -233,11 +233,9 @@ function Flow() {
       <Reveal><h2 id="flow-h">How a support plan gets made.</h2>
         <p className="lead">Agents narrate evidence that the code computed. If the critic still finds a problem after one revision, a rule-based plan is used instead.</p></Reveal>
       <div className="lp-flow">
-        <svg className="wire" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true">
-          <motion.line x1="2" y1="1" x2="92" y2="1" stroke="var(--field)" strokeWidth="1" vectorEffect="non-scaling-stroke"
-            initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, amount: 0.6 }}
-            transition={{ duration: 1.6, ease: EASE }} />
-        </svg>
+        {/* one solid line through the nodes, drawn left to right as the section comes into view */}
+        <motion.div className="wire" aria-hidden="true" initial={reduce ? false : { scaleX: 0 }} whileInView={{ scaleX: 1 }}
+          viewport={{ once: true, amount: 0.6 }} transition={{ duration: 1.6, ease: EASE }} />
         <ol>{FLOW.map((f, i) => (
           <Reveal as="li" key={f.t} delay={0.12 + i * 0.12} className={f.ai ? "ai" : undefined}>
             <div className="node"><f.icon aria-hidden="true" /></div>
