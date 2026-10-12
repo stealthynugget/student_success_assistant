@@ -20,7 +20,7 @@ export default function Today() {
   const top = useQuery({ queryKey: ["top", module, presentation, checkpoint], enabled: !!checkpoint,
     queryFn: ({ signal }) => api("/prioritize", { method: "POST", body: { code_module: module, code_presentation: presentation, capacity: 0.1, limit: 8, checkpoint }, signal }) });
   const [brief, setBrief] = useState<{ status: string; steps?: StepState[]; data?: any; error?: ApiError }>({ status: "idle" });
-  useEffect(() => setBrief({ status: "idle" }), [module, presentation, checkpoint]);
+  useEffect(() => { setBrief({ status: "idle" }); }, [module, presentation, checkpoint]);
 
   const makeBrief = async () => {
     setBrief({ status: "running", steps: [] });

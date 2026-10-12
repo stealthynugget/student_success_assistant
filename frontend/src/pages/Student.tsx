@@ -47,7 +47,7 @@ export default function Student() {
   const timeline = q("timeline", "/students/timeline", { student: ref }, ok);
   const similar = q("similar", "/retrieve-similar", { student: ref, top_k: 8, checkpoint, understand: false }, ok);
   const [analysis, setAnalysis] = useState<{ status: string; steps?: StepState[]; data?: any; error?: ApiError }>({ status: "idle" });
-  useEffect(() => setAnalysis({ status: "idle" }), [ref, checkpoint]);
+  useEffect(() => { setAnalysis({ status: "idle" }); }, [ref, checkpoint]);
   const active = useScrollSpy(OUTLINE.map(([k]) => k));
 
   const runAnalysis = async (useLlm = true) => {

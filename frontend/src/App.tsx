@@ -9,7 +9,7 @@ import { Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams }
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { studentPath, useStore } from "./store";
-import { ErrorNote, Loading } from "./ui";
+import { ErrorNote, Loading, PageBoundary } from "./ui";
 // Pages load on demand (route-level code splitting).
 const CaseFinder = lazy(() => import("./pages/CaseFinder"));
 const Student = lazy(() => import("./pages/Student"));
@@ -201,12 +201,12 @@ export default function App() {
   ), []);
 
   let body;
-  if (page === "settings") body = <div className="content"><Suspense fallback={<Loading />}><Settings /></Suspense></div>;
+  if (page === "settings") body = <div className="content"><PageBoundary key={loc.pathname}><Suspense fallback={<Loading />}><Settings /></Suspense></PageBoundary></div>;
   else if (error) body = (
     <div className="content"><h1>Can't load the console</h1><p className="muted">The service didn't respond as expected.</p>
       <ErrorNote error={error} onRetry={reload} /><p style={{ marginTop: 16 }}><NavLink to="/settings">Open Settings</NavLink> to check the service address and API key.</p></div>);
   else if (!config) body = <div className="content"><p className="muted" role="status">Loading…</p></div>;
-  else body = <><CourseClock /><div className="content"><Suspense fallback={<Loading lines={4} />}>{routes}</Suspense></div></>;
+  else body = <><CourseClock /><div className="content"><PageBoundary key={loc.pathname}><Suspense fallback={<Loading lines={4} />}>{routes}</Suspense></PageBoundary></div></>;
 
   return (
     <div className="shell" onClick={onClick}>

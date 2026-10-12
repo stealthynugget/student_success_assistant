@@ -1,7 +1,7 @@
 // Shared UI primitives. Generated (AI) text is always labelled and visually distinct; computed facts are plain ink.
 import { Check, Copy, PenLine, RotateCcw } from "lucide-react";
 import { animate, AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import * as RTabs from "@radix-ui/react-tabs";
 import type { ApiError } from "./api";
 
@@ -36,10 +36,29 @@ export function Generated({ source, children, title, extra, pending }: { source?
   );
 }
 
+/** Keeps one broken page from blanking the console: the rail and course clock stay, the page shows what failed. */
+export class PageBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error("page crashed", error, info.componentStack); }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="note error" role="alert">
+        <strong>This page hit an error and could not be shown.</strong> Other pages still work.
+        <div className="small">{this.state.error.message}</div>
+        <div><button className="ghost" onClick={() => window.location.reload()}><RotateCcw aria-hidden="true" />Reload page</button></div>
+      </div>
+    );
+  }
+}
+
 export function ErrorNote({ error, onRetry }: { error?: ApiError | Error | null; onRetry?: () => void }) {
   if (!error) return null;
   const e = error as ApiError;
-  const hint = e.status === 401 ? " Add a valid API key in Settings." : e.status === 503 ? " Build the artifacts on the server, then try again." : "";
+  const hint = e.status === 401 ? " Add a valid API key in Settings."
+    : e.status === 503 && /api key/i.test(e.message || "") ? " Set STUDENT_ASSISTANT_API_KEY on the server (or SSA_DEV_MODE=1 locally), then try again."
+    : e.status === 503 ? " Build the artifacts on the server, then try again." : "";
   return (
     <div className="note error" role="alert">
       <strong>{e.message}</strong>{hint}

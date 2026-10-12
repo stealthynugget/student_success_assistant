@@ -106,7 +106,7 @@ export default function Copilot() {
   const [err, setErr] = useState<ApiError | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const ctl = useRef<AbortController | null>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: "end" }), [turns.length]);
+  useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [turns.length]);  // newer browsers return a Promise
   useEffect(() => () => ctl.current?.abort(), []);
   const suggestions = [`Who should I contact first in ${module} ${presentation}?`, `Give me an overview of ${module} ${presentation}`,
     `Which assessments matter most in ${module}?`, "Which factors are most associated with withdrawal?", "How accurate is the withdrawal model?"];
