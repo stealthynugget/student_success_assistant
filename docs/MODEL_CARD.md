@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-12 05:07 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-12 05:51 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -158,26 +158,26 @@ Generator: claude-sonnet-5-5; judge: claude-opus-5-5.
 | Support plans passing every guardrail | 100% |
 | AI plan drafts accepted / revised | 79% / 0% |
 | Judge pass rate | 96% |
-| AI plan preferred in order-swapped A/B | 95% |
+| AI plan preferred in order-swapped A/B | 89% |
 | Search understanding F1, templated (rules / AI) | 0.975 / 0.838 |
 | Search understanding F1, paraphrased (rules / AI) | 0.741 / 0.882 |
 | Copilot correct answers (rules / AI) | 100% / 100% |
 | Adversarial copilot prompts handled safely (llm) | 88% |
 | Precedent syntheses accepted by the code checks / judge pass | 92% / 82% |
-| Cohort briefings accepted by the code checks / judge pass | 80% / 75% |
+| Cohort briefings accepted by the code checks / judge pass | 100% / 100% |
 | Outreach rewrites accepted / within length / safe | 100% / 100% / 100% |
 
 DeepEval (claude-opus-5-5; mean score, 95% bootstrap CI, pass rate):
 
 | Metric | Mean | 95% CI | Pass rate |
 |---|---|---|---|
-| Actionable for an advisor | 0.65 | 0.59–0.69 | 71% |
+| Actionable for an advisor | 0.66 | 0.61–0.70 | 75% |
 | AnswerRelevancyMetric | 1.00 | 1.00–1.00 | 100% |
 | FaithfulnessMetric | 1.00 | 1.00–1.00 | 100% |
-| No protected-attribute reasoning | 0.95 | 0.93–0.97 | 100% |
-| Supportive and non-punitive | 0.90 | 0.90–0.91 | 100% |
+| No protected-attribute reasoning | 0.97 | 0.95–0.99 | 100% |
+| Supportive and non-punitive | 0.90 | 0.90–0.90 | 100% |
 
-Models: claude-haiku-5-5 (search, outreach, note themes), claude-sonnet-5-5 (agents, copilot, synthesis, briefing), claude-opus-5-5 (judge, A/B, DeepEval). Last evaluation run: 612 calls, of which 580 were answered from the response cache of earlier runs; 0 errors; new spend $0.10 (spend across runs: `/api/llm/usage`).
+Models: claude-haiku-5-5 (search, outreach, note themes), claude-sonnet-5-5 (agents, copilot, synthesis, briefing), claude-opus-5-5 (judge, A/B, DeepEval). Last evaluation run: 613 calls, of which 603 were answered from the response cache of earlier runs; 0 errors; new spend $0.20 (spend across runs: `/api/llm/usage`).
 
 ## Limitations
 - Associations, not causes. Drivers explain the model, not the student.

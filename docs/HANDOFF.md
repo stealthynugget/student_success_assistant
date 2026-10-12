@@ -136,10 +136,21 @@ per-call usage and cost in the ledger). Models: haiku-5-5 (fast), sonnet-5-5 (ma
       `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
       lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
       hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
+      Follow-up (2026-10-12): text weights are now tuned per parser (`search-benchmark --tune --llm`, stored as
+      `text_weights_by_parser`; the API uses the weights of whichever parser interpreted the query). Tuning picks
+      lexical-only for the LLM parser at every checkpoint and keeps dense 2.0 (0.25 at week 6) for the rules parser; LLM-parsed
+      hybrid precision@10 on the reported queries 0.769 -> 0.862. Cost $0.01 (161 of 200 parser calls cached).
 - [x] 12. `ONLINE_EVAL_SAMPLE_RATE=0.1` through the API (29 analyses, 8 copilot questions): live reviews hold sampled copilot
       (2, both PASS) and analysis (1, PASS 9.3) judgements; usage and cost view populated per feature and serving model.
 - [x] 13. `python -m ssa.cli report` regenerated the model card (AI section now lists synthesis, briefing, outreach, DeepEval,
       models and spend) and the deck. Total LLM spend for steps 3-4: $10.26.
+      Re-run (2026-10-12) after the risk-agent and briefing prompt fixes: $5.94, 0 errors. Analysis judge pass 96% (as
+      before); all 19 intervene plans accepted without revision (the 5 monitor cases are deterministic by design); A/B AI
+      preference 95% -> 89% (ties 5% -> 11%); DeepEval actionable pass 71% -> 75%. Briefings 4/5 accepted: BBB said "the
+      top 12 priority students", a true count missing from the evidence, so `top_priorities_count` was added to the
+      briefing evidence (the judge sees it too; no check changed) and the eval now records briefing rejections. Second
+      run, $0.20 (603 of 613 calls cached): briefings 5/5 accepted, judge pass 100%, usefulness 8.2. Total for the
+      re-runs: $6.14.
 
 ## Console upgrade brief
 Keep: the course-clock concept, the functional colour rules and every capability in `frontend/DESIGN.md`.

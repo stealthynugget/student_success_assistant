@@ -242,7 +242,8 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
     bj = [b["judge"] for b in briefs if b["judge"] and b["judge"].get("scores")]
     briefing = {"n": len(briefs), "llm_accepted_rate": float(np.mean([b["source"] == "llm" for b in briefs])) if briefs else None,
                 "judge_pass_rate": float(np.mean([j["verdict"] == "PASS" for j in bj])) if bj else None,
-                "judge_mean_usefulness": float(np.mean([j["scores"]["usefulness"] for j in bj])) if bj else None}
+                "judge_mean_usefulness": float(np.mean([j["scores"]["usefulness"] for j in bj])) if bj else None,
+                "rejected_checks": [f"{b['module']}: {c}" for b in briefs for c in b["checks"]][:10]}
 
     outs = []
     for r in rows[:6]:

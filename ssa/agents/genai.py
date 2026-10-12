@@ -234,7 +234,7 @@ def briefing_evidence(cohort: dict, ranking: dict) -> dict:
                 "common_high_tier_drivers": cohort["common_high_tier_drivers"][:5],
                 "upcoming_assessments": [{"type": a["assessment_type"], "week": a["deadline_week"], "weight": a["weight"],
                                           "historical_submission_rate": round(a["submission_rate"], 2)} for a in upcoming],
-                "top_priorities": top, "capacity": ranking.get("capacity")}
+                "top_priorities": top, "top_priorities_count": len(top), "capacity": ranking.get("capacity")}
 
 
 def cohort_briefing(llm, cohort: dict, ranking: dict, factors_top: list[dict]) -> dict:
