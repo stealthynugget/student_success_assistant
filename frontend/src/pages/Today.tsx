@@ -116,8 +116,8 @@ export default function Today() {
                   <th scope="col" className="num">Usually submitted</th><th scope="col" className="num">Missing it signals risk</th></tr></thead>
                 <tbody>{c.assessments.filter((a: any) => a.assessment_type !== "Exam").map((a: any) => (
                   <tr key={a.id_assessment} style={a.upcoming ? {} : { color: "var(--muted)" }}>
-                    <td>{a.assessment_type}{a.upcoming ? <strong> upcoming</strong> : ""}</td><td className="num">{a.deadline_week ?? "–"}</td><td className="num">{a.weight}</td>
-                    <td className="num">{fmt.pct(a.submission_rate)}</td><td className="num">{a.non_submission_auc_for_poor_outcome ? a.non_submission_auc_for_poor_outcome.toFixed(2) : "–"}</td></tr>))}</tbody></table></div>
+                    <td>{a.assessment_type}{a.upcoming ? <strong> upcoming</strong> : ""}</td><td className="num">{a.deadline_week ?? "-"}</td><td className="num">{a.weight}</td>
+                    <td className="num">{fmt.pct(a.submission_rate)}</td><td className="num">{a.non_submission_auc_for_poor_outcome ? a.non_submission_auc_for_poor_outcome.toFixed(2) : "-"}</td></tr>))}</tbody></table></div>
               <p className="small muted">The last column is an AUC from this presentation's complete records: 0.5 means no signal; higher means missing it more strongly marks students who later failed or withdrew.</p>
             </section>
           </div>

@@ -8,10 +8,13 @@ calling the same tools, every AI feature is evaluated, and advisor feedback flow
 
 **Stack:** Python 3.12 (pandas, XGBoost with TreeSHAP), LanceDB vector store, sentence-transformers (e5-small-v2),
 LangGraph agent workflow, Claude through the Anthropic API (Haiku / Sonnet / Opus by task; everything has a computed
-fallback), FastAPI + uvicorn, React 19 + TypeScript console (Vite, TanStack Query/Table, Radix, Recharts), SQLite for
+fallback), FastAPI + uvicorn, React 19 + TypeScript console and landing page (Vite, TanStack Query/Table, Radix, Recharts,
+Motion; Geist type, dark by default), SQLite for
 feedback, usage and evaluation records, DeepEval and RAGAS for AI evaluation.
 
-![Console](docs/screenshots/student.jpg)
+![Landing page](docs/screenshots/landing.jpg)
+
+![Student case file in the console](docs/screenshots/student.jpg)
 
 ## Quick start
 

@@ -175,8 +175,8 @@ function HumanReview() {
         far the judge can be trusted: agreement is computed once at least 5 cases are rated, and again on every <code>llm-eval</code> run.</p>
       <div className="stats">
         <div className="stat"><div className="v">{d.labelled} of {d.cases.length}</div><div className="l">cases rated</div></div>
-        <div className="stat"><div className="v">{ag.verdict_agreement != null ? fmt.pct(ag.verdict_agreement) : "–"}</div><div className="l">same verdict as the AI judge</div></div>
-        <div className="stat"><div className="v">{ag.verdict_cohen_kappa != null ? ag.verdict_cohen_kappa.toFixed(2) : "–"}</div><div className="l">Cohen's kappa (chance-corrected)</div></div>
+        <div className="stat"><div className="v">{ag.verdict_agreement != null ? fmt.pct(ag.verdict_agreement) : "-"}</div><div className="l">same verdict as the AI judge</div></div>
+        <div className="stat"><div className="v">{ag.verdict_cohen_kappa != null ? ag.verdict_cohen_kappa.toFixed(2) : "-"}</div><div className="l">Cohen's kappa (chance-corrected)</div></div>
       </div>
       {ag.status && <p className="small muted">{ag.status === "insufficient overlap" ? `Agreement needs at least 5 rated cases (${ag.n} so far).`
         : ag.status === "no human labels provided" ? "No ratings yet." : `${ag.status}.`}</p>}
@@ -186,7 +186,7 @@ function HumanReview() {
         <tbody>{d.cases.map((c: any) => (
           <tr key={`${c.id_student}-${c.code_module}`} className={open?.id_student === c.id_student && open?.code_module === c.code_module ? "hl" : undefined}>
             <td>{c.id_student}</td><td>{c.code_module} {c.code_presentation}</td><td><Tier tier={c.tier} /></td><td>{c.plan_source?.startsWith("llm") ? "AI" : "Computed"}</td>
-            <td>{c.label ? `${c.label.verdict === "PASS" ? "Pass" : "Needs review"}, ${c.label.overall}/10` : "–"}</td>
+            <td>{c.label ? `${c.label.verdict === "PASS" ? "Pass" : "Needs review"}, ${c.label.overall}/10` : "-"}</td>
             <td><button className="ghost" onClick={() => setOpen(c)}>{c.label ? "Re-rate" : "Rate"}</button></td></tr>))}</tbody>
       </table></div>
       {open && <RateCase key={`${open.id_student}-${open.code_module}`} c={open} onSaved={() => { q.refetch(); setOpen(null); }} />}
@@ -289,7 +289,7 @@ function Usage() {
         {d.total.unpriced > 0 && <p className="note warn">{d.total.unpriced} calls used a model without a price entry; add it with LLM_PRICE_TABLE on the server.</p>}
         {d.prices_usd_per_million_tokens && <details><summary>Prices used (USD per million tokens)</summary>
           <table className="data small"><thead><tr><th scope="col">Model</th><th scope="col" className="num">Input</th><th scope="col" className="num">Cache write</th><th scope="col" className="num">Cache read</th><th scope="col" className="num">Output</th></tr></thead>
-            <tbody>{Object.entries(d.prices_usd_per_million_tokens).map(([k, p]: [string, any]) => <tr key={k}><td>{k}</td><td className="num">{p.input}</td><td className="num">{p.cache_write ?? "–"}</td><td className="num">{p.cache_read ?? "–"}</td><td className="num">{p.output}</td></tr>)}</tbody></table></details>}
+            <tbody>{Object.entries(d.prices_usd_per_million_tokens).map(([k, p]: [string, any]) => <tr key={k}><td>{k}</td><td className="num">{p.input}</td><td className="num">{p.cache_write ?? "-"}</td><td className="num">{p.cache_read ?? "-"}</td><td className="num">{p.output}</td></tr>)}</tbody></table></details>}
       </>)}
     </div>
   );

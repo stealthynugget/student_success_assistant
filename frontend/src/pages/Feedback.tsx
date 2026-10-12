@@ -78,7 +78,7 @@ export default function Feedback() {
             <th scope="col" className="num">Rating</th><th scope="col">Acted on</th><th scope="col">Outcome</th><th scope="col">Notes</th></tr></thead>
             <tbody>{(list.data as any).items.map((r: any) => <tr key={r.id}><td>{new Date(r.created_at * 1000).toLocaleDateString("en-GB")}</td>
               <td className="small">{r.recommendation_id.slice(0, 8)}</td><td>{r.risk_tier}</td><td className="num">{r.rating}</td><td>{r.plan_accepted ? "Yes" : "No"}</td>
-              <td>{r.observed_outcome || "–"}</td><td className="small">{r.notes}</td></tr>)}</tbody></table></div>)}
+              <td>{r.observed_outcome || "-"}</td><td className="small">{r.notes}</td></tr>)}</tbody></table></div>)}
       </Section>
     </>
   );

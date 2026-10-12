@@ -9,7 +9,7 @@ import { Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams }
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { studentPath, useStore } from "./store";
-import { ErrorNote, Loading, PageBoundary } from "./ui";
+import { BrandMark, ErrorNote, Loading, PageBoundary } from "./ui";
 // Pages load on demand (route-level code splitting).
 const CaseFinder = lazy(() => import("./pages/CaseFinder"));
 const Student = lazy(() => import("./pages/Student"));
@@ -21,6 +21,7 @@ const Priorities = lazy(() => import("./pages/Priorities"));
 const Quality = lazy(() => import("./pages/Quality"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Students = lazy(() => import("./pages/Students"));
+const Landing = lazy(() => import("./pages/Landing"));
 
 const NAV: [string, string, LucideIcon][] = [
   ["/today", "This week", CalendarClock], ["/students", "Students", Users], ["/priorities", "Who to contact", SlidersHorizontal],
@@ -30,14 +31,16 @@ const NAV: [string, string, LucideIcon][] = [
 
 // ---------------------------------------------------------------- theme
 type Theme = "system" | "light" | "dark";
+// Dark is the default; "system" follows the operating system. Saved per browser (a viewer convenience only).
 function useTheme(): [Theme, () => void] {
-  const [theme, setTheme] = useState<Theme>(() => { try { return (localStorage.getItem("ssa.theme") as Theme) || "system"; } catch { return "system"; } });
+  const [theme, setTheme] = useState<Theme>(() => {
+    try { const t = localStorage.getItem("ssa.theme"); return t === "light" || t === "system" ? t : "dark"; } catch { return "dark"; }
+  });
   useEffect(() => {
-    const el = document.documentElement;
-    if (theme === "system") delete el.dataset.theme; else el.dataset.theme = theme;
+    document.documentElement.dataset.theme = theme;
     try { localStorage.setItem("ssa.theme", theme); } catch { /* ignore */ }
   }, [theme]);
-  const next = () => setTheme((t) => (t === "system" ? "dark" : t === "dark" ? "light" : "system"));
+  const next = () => setTheme((t) => (t === "dark" ? "light" : t === "light" ? "system" : "dark"));
   return [theme, next];
 }
 
@@ -96,10 +99,10 @@ function CourseClock() {
           })}
         </svg>
         {/* Labels as HTML so text stays crisp and readable at any width */}
-        <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", fontSize: 12 }}>
+        <div aria-hidden="true" className="labels" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           {stops.map((s) => (
             <span key={s.tag} style={{ position: "absolute", top: 3, left: `${(x(s.week) / W) * 100}%`, transform: "translateX(-50%)",
-              fontWeight: s === current ? 700 : 400, color: s === current ? "var(--on-marker)" : "var(--ink)" }}>wk {s.week}</span>
+              fontWeight: s === current ? 600 : 400, color: s === current ? "var(--on-marker)" : "var(--ink)" }}>wk {s.week}</span>
           ))}
           {Array.from({ length: Math.floor(weeks / 5) + 1 }).map((_, i) => (
             <span key={i} style={{ position: "absolute", top: 38, left: `${(x(i * 5) / W) * 100}%`, transform: "translateX(-50%)", color: "var(--muted)" }}>wk {i * 5}</span>
@@ -185,7 +188,6 @@ export default function App() {
   const llm = config?.llm;
   const routes = useMemo(() => (
     <Routes>
-      <Route path="/" element={<Navigate replace to="/today" />} />
       <Route path="/today" element={<Today />} />
       <Route path="/students" element={<Students />} />
       <Route path="/students/:module/:presentation/:id" element={<Student />} />
@@ -200,6 +202,12 @@ export default function App() {
     </Routes>
   ), []);
 
+  if (loc.pathname === "/") {
+    return (
+      <PageBoundary key="landing"><Suspense fallback={<div className="landing-boot" aria-busy="true" />}><Landing /></Suspense></PageBoundary>
+    );
+  }
+
   let body;
   if (page === "settings") body = <div className="content"><PageBoundary key={loc.pathname}><Suspense fallback={<Loading />}><Settings /></Suspense></PageBoundary></div>;
   else if (error) body = (
@@ -212,9 +220,10 @@ export default function App() {
     <div className="shell" onClick={onClick}>
       <a className="skip" href="#main">Skip to content</a>
       <nav className="rail" aria-label="Main">
-        <div className="brand"><strong>Student support</strong><span>OULAD early warning</span></div>
+        <NavLink to="/" className="brand"><BrandMark className="mark" />
+          <div><strong>Student support</strong><span>OULAD early warning</span></div></NavLink>
         {NAV.map(([to, label, Icon]) => (
-          <NavLink key={to} to={to} aria-current={(page === to.slice(1) || (to === "/students" && page === "students")) ? "page" : undefined}>
+          <NavLink key={to} to={to} className="nav" aria-current={(page === to.slice(1) || (to === "/students" && page === "students")) ? "page" : undefined}>
             <Icon aria-hidden="true" />{label}</NavLink>
         ))}
         <div className="foot">

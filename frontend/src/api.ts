@@ -126,8 +126,8 @@ export async function streamCopilot(body: unknown, onEvent: (e: CopilotEvent) =>
 
 const isNum = (v: unknown): v is number => typeof v === "number" && !Number.isNaN(v);
 export const fmt = {
-  pct: (v: unknown, d = 0) => (isNum(v) ? `${(100 * v).toFixed(d)}%` : "–"),
-  num: (v: unknown, d = 1) => (isNum(v) ? Number(v).toFixed(d) : "–"),
-  int: (v: unknown) => (isNum(v) ? Math.round(v).toLocaleString("en-GB") : "–"),
+  pct: (v: unknown, d = 0) => (isNum(v) ? `${(100 * v).toFixed(d)}%` : "-"),
+  num: (v: unknown, d = 1) => (isNum(v) ? Number(v).toFixed(d) : "-"),
+  int: (v: unknown) => (isNum(v) ? Math.round(v).toLocaleString("en-GB") : "-"),
   week: (cp: number, len = 262) => Math.round((cp * len) / 7),
 };

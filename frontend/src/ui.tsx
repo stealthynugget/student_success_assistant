@@ -6,7 +6,7 @@ import * as RTabs from "@radix-ui/react-tabs";
 import type { ApiError } from "./api";
 
 export const Tier = ({ tier }: { tier?: string | null }) =>
-  tier ? <span className={`tier ${tier}`}>{tier}</span> : <span className="muted">–</span>;
+  tier ? <span className={`tier ${tier}`}>{tier}</span> : <span className="muted">-</span>;
 
 const SOURCE_LABEL: Record<string, string> = { llm: "Drafted by AI", llm_revised: "Drafted by AI, revised", rules: "Rule-based",
   deterministic: "Computed", computed: "Computed", guardrail: "Guardrail", none: "Not available" };
@@ -123,7 +123,7 @@ export function CountUp({ value, format }: { value: number | null | undefined; f
     prev.current = value;
     return () => c.stop();
   }, [value, reduce]);
-  return <>{value == null ? "–" : format(shown)}</>;
+  return <>{value == null ? "-" : format(shown)}</>;
 }
 
 export function Stat({ value, label, tone }: { value: ReactNode; label: ReactNode; tone?: string }) {
@@ -194,5 +194,16 @@ export function TabSet({ tabs, value, onChange, label, children }: { tabs: [stri
         <RTabs.Content key={v} value={v} forceMount hidden={v !== value} className="tabpanel">{v === value ? children : null}</RTabs.Content>
       ))}
     </RTabs.Root>
+  );
+}
+
+/** The course clock as a mark: a timeline with ticks and the marker on the point in the course you are looking at. */
+export function BrandMark({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="8" y="3" width="8" height="7" rx="1" fill="var(--marker)" />
+      <line x1="2" y1="16" x2="22" y2="16" stroke="currentColor" strokeWidth="1.6" />
+      {[2, 7, 12, 17, 22].map((x) => <line key={x} x1={x} y1="13.5" x2={x} y2="18.5" stroke="currentColor" strokeWidth="1.2" />)}
+    </svg>
   );
 }

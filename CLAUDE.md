@@ -43,4 +43,5 @@ historical records -> `ssa/models/` (withdrawal risk, outcome, prioritiser) -> `
 
 ## Style
 Python: ruff (line length 140), type hints, no import-time side effects. Frontend: follow `frontend/DESIGN.md`
-(course-clock concept, tokens, functional colour: tier colours = tier, indigo = AI-generated, yellow = current point).
+(course-clock concept, dark monochrome tokens, 2px radius, Geist/Geist Mono, functional colour: tier colours = tier,
+indigo = AI-generated, yellow = current point). The landing page lives at `/`, the console at `/today` and below.

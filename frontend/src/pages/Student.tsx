@@ -260,7 +260,7 @@ function Precedents({ data, synthesis }: { data: any; synthesis?: any }) {
             <p className="small">{fmt.pct(nb.fail_or_withdrawn_rate)} failed or withdrew (95% interval {fmt.pct(nb.fail_or_withdrawn_ci95[0])} to {fmt.pct(nb.fail_or_withdrawn_ci95[1])}).</p>
           </>}
           {af && <dl className="kv">
-            <dt>Median weeks to withdrawal</dt><dd>{af.median_weeks_to_withdrawal ?? "–"}</dd>
+            <dt>Median weeks to withdrawal</dt><dd>{af.median_weeks_to_withdrawal ?? "-"}</dd>
             <dt>Median change in activity after this point</dt><dd>{fmt.pct(af.median_activity_change_after_checkpoint)}</dd>
             <dt>More than halved their activity</dt><dd>{fmt.pct(af.share_with_activity_drop_over_50pct)}</dd>
             <dt>Median final coursework average</dt><dd>{fmt.num(af.median_final_coursework_score, 0)}</dd></dl>}

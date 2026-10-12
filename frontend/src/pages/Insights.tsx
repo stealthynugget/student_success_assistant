@@ -74,7 +74,7 @@ function Engagement() {
       <SeriesLines label="Weekly activity by final outcome" yLabel="mean clicks per student"
         series={order.map((k) => ({ key: k, name: k, values: d.weekly_mean_clicks_by_outcome[k], color: COL[k] }))}
         markers={Object.entries(d.first_week_below_60pct_of_pass).filter(([, w]) => w != null).map(([k, w]) => ({ x: w as number, label: `${k} diverge`, color: COL[k] }))} />
-      <p className="muted">Students who eventually withdrew fall below 60% of passing students' activity from week {d.first_week_below_60pct_of_pass.Withdrawn ?? "–"}; those who eventually failed from week {d.first_week_below_60pct_of_pass.Fail ?? "–"}. Students who had already left at the checkpoint are excluded.</p>
+      <p className="muted">Students who eventually withdrew fall below 60% of passing students' activity from week {d.first_week_below_60pct_of_pass.Withdrawn ?? "-"}; those who eventually failed from week {d.first_week_below_60pct_of_pass.Fail ?? "-"}. Students who had already left at the checkpoint are excluded.</p>
     </div>
   );
 }
@@ -100,7 +100,7 @@ function Assessments() {
           <th scope="col" className="num">Mean score</th><th scope="col" className="num">Late</th><th scope="col" className="num">Score AUC</th></tr></thead>
         <tbody>{rows.map((a: any) => <tr key={a.id_assessment}><td>{a.assessment_type} {a.id_assessment}</td><td className="num">{a.deadline_week}</td><td className="num">{a.weight}</td>
           <td className="num">{fmt.pct(a.submission_rate)}</td><td className="num">{fmt.num(a.mean_score, 0)}</td><td className="num">{fmt.pct(a.late_rate)}</td>
-          <td className="num">{a.score_auc_for_poor_outcome ? a.score_auc_for_poor_outcome.toFixed(2) : "–"}</td></tr>)}</tbody></table></div>
+          <td className="num">{a.score_auc_for_poor_outcome ? a.score_auc_for_poor_outcome.toFixed(2) : "-"}</td></tr>)}</tbody></table></div>
     </div>
   );
 }
@@ -173,7 +173,7 @@ function Fairness() {
               <th scope="col" className="num">Caught, 95% interval</th><th scope="col" className="num">Precision</th></tr></thead>
               <tbody>{Object.entries(v.groups).map(([g, x]: [string, any]) => <tr key={g} style={x.sufficient_sample ? {} : { color: "var(--muted)" }}><td>{g}</td><td className="num">{x.n}</td>
                 <td className="num">{fmt.pct(x.observed_rate)}</td><td className="num">{fmt.pct(x.mean_predicted)}</td><td className="num">{fmt.pct(x.selection_rate_high)}</td>
-                <td className="num">{fmt.pct(x.tpr_high)}</td><td className="num">{x.tpr_high_ci95 ? `${fmt.pct(x.tpr_high_ci95[0])} to ${fmt.pct(x.tpr_high_ci95[1])}` : "–"}</td>
+                <td className="num">{fmt.pct(x.tpr_high)}</td><td className="num">{x.tpr_high_ci95 ? `${fmt.pct(x.tpr_high_ci95[0])} to ${fmt.pct(x.tpr_high_ci95[1])}` : "-"}</td>
                 <td className="num">{fmt.pct(x.ppv_high)}</td></tr>)}</tbody></table></div>
             {v.threshold_review && v.gap_null?.p_value < 0.05 && <ThresholdReview review={v.threshold_review} />}
           </div></details>
