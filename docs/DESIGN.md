@@ -34,8 +34,8 @@
   `vectors.lance`), next to the filterable metadata (course, presentation, region, education, age band, IMD band,
   credits, previous attempts, outcome) with bitmap/B-tree scalar indexes. Metadata filters, the "earlier presentations
   only" rule and self-exclusion are pushed down as a pre-filter, and kNN is exact (flat scan): at ~25k enrolments per
-  checkpoint an approximate index would only cost recall. Parity with the earlier NumPy scan: 1,800 of 1,800 sampled
-  searches returned the same top 10 and outcome mix across the four checkpoints. `VECTOR_STORE=numpy` keeps plain arrays;
+  checkpoint an approximate index would only cost recall. Both backends return the same neighbours
+  (`tests/test_vector_store.py`; the migration check on the real indexes is in `docs/HANDOFF.md`). `VECTOR_STORE=numpy` keeps plain arrays;
   `python -m ssa.cli index --migrate-vectors` moves an existing index into the database without re-encoding.
 - **Behavioural kNN:** robust-scaled snapshot features, weighted by the risk model's mean |attribution| (supervised
   similarity); exact Euclidean search in the vector database.

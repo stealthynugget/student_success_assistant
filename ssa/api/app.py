@@ -285,6 +285,12 @@ def create_app(settings: Settings | None = None, service=None, llm=None) -> Fast
     def judge(req: S.JudgeRequest):
         return h.judge_recommendation(req)
 
+    r.get("/evaluations/human-review", tags=["evaluation"])(lambda: h.human_review())
+
+    @r.post("/evaluations/human-labels", tags=["evaluation"])
+    def human_label(req: S.HumanLabelRequest):
+        return h.human_label(req)
+
     @r.get("/llm/usage", tags=["evaluation"])
     def usage(since_hours: float | None = Query(None, gt=0, le=24 * 365)):
         return h.llm_usage(since_hours)

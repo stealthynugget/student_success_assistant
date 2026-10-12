@@ -3,6 +3,7 @@
 !.env.example
 .git
 .venv
+.venv-ragas
 **/__pycache__
 **/*.pyc
 .pytest_cache

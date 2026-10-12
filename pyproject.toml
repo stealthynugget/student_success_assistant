@@ -16,3 +16,11 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B"]
 ignore = ["E731", "E702"]
+
+[tool.coverage.run]
+source = ["ssa"]
+omit = ["ssa/reporting.py"]  # renders documents from finished artifacts; exercised by `ssa.cli report`, not unit tests
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = false

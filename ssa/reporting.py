@@ -15,9 +15,9 @@ NAVY, TEAL, AMBER, RED, SLATE, PAPER = "1F2A44", "0F766E", "B45309", "B91C1C", "
 def load_all(s: Settings) -> dict:
     s = s.at(None)
     names = ["data_build", "withdrawal_model", "outcome_model", "ablations", "fairness", "prioritization", "retrieval_benchmark",
-             "text_search_benchmark"]
+             "text_search_benchmark", "embedding_eval", "retrieval_sensitivity"]
     m = {n: read_json(s.metrics_dir / f"{n}.json", {}) for n in names}
-    for n in ("llm_evaluation", "quality_gate", "checkpoint_summary"):
+    for n in ("llm_evaluation", "quality_gate", "checkpoint_summary", "model_comparison", "ragas_eval"):
         m[n] = read_json(s.global_metrics_dir / f"{n}.json", {})
     m["fairness_by_checkpoint"] = {c: read_json(s.at(c).metrics_dir / "fairness.json", {}) for c in s.checkpoints}
     m["factors"] = read_json(s.analysis_dir / "factor_analysis.json", {})
@@ -116,6 +116,91 @@ def _fairness_detail_lines(fa: dict, by_cp: dict) -> list[str]:
     return out
 
 
+def _strategy_lines(sv: dict) -> list[str]:
+    if not sv.get("top_k"):
+        return []
+    prod = sv["production"]
+    lines = ["", "### Retrieval strategy: documents, top-K and context",
+             "One document per enrolment, no chunking: each case is one record (snapshot features, discretised descriptors and a "
+             "~60-word narrative), and splitting it would separate the signals from the outcome they lead to. Each channel ranks "
+             f"the eligible cases and fusion reads the top {prod['candidate_pool']} of each (weighted RRF, k = {prod['rrf_k']}). "
+             f"The agents and the precedent synthesis get the {prod['precedents_shown']} closest cases as stories (what happened "
+             f"after this point), and outcome statistics use the {prod['outcome_neighbourhood']} nearest. Sensitivity on "
+             f"{sv['queries']} students of {sv['query_presentation']} (hybrid):", "",
+             "| Setting | Neighbour-vote AUC (fail/withdraw) | Neighbour-vote AUC (withdrawal) | Outcome agreement |", "|---|---|---|---|"]
+    for g in ("top_k", "candidate_pool", "rrf_k"):
+        for name, v in sv.get(g, {}).items():
+            if name != "seconds":
+                lines.append(f"| {name} | {_f(v['vote_auc_poor_outcome'])} | {_f(v['vote_auc_withdrawal'])} | "
+                             f"{_f(v['outcome_agreement'])} |")
+    lines += ["", "More neighbours make better outcome estimates (hence 50 for the outcome mix); a handful of concrete stories "
+              "keeps the context readable and the prompt short (hence 6). Pool depth and the RRF constant hardly matter here."]
+    return lines
+
+
+def _embedding_lines(ee: dict) -> list[str]:
+    rows = [r for r in ee.get("models", []) if "error" not in r]
+    if not rows:
+        return []
+    parsers = sorted({p for r in rows for p in r.get("typed_search", {})})
+    head = " | ".join(f"Typed {p}: dense / hybrid P@10" for p in parsers)
+    lines = ["", "## Embedding model evaluation (dense narrative channel)",
+             f"Same {rows[0]['corpus_docs']:,} case narratives (checkpoint {ee['checkpoint']}), encoded on CPU by each model. "
+             "Typed search: "
+             "40 labelled queries, hybrid ratio tuned per model on separate tuning queries. Precedents: dense-only neighbours "
+             f"of {ee['profile_queries'].split(' ')[0]} test students. Current model: {ee['current_model']}.", "",
+             f"| Model | Params (M) | Dims | Index MB | Encode docs/s | Query ms | {head} | Precedents vote-AUC (fail/withdraw) |",
+             "|---|---|---|---|---|---|" + "---|" * len(parsers) + "---|"]
+    for r in rows:
+        ts = " | ".join(f"{_f(r['typed_search'].get(p, {}).get('dense_precision_at_10'))} / "
+                        f"{_f(r['typed_search'].get(p, {}).get('hybrid_precision_at_10'))}" for p in parsers)
+        lines.append(f"| {r['model']} | {r['parameters_millions']} | {r['dimensions']} | {r['index_mb']} | {r['encode_docs_per_second']} | "
+                     f"{r['query_latency_ms']} | {ts} | {_f(r['profile_dense']['vote_auc_poor_outcome'])} |")
+    failed = [r["model"] for r in ee.get("models", []) if "error" in r]
+    if failed:
+        lines += ["", f"Not evaluated (error): {', '.join(failed)}."]
+    return lines
+
+
+def _ragas_lines(rg: dict) -> list[str]:
+    if not rg.get("features"):
+        return []
+    lines = ["", "### RAGAS (retrieval-augmented features)",
+             f"Evaluator: {rg['judge_model']} (judge tier, never the generator), via the project's LLM client. Faithfulness = share "
+             "of the response's claims supported by the retrieved context; hallucination rate = 1 - faithfulness. Precedent "
+             "synthesis is scored on its factual sections; its advice is scored by the judge and DeepEval. Copilot answers "
+             "are scored whole, so explanations of what a metric means count as unsupported.", "",
+             "| Feature | Cases | Faithfulness | Hallucination rate | Fully supported | Response groundedness | Context relevance |",
+             "|---|---|---|---|---|---|---|"]
+    for f, v in rg["features"].items():
+        mm = v["mean"]
+        lines.append(f"| {f} | {v['n']} | {_f(mm.get('faithfulness'))} | {_pct(v.get('hallucination_rate'), 1)} | "
+                     f"{_pct(v.get('fully_supported_rate'))} | {_f(mm.get('nv_response_groundedness'))} | "
+                     f"{_f(mm.get('nv_context_relevance'))} |")
+    return lines
+
+
+def _model_choice_lines(mc: dict) -> list[str]:
+    if not mc.get("search_understanding"):
+        return []
+    pc = mc["production_choice"]
+    lines = ["", "### LLM selection: the same features on each tier",
+             f"Production: search understanding on {pc['search_understanding']}, precedent synthesis on {pc['precedent_synthesis']}, "
+             f"judge {pc['judge']}. Same prompts, schemas, effort and code checks; only the model changes. Cost and latency per "
+             "live call (from the usage ledger where this run was answered from cache).", "",
+             "| Feature | Model | Quality | Passes code checks | Cost per call | Median latency |", "|---|---|---|---|---|---|"]
+    for m, v in mc["search_understanding"].items():
+        lines.append(f"| Search understanding | {m} | filter F1 {_f(v['filter_f1'])}, exact {_pct(v['exact_match'])} | "
+                     f"{_pct(v['accepted_by_code_checks'])} | ${v['cost_per_call_usd']:.4f} | {v['median_latency_s']} s |")
+    for m, v in mc["precedent_synthesis"].items():
+        js = v.get("judge_mean_scores") or {}
+        q = f"judge pass {_pct(v['judge_pass_rate'])}, faithfulness {js.get('faithfulness', 'n/a')}"
+        q += " (self-judged)" if v["self_judged"] else ""
+        lines.append(f"| Precedent synthesis | {m} | {q} | {_pct(v['accepted_by_code_checks'])} | ${v['cost_per_call_usd']:.4f} | "
+                     f"{v['median_latency_s']} s |")
+    return lines
+
+
 def _selection_lines(p: dict) -> list[str]:
     d = p.get("selection_detail")
     if not d:
@@ -206,7 +291,8 @@ def model_card(s: Settings | None = None) -> str:
         f"Queries: {r.get('queries')} in-scope students of {r.get('query_presentation')}; corpus: earlier presentations, same module.", "",
         "| Mode | Neighbour-vote AUC (fail/withdraw) | Outcome agreement@10 | nDCG@10 (global ideal) |", "|---|---|---|---|",
     ] + [f"| {k} | {_f(v['neighbour_vote_auc_poor_outcome'])} | {_f(v['outcome_agreement_at_10'])} | {_f(v['reference_ndcg_at_10_global_ideal'])} |"
-         for k, v in r.get("modes", {}).items()] + _typed_search_lines(m.get("text_search_benchmark", {})) + [
+         for k, v in r.get("modes", {}).items()] + _typed_search_lines(m.get("text_search_benchmark", {})) + \
+        _strategy_lines(m.get("retrieval_sensitivity", {})) + _embedding_lines(m.get("embedding_eval", {})) + [
         "", "## Fairness audit (High tier, test presentation)",
         f"Groups count towards a gap only with {fa.get('sufficient_sample_rule', 'a sufficient sample')}. "
         "Chance gap: the median max−min gap when group labels are shuffled among withdrawn students (1,000 permutations), "
@@ -226,7 +312,8 @@ def model_card(s: Settings | None = None) -> str:
     ] + [f"| {round(c['approx_week'])} | {c['in_scope']:,} | {_f(c['withdrawal']['roc_auc'])} | {_f(c['withdrawal']['pr_auc'])} | "
          f"{_f(c['withdrawal']['positive_rate'])} | {_f(c['withdrawal']['ece_10'])} | {_f(c['outcome_macro_f1'])} |"
          for c in m["checkpoint_summary"].get("checkpoints", [])] + [
-        "", "## AI features (offline evaluation)", _llm_lines(m["llm_evaluation"]), "",
+        "", "## AI features (offline evaluation)", _llm_lines(m["llm_evaluation"]), *_ragas_lines(m.get("ragas_eval", {})),
+        *_model_choice_lines(m.get("model_comparison", {})), "",
         "## Limitations",
         "- Associations, not causes. Drivers explain the model, not the student.",
         "- One test presentation (2014J); performance can drift across cohorts — monitored by the feedback loop's tier-drift check.",
@@ -345,10 +432,11 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
             r_ = Inches(6.0) / pic.height
             pic.height, pic.width = Inches(6.0), int(pic.width * r_)
     text(sl, 8.9, 1.5, 4.1, 5.5, [
-        "Offline build: features → calibrated models → prioritiser → historical-case index → evaluation and quality gate.",
-        "Online: API (auth, rate limit, strict validation) → service (real snapshots, what-if with imputation flags) → agent workflow.",
-        "LLM is optional and narrates only; facts, scores, priorities and eligible actions are computed in code.",
-        "Feedback store and loop (amber) feed approved changes back into actions, retrieval weights and calibration."], size=16)
+        "Offline build: features → calibrated models → prioritiser → case index in a LanceDB vector store → evaluation and gate.",
+        "Online: one FastAPI service (auth, rate limit, strict validation, streaming) → service layer → LangGraph agent workflow.",
+        "Claude by task: Haiku parses, Sonnet writes, Opus judges. The LLM narrates only; facts, scores, priorities and "
+        "eligible actions are computed in code, and everything works with the LLM off.",
+        "Feedback store and loop (amber) feed approved changes back into actions, retrieval weights and calibration."], size=15)
 
     sl = slide("Honest evaluation: removing the leakage",
                notes="v4 trained and tested on students who had already left, so silence in the logs 'predicted' withdrawal. "
@@ -396,16 +484,18 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
          [f"{k}: week {v}" for k, v in div.items() if v is not None], size=14, bold_first=True)
 
     sl = slide("Similar historical students — retrieval that beats chance",
-               notes="Behavioural kNN weighted by model attributions + BM25 over qualitative descriptors (+ optional dense). "
-                     "Only earlier presentations are searchable. Evaluated against real outcomes and a random baseline.")
+               notes="Behavioural kNN weighted by model attributions + BM25 over qualitative descriptors + dense narrative embeddings, "
+                     "fused with RRF; vectors live in LanceDB with metadata filters pushed down. Only earlier presentations are "
+                     "searchable. Evaluated against real outcomes and a random baseline.")
     modes = r.get("modes", {})
     bar(sl, 0.6, 1.4, 7.6, 5.4, list(modes), [("Neighbour-vote AUC", [v["neighbour_vote_auc_poor_outcome"] for v in modes.values()]),
                                               ("nDCG@10", [v["reference_ndcg_at_10_global_ideal"] for v in modes.values()])],
         [NAVY, TEAL], "Do retrieved precedents predict the real outcome?", maxv=1.0)
-    text(sl, 8.6, 1.6, 4.3, 5, ["Metadata filters: module, presentation, region, education, age band, credits (range), "
-                                "previous attempts, outcome.",
-                                "Each answer reports the outcome mix of the 50 nearest precedents with a 95% CI.",
-                                "v4's index shipped with 2 test records and scored at random level."], size=15)
+    text(sl, 8.6, 1.6, 4.3, 5, ["Vector database (LanceDB): filters on module, presentation, region, education, age band, "
+                                "credits (range), previous attempts and outcome run before an exact nearest-neighbour search.",
+                                "One document per enrolment; 6 precedent stories go to the agents, the outcome mix uses the 50 "
+                                "nearest with a 95% CI (top-K study in the model card).",
+                                "v4's index shipped with 2 test records and scored at random level."], size=14)
 
     sl = slide("Who first? Prioritisation learned for limited capacity",
                notes="Weights chosen on the validation presentation to maximise precision at 10/20/30% capacity; compared on test.")
@@ -423,7 +513,7 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
                      "the critic enforces guardrails in code with one revision, else a deterministic plan.")
     det = (llm.get("agents") or {}).get("deterministic", {}) if llm else {}
     text(sl, 0.6, 1.5, 6.5, 5.5, [
-        "Performance → Risk → Router → Intervention ⇄ Critic, or Monitoring for low-risk students.",
+        "A LangGraph state graph: Performance → Risk → Router → Intervention ⇄ Critic, or a deterministic plan.",
         "Facts are computed in code; the LLM only narrates and must cite observation IDs.",
         "Critic checks: catalogue eligibility, numeric grounding, protected attributes, punitive or clinical language, "
         "and no risk scores in messages to students.",
@@ -449,14 +539,64 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
                                        "Computed facts in ink; AI-drafted text marked in indigo.",
                                        "Copilot, case finder, insights, model quality and the feedback loop use the same API."], size=14)
 
+    mc, ee, rg = m.get("model_comparison", {}), m.get("embedding_eval", {}), m.get("ragas_eval", {})
+    if mc.get("search_understanding"):
+        sl = slide("Choosing the models: measured, not assumed",
+                   notes="The same features ran on Haiku, Sonnet and Opus with identical prompts and checks; five embedding models "
+                         "encoded the same case narratives. Production choices follow the measurements.")
+        su, ps = mc["search_understanding"], mc["precedent_synthesis"]
+        ms = list(su)
+        short = [x.replace("claude-", "").replace("-5-5", "") for x in ms]
+        bar(sl, 0.6, 1.4, 6.0, 2.7, short, [("Search filter F1", [su[x]["filter_f1"] for x in ms]),
+                                             ("Synthesis judge pass", [ps[x]["judge_pass_rate"] or 0 for x in ms])],
+            [NAVY, "4C4BC2"], "Claude tiers on the same tasks", maxv=1.0)
+        costs = [f"{s_} ${su[x]['cost_per_call_usd']:.4f} (search) / ${ps[x]['cost_per_call_usd']:.4f} (synthesis)"
+                 for s_, x in zip(short, ms, strict=True)]
+        text(sl, 6.9, 1.5, 6.0, 2.8, ["Cost per call: " + ", ".join(costs),
+                                      f"Production: {mc['production_choice']['search_understanding']} parses, "
+                                      f"{mc['production_choice']['precedent_synthesis']} writes, {mc['production_choice']['judge']} judges "
+                                      "(never its own output)."], size=13)
+        rows = [x for x in ee.get("models", []) if "error" not in x]
+        if rows:
+            bar(sl, 0.6, 4.3, 6.0, 2.8, [x["model"].replace("-en-v1.5", "").replace("all-", "") for x in rows],
+                [("Typed search P@10 (dense)", [x["typed_search"].get("llm", x["typed_search"].get("rules", {}))
+                                                .get("dense_precision_at_10") or 0 for x in rows]),
+                 ("Precedent vote-AUC (dense)", [x["profile_dense"]["vote_auc_poor_outcome"] for x in rows])],
+                [TEAL, SLATE], "Embedding models on the same narratives", maxv=1.0)
+            text(sl, 6.9, 4.4, 6.0, 2.8, [f"Encoding speed {min(x['encode_docs_per_second'] for x in rows):.0f}–"
+                                          f"{max(x['encode_docs_per_second'] for x in rows):.0f} docs/s on CPU; index "
+                                          f"{min(x['index_mb'] for x in rows):.0f}–{max(x['index_mb'] for x in rows):.0f} MB.",
+                                          f"In use: {ee['current_model']} (full table in the model card)."], size=13)
+
+    if rg.get("features") and llm:
+        sl = slide("Evaluating the AI: five layers",
+                   notes="Code checks on every output; LLM-as-judge with anchored rubrics and order-swapped A/B; DeepEval; RAGAS on the "
+                         "retrieval-augmented features; blind human review in the console to check the judge.")
+        feats = list(rg["features"])
+        bar(sl, 0.6, 1.4, 6.4, 5.4, feats, [("RAGAS faithfulness", [rg["features"][f]["mean"].get("faithfulness") or 0 for f in feats]),
+                                             ("Context relevance", [rg["features"][f]["mean"].get("nv_context_relevance") or 0
+                                                                    for f in feats])],
+            [NAVY, TEAL], "RAGAS on the retrieval-augmented features", maxv=1.0)
+        j = (llm.get("agents") or {}).get("judge", {})
+        pw = (llm.get("agents") or {}).get("pairwise_llm_vs_deterministic", {})
+        text(sl, 7.3, 1.5, 5.6, 5.5, [
+            "1. Code checks on every output: cited IDs, numbers, protected, punitive, clinical and stigma terms.",
+            f"2. LLM judge (separate model): {_pct(j.get('pass_rate'))} of plans pass; AI plan preferred in "
+            f"{_pct(pw.get('llm_win_rate'))} of order-swapped comparisons.",
+            "3. DeepEval: faithfulness, relevancy and three rubric metrics.",
+            "4. RAGAS: " + "; ".join(f"{f} hallucination rate {_pct(v.get('hallucination_rate'), 1)}"
+                                     for f, v in rg["features"].items()) + ".",
+            "5. Human review: advisors rate plans blind in the console; agreement with the judge (Cohen's kappa) is reported."], size=14)
+
     sl = slide("Fairness and limits — stated, not hidden",
                notes="Gaps remain via proxies; they are flagged by the gate and need institutional review.")
     attrs = fa.get("attributes", {})
     bar(sl, 0.6, 1.4, 7.6, 5.4, list(attrs), [("Equal-opportunity gap", [v["equal_opportunity_gap"] or 0 for v in attrs.values()])],
         [AMBER], "Difference in true-positive rate between groups (High tier)", fmt='0.00')
-    text(sl, 8.6, 1.6, 4.3, 5, ["Sensitive attributes are excluded from the model and from agent prompts, yet gaps persist through "
-                                "proxies and base-rate differences.", "The quality gate warns above 0.15; deployment needs equity review.",
-                                "One institution, 2013–14 data: revalidate before use elsewhere."], size=15)
+    verdicts = [f"{k}: {v['verdict'].split(':')[0]}" for k, v in attrs.items() if v.get("verdict")]
+    text(sl, 8.6, 1.6, 4.3, 5, ["Sensitive attributes are excluded from the model and from agent prompts; each gap is tested "
+                                "against shuffled group labels, overall and within module."] + verdicts[:6] +
+         ["Per-group cut-offs are shown for equity review, never applied."], size=13)
 
     sl = slide("Closing the loop", dark=True, notes="Feedback becomes versioned, human-approved changes; then re-evaluate.")
     text(sl, 0.6, 1.8, 12, 5, [

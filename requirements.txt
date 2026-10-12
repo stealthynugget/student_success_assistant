@@ -10,4 +10,5 @@ python-pptx>=1.0,<2
 graphviz>=0.20,<1
 # Dev / test
 pytest>=8,<10
+pytest-cov>=6,<8
 ruff>=0.6,<1

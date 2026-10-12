@@ -149,6 +149,44 @@ def cmd_search_benchmark(args):
     _text_benchmark(s, llm=llm)
 
 
+def cmd_retrieval_study(args):
+    """Sensitivity of hybrid retrieval to top-K, candidate pool and RRF constant (primary checkpoint)."""
+    from ssa.data.pipeline import load_features
+    from ssa.retrieval.benchmark import retrieval_sensitivity
+    from ssa.retrieval.hybrid import HistoricalCaseIndex
+    s = get_settings().at(None)
+    res = retrieval_sensitivity(load_features(s), HistoricalCaseIndex(s).load(), n_queries=args.queries, settings=s)
+    print(json.dumps(res, indent=1, default=str))
+
+
+def cmd_llm_compare(args):
+    """Run search understanding and precedent synthesis on each Claude tier (quality, latency, cost)."""
+    from ssa.agents.llm import LLMBudgetExceeded, process_spend_usd
+    from ssa.evaluation.model_comparison import run
+    try:
+        res = run(models=args.models or None)
+    except LLMBudgetExceeded as exc:
+        log.error(f"llm-compare stopped: {exc}. No results written.")
+        raise SystemExit(2) from None
+    log.info(f"llm-compare spend this run: ${process_spend_usd():.2f}")
+    print(json.dumps({k: res[k] for k in ("search_understanding", "precedent_synthesis")}, indent=1, default=str)[:5000])
+
+
+def cmd_embedding_eval(args):
+    """Compare sentence-embedding models for the dense channel (no production index is modified)."""
+    from ssa.evaluation.embedding_eval import run
+    s = get_settings().at(args.checkpoint) if args.checkpoint else get_settings().at(None)
+    llm = None
+    if args.llm:
+        from ssa.agents.llm import LLMClient
+        llm = LLMClient(s)
+        if not llm.available:
+            raise SystemExit("--llm requested but the LLM is not configured or LLM_ENABLED=false")
+    res = run(s, names=args.models or None, llm=llm, n_profile_queries=args.queries)
+    for r in res["models"]:
+        log.info(json.dumps(r, default=str))
+
+
 def cmd_llm_eval(args):
     from ssa.agents.llm import LLMBudgetExceeded, process_spend_usd
     from ssa.evaluation.offline_eval import run
@@ -176,7 +214,7 @@ SCAN_SUFFIXES = {".py", ".md", ".txt", ".toml", ".yml", ".yaml", ".json", ".cfg"
 def secret_scan(root: Path) -> list[str]:
     hits = []
     for p in root.rglob("*"):
-        if any(part in {".git", ".venv", "node_modules", "artifacts", "data"} for part in p.parts):
+        if any(part in {".git", "node_modules", "artifacts", "data"} or part.startswith(".venv") for part in p.parts):
             continue
         if p.is_file() and (p.suffix in SCAN_SUFFIXES or p.name.startswith(".env")) and p.name != ".env":
             text = p.read_text(errors="ignore")
@@ -313,6 +351,10 @@ def main(argv=None):
     sp = sub.add_parser("evaluate"); sp.add_argument("--queries", type=int, default=600); sp.set_defaults(fn=cmd_evaluate)  # noqa: E702
     sp = sub.add_parser("search-benchmark"); sp.add_argument("--tune", action="store_true"); sp.add_argument("--llm", action="store_true")
     sp.add_argument("--checkpoint", type=float); sp.set_defaults(fn=cmd_search_benchmark)
+    sp = sub.add_parser("retrieval-study"); sp.add_argument("--queries", type=int, default=300); sp.set_defaults(fn=cmd_retrieval_study)  # noqa: E702
+    sp = sub.add_parser("llm-compare"); sp.add_argument("--models", nargs="*"); sp.set_defaults(fn=cmd_llm_compare)  # noqa: E702
+    sp = sub.add_parser("embedding-eval"); sp.add_argument("--models", nargs="*"); sp.add_argument("--checkpoint", type=float)
+    sp.add_argument("--queries", type=int, default=300); sp.add_argument("--llm", action="store_true"); sp.set_defaults(fn=cmd_embedding_eval)
     sp = sub.add_parser("llm-eval"); sp.add_argument("--per-tier", type=int, default=8); sp.add_argument("--no-llm", action="store_true")
     sp.set_defaults(fn=cmd_llm_eval)
     sp = sub.add_parser("feedback-loop"); sp.add_argument("--apply", action="store_true"); sp.add_argument("--approved-by")

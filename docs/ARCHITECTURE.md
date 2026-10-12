@@ -18,6 +18,8 @@ assessment analytics, engagement trends) are built once.
 | Prioritiser | `ssa.models.prioritization` | `prioritization.json` (weights learned on validation) |
 | Case index | `ssa.retrieval.hybrid`, `ssa.retrieval.vector_store` | `artifacts/checkpoints/<c>/index/`: `vectors.lance` (LanceDB table: behavioural + dense vectors with filterable metadata), descriptors and narratives, manifest, tuned fusion weights |
 | Evaluation | `ssa.evaluation.*`, `ssa.retrieval.benchmark` | `artifacts/metrics/*.json`, `artifacts/analysis/*.json` |
+| AI evaluation | `ssa.evaluation.offline_eval` (`llm-eval`), `model_comparison` (`llm-compare`), `embedding_eval` (`embedding-eval`), `scripts/ragas_eval.py` (own environment) | `llm_evaluation.json`, `model_comparison.json`, `embedding_eval.json`, `ragas_eval.json`, `rag_cases.jsonl`, `human_labels.jsonl` |
+| Agent orchestration | `ssa.agents.graph` (LangGraph state graph over the agents in `ssa.agents.workflow`) | `docs/AGENT_GRAPH.md` |
 | Quality gate | `ssa.cli.quality_gate` | `artifacts/metrics/quality_gate.json` (thresholds, not file existence) |
 | Reports | `ssa.reporting` | `docs/MODEL_CARD.md`, `docs/Student_Success_Assistant_10min.pptx` |
 

@@ -20,3 +20,11 @@ docs/screenshots/step5-review/
 
 # DeepEval local state
 .deepeval/
+
+# Isolated RAGAS environment (scripts/ragas_eval.py)
+.venv-ragas/
+
+# coverage output
+.coverage
+coverage.json
+htmlcov/

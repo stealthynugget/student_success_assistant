@@ -1,0 +1,9 @@
+# Isolated environment for scripts/ragas_eval.py only. RAGAS brings the LangChain stack, whose versions conflict with the
+# service's pins (requirements.lock), so it never shares the service environment. ragas 0.4.3 imports
+# langchain_community.chat_models.vertexai, removed in langchain-community 0.4.
+ragas==0.4.3
+langchain-community>=0.3.31,<0.4
+langchain-core==1.6.9
+anthropic==1.13.0
+python-dotenv>=1.0,<2
+numpy>=1.26,<3

@@ -117,6 +117,33 @@ def copilot_golden(svc: StudentSuccessService, refs: list[dict]) -> list[dict]:
     return qs
 
 
+RAG_CASES: list[dict] = []  # retrieval-augmented answers of this run, exported for RAGAS (scripts/ragas_eval.py)
+
+
+def synthesis_rag_case(ps: dict, evidence: dict) -> dict:
+    """Precedent synthesis as a RAG sample. Context = exactly the evidence the generator saw (the student's tier and drivers,
+    the retrieved precedents, their aftermath and the neighbourhood outcome mix). Response = the factual sections (what
+    happened, patterns); the advice section is not a factual claim, so it is scored by the judge and DeepEval instead."""
+    ctx = [f"Student under review: {evidence['student_risk_tier']} withdrawal-risk tier; main risk drivers: "
+           f"{', '.join(evidence['student_drivers'])}."]
+    ctx += [f"Case {p['case_id']} ({p['presentation']}), final result {p['final_result']}: {p['story']} "
+            f"Shared signals: {', '.join(p['shared_signals']) or 'none'}." for p in evidence["precedents"]]
+    ctx.append("Outcomes after this point among the retrieved precedents: " + json.dumps(evidence["aftermath_summary"], default=str))
+    ctx.append("Outcome mix of the 50 nearest earlier students: " + json.dumps(evidence["neighbourhood_outcomes"], default=str))
+    response = " ".join([str(ps.get("what_happened", "")), " ".join(map(str, ps.get("patterns") or []))])
+    return {"feature": "precedent_synthesis", "advice_not_scored": str(ps.get("implication", "")),
+            "user_input": (f"What happened to earlier students similar to this {evidence['student_risk_tier']}-tier student "
+                           f"(main drivers: {', '.join(evidence['student_drivers'])}), and what does it imply for them?"),
+            "retrieved_contexts": ctx, "response": response.strip()}
+
+
+def copilot_rag_case(question: str, r: dict) -> dict:
+    """Copilot answer as a RAG sample: the tool results it read are the context."""
+    ctx = [f"{t['tool']}({json.dumps(t['arguments'], default=str)}) -> {json.dumps(t['result'], default=str)[:4000]}"
+           for t in r["tool_calls"] if t.get("ok")]
+    return {"feature": "copilot", "user_input": question, "retrieved_contexts": ctx, "response": r["answer"]}
+
+
 def eval_copilot(svc, llm, refs) -> dict:
     gold = copilot_golden(svc, refs)
     out = {}
@@ -129,6 +156,8 @@ def eval_copilot(svc, llm, refs) -> dict:
         for g in gold:
             r = cp.ask(g["q"])
             ans = r["answer"]
+            if name == "llm" and r.get("source") == "llm" and r["tool_calls"]:
+                RAG_CASES.append(copilot_rag_case(g["q"], r))
             if "expect_ids" in g:
                 ok = sum(str(i) in ans for i in g["expect_ids"]) >= 2
             else:
@@ -168,6 +197,7 @@ def eval_robustness(svc, llm) -> dict:
 # --------------------------------------------------------------------- main
 def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = None, llm=None, judge_llm=None) -> dict:
     s = settings or get_settings()
+    RAG_CASES.clear()
     svc = StudentSuccessService(s, llm=llm).warm()
     gen_llm = (llm or svc.llm()) if use_llm else None
     gen_llm = gen_llm if (gen_llm is not None and gen_llm.available) else None
@@ -189,6 +219,8 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
             pair = pairwise_preference(jllm, ev, {k: wf["intervention_plan"][k] for k in ("actions", "outreach_message", "rationale")},
                                        {k: det[k] for k in ("actions", "outreach_message", "rationale")})
         ps = res["precedent_synthesis"]
+        if ps["source"] == "llm":
+            RAG_CASES.append(synthesis_rag_case(ps, precedent_evidence(res, res["similar_cases"])))
         synth.append({"source": ps["source"], "checks": ps["checks"],
                       "judge": judge_text(jllm, "precedent_synthesis", ps, precedent_evidence(res, res["similar_cases"]))
                       if jllm and ps["source"] == "llm" else None})
@@ -265,6 +297,8 @@ def run(per_tier: int = 8, use_llm: bool = True, settings: Settings | None = Non
     result["usage"] = AppDB(s).usage_summary(since_s=time.time() - t_start + 5)
     write_json(s.global_metrics_dir / "llm_evaluation.json", result)
     (s.global_metrics_dir / "llm_evaluation_cases.jsonl").write_text("\n".join(json.dumps(r, default=str) for r in rows), encoding="utf-8")
+    if RAG_CASES:  # input for RAGAS, which runs in its own environment (scripts/ragas_eval.py)
+        (s.global_metrics_dir / "rag_cases.jsonl").write_text("\n".join(json.dumps(r, default=str) for r in RAG_CASES), encoding="utf-8")
     return result
 
 

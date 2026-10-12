@@ -192,3 +192,28 @@ def test_console_spa_fallback(built, service):
     assert deep.status_code == 200 and "<div id=\"root\">" in deep.text
     assert c.get("/assets/missing-file.js").status_code == 404
     assert c.get("/api/nope", headers=H).status_code == 404
+
+
+def test_human_review_labels_and_agreement(handlers, built):
+    import json
+
+    from ssa.api import schemas as S
+    rows = [{"ref": {"id_student": 100 + i, "code_module": "AAA", "code_presentation": "2014J", "tier": "High"}, "plan_source": "llm",
+             "judge": {"verdict": "PASS" if i % 2 else "REVIEW", "scores": {"x": 1.0}, "overall": 8.0 if i % 2 else 4.0}} for i in range(6)]
+    path = built.global_metrics_dir / "llm_evaluation_cases.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+    try:
+        hr = handlers.human_review()
+        assert hr["labelled"] == 0 and len(hr["cases"]) == 6 and "verdict" not in json.dumps(hr["cases"])  # blind: no judge verdict
+        for r in rows:
+            v = r["judge"]["verdict"]
+            hr = handlers.human_label(S.HumanLabelRequest(**{k: r["ref"][k] for k in ("id_student", "code_module", "code_presentation")},
+                                                          verdict=v, overall=r["judge"]["overall"], reviewer="tester", notes="ok"))
+        assert hr["labelled"] == 6 and hr["agreement"]["verdict_agreement"] == 1.0
+        hr = handlers.human_label(S.HumanLabelRequest(id_student=100, code_module="AAA", code_presentation="2014J", verdict="PASS",
+                                                      overall=9, reviewer="tester"))
+        assert hr["labelled"] == 6 and hr["agreement"]["verdict_agreement"] < 1.0  # a re-rating replaces, never duplicates
+    finally:
+        path.unlink(missing_ok=True)
+        (built.global_metrics_dir / "human_labels.jsonl").unlink(missing_ok=True)

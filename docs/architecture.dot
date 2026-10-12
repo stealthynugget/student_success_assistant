@@ -10,30 +10,32 @@ digraph SSA {
     risk [label="Withdrawal model\nGBM, LOPO Platt calibration,\nlearned tiers, TreeSHAP"];
     out  [label="Outcome model\n4 classes, calibrated"];
     prio [label="Prioritiser\nweights learned for\nprecision at capacity"];
-    idx  [label="Case index\nsupervised kNN + BM25\n(+ dense), RRF"];
-    eval [label="Evaluation + quality gate\nmodels, retrieval, fairness,\noffline LLM evaluation"];
-    raw -> feat; raw -> full; feat -> risk; feat -> out; risk -> prio; out -> prio; feat -> idx; risk -> idx [label="weights"];
+    idx  [label="Case index\nsupervised kNN + BM25 + dense\n(all-MiniLM-L6-v2), weighted RRF"];
+    vdb  [label="LanceDB vector store\nbehavioural + dense vectors,\nmetadata pre-filter, exact kNN", shape=cylinder, fillcolor="#EEF2F1"];
+    eval [label="Evaluation + quality gate\nmodels, retrieval, fairness, embeddings,\nLLM judge, DeepEval, RAGAS, tier comparison"];
+    raw -> feat; raw -> full; feat -> risk; feat -> out; risk -> prio; out -> prio; feat -> idx; risk -> idx [label="weights"]; idx -> vdb;
     risk -> eval; prio -> eval; idx -> eval;
   }
 
   subgraph cluster_online { label="One microservice: FastAPI (uvicorn) serving the React console at /"; style="rounded"; color="#E2E8F0"; fontcolor="#475569";
     ui  [label="React console\ncourse clock, students, plans,\ncase finder, copilot, insights,\nquality, feedback", fillcolor="#FEF7DC", color="#C9A227"];
-    api [label="FastAPI routers\nAPI key, admin key, rate limit,\nstrict pydantic validation,\nbackground jobs", fillcolor="#E6F2F1", color="#2E7466"];
+    api [label="FastAPI routers\nAPI key, admin key, rate limit,\nstrict pydantic validation,\njobs + SSE streaming", fillcolor="#E6F2F1", color="#2E7466"];
+    shared [label="Shared state (SQLite)\njobs, rate limits,\nacross workers", shape=cylinder];
     svc [label="Service layer\ncheckpoint bundles, real snapshots,\nwhat-if, precedent stories"];
     subgraph cluster_agents { label="Agents and generative features"; style="rounded,dashed"; color="#94A3B8";
-      wf  [label="Support workflow\nperformance, risk, router,\nintervention, critic (1 revision)"];
+      wf  [label="Support workflow (LangGraph)\nperformance, risk, router,\nintervention, critic (1 revision)"];
       cop [label="Copilot\nfunction calling over 8 tools,\ngrounding check + revision"];
       gen [label="Search understanding, precedent\nsynthesis, cohort briefing,\noutreach rewrite, note themes"];
       grd [label="Guardrails in code\nIDs, numbers, protected terms,\npunitive / clinical / stigma", shape=note, fillcolor="#FFFFFF"];
     }
-    llm [label="OpenAI-compatible LLM\ncache, retries, usage ledger", style="rounded,dashed", fillcolor="#EEEEFB", color="#4C4BC2"];
-    jud [label="LLM judge (separate model)\non demand + sampled online reviews", fillcolor="#EEEEFB", color="#4C4BC2"];
+    llm [label="Claude via LLMClient\nHaiku: parse, rewrite / Sonnet: agents, copilot\ncache, retries, budget cap, cost ledger", style="rounded,dashed", fillcolor="#EEEEFB", color="#4C4BC2"];
+    jud [label="LLM judge: Claude Opus\n(never the generator)\non demand + sampled online reviews", fillcolor="#EEEEFB", color="#4C4BC2"];
     fb  [label="Feedback store\nplans, actions, precedents,\nreal outcomes", fillcolor="#FEF3E2", color="#B45309"];
     loop [label="Feedback loop\nproposals, admin approval,\ndrift monitors", fillcolor="#FEF3E2", color="#B45309"];
     ui -> api -> svc; svc -> wf; svc -> cop; svc -> gen; wf -> grd [style=dotted, arrowhead=none]; cop -> grd [style=dotted, arrowhead=none];
     gen -> grd [style=dotted, arrowhead=none]; wf -> llm [style=dotted]; cop -> llm [style=dotted]; gen -> llm [style=dotted];
-    api -> jud; api -> fb [label="register"]; fb -> loop;
+    api -> jud; api -> fb [label="register"]; fb -> loop; api -> shared [style=dotted, arrowhead=none];
   }
-  risk -> svc; out -> svc; prio -> svc; idx -> svc; full -> svc [label="precedent stories"];
+  risk -> svc; out -> svc; prio -> svc; idx -> svc; vdb -> svc [label="vector search"]; full -> svc [label="precedent stories"];
   loop -> idx [style=dashed, color="#B45309"]; loop -> wf [style=dashed, color="#B45309", label="action stats"]; loop -> risk [style=dashed, color="#B45309", label="recalibration"];
 }

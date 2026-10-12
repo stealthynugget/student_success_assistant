@@ -6,8 +6,10 @@ explains why, shows what happened to similar students from earlier cohorts, rank
 advisor capacity, and drafts a supportive plan and message that an advisor reviews. A copilot answers questions by
 calling the same tools, every AI feature is evaluated, and advisor feedback flows back through approval-gated updates.
 
-**Stack:** Python (pandas, scikit-learn / XGBoost), FastAPI + uvicorn, React 18 (Vite, no UI or chart libraries), SQLite
-for feedback, usage and evaluation records, any OpenAI-compatible LLM (optional: everything has a computed fallback).
+**Stack:** Python 3.12 (pandas, XGBoost with TreeSHAP), LanceDB vector store, sentence-transformers (all-MiniLM-L6-v2),
+LangGraph agent workflow, Claude through the Anthropic API (Haiku / Sonnet / Opus by task; everything has a computed
+fallback), FastAPI + uvicorn, React 19 + TypeScript console (Vite, TanStack Query/Table, Radix, Recharts), SQLite for
+feedback, usage and evaluation records, DeepEval and RAGAS for AI evaluation.
 
 ![Console](docs/screenshots/student.jpg)
 
@@ -28,36 +30,37 @@ The repository ships a prebuilt console in `frontend/dist`, which the API serves
 In the console open **Settings** and paste the API key. Docker: `docker compose run --rm build`, then `docker compose up app`.
 No dataset yet? `make demo` builds everything on a small synthetic fixture (clearly marked non-official).
 
+Extra evaluations (each writes an artifact the model card reads):
+
+```bash
+python -m ssa.cli llm-eval            # every AI feature: code checks, LLM judge, A/B, DeepEval, copilot, adversarial prompts (LLM_BUDGET_USD caps spend)
+python -m ssa.cli embedding-eval      # five sentence-embedding models on the same narratives: accuracy, speed, size
+python -m ssa.cli llm-compare         # the same features on Haiku, Sonnet and Opus: quality, cost, latency
+python -m ssa.cli retrieval-study     # top-K, candidate pool and RRF sensitivity
+.venv-ragas/Scripts/python scripts/ragas_eval.py   # RAGAS, in its own environment (see requirements-ragas.txt)
+python -m ssa.cli report              # regenerate docs/MODEL_CARD.md and the deck from the artifacts
+```
+
 ## What's in it
 
 | Area | What it does |
 |---|---|
-| Data | All 7 tables: demographics, registrations, tutor- vs computer-marked assessments, VLE clicks by activity type, the planned teaching schedule (`week_from`/`week_to`), and complete historical records (whole-course activity, withdrawal week, coursework and exam results) |
-| Checkpoints | Separate calibrated models, indexes and rankings at ~week 6, 9, 15 and 22 of the course; the console's course clock switches between them |
+| Data | All 7 tables: demographics, registrations, tutor- vs computer-marked assessments, VLE clicks by activity type, the planned teaching schedule, and complete historical records (whole-course activity, withdrawal week, coursework and exam results) |
+| Checkpoints | Separate calibrated models, indexes and rankings at ~week 6, 9, 15 and 22; the console's course clock switches between them |
 | Risk | Withdrawal model (students still enrolled only), four-class outcome model, learned Medium/High tiers, TreeSHAP drivers |
-| Retrieval | Supervised behavioural kNN + BM25 over descriptive signals (+ optional dense), metadata filters, earlier cohorts only, "what happened next" stories |
-| Prioritisation | Weights learned for precision at advisor capacity, observable reason codes |
-| Agents | Performance → risk → router → intervention ⇄ critic workflow with live progress, eligible-action catalogue, code guardrails |
-| LLM features | Copilot with function calling over 8 tools; search understanding; precedent synthesis; cohort briefing; outreach rewrite by channel, tone and language; feedback note themes; judge on demand and sampled online |
-| Evaluation | Temporal test, calibration, baselines, ablations, fairness, retrieval vs random, prioritisation vs baselines, and an offline evaluation per AI feature (judge, DeepEval, A/B, labelled search queries, copilot golden questions, adversarial prompts) plus usage and cost |
+| Retrieval | Supervised behavioural kNN + BM25 over descriptive signals + dense narrative embeddings, weighted RRF; vectors in LanceDB with metadata pre-filtering (course, region, education, age band, credits, previous attempts); earlier cohorts only; "what happened next" stories |
+| Prioritisation | Weights learned for precision at advisor capacity (one-standard-error blend), reason codes |
+| Agents | LangGraph workflow: performance → risk → router → intervention ⇄ critic, with live progress, an eligible-action catalogue and code guardrails ([graph](docs/AGENT_GRAPH.md)) |
+| LLM features | Copilot with tool use over 8 tools, streamed; search understanding; precedent synthesis; cohort briefing; outreach rewrite by channel, tone and language; feedback note themes; judge on demand and sampled online |
+| Evaluation | Temporal test, calibration, baselines, ablations, fairness with permutation tests, retrieval vs random, embedding-model comparison, LLM-tier comparison, and per-feature AI evaluation: code checks, LLM-as-judge, order-swapped A/B, DeepEval, RAGAS, blind human review in the console, usage and cost |
+| Security | API and admin keys, strict validation, prompt-injection screen, output guardrails, sensitive attributes never used or sent ([details](docs/SECURITY.md)) |
 | Feedback | Registered recommendations, per-action and per-precedent labels, real outcomes, learners with admin approval, drift monitors |
 
-## Reference run (official OULAD, untouched 2014J presentation)
+## Results
 
-Generated 2026-10-10 with the scikit-learn engine (XGBoost is used automatically when installed). Always-current
-figures: [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md), regenerated by `make report`.
-
-| Course week | Students still enrolled | Withdrawal ROC-AUC | PR-AUC (base rate) | Calibration error |
-|---|---|---|---|---|
-| 6 | 27,157 | 0.693 | 0.347 (0.179) | 0.011 |
-| 9 | 26,241 | 0.703 | 0.281 (0.150) | 0.014 |
-| 15 | 25,204 | 0.730 | 0.266 (0.113) | 0.006 |
-| 22 | 23,926 | 0.758 | 0.173 (0.058) | 0.011 |
-
-At week 15: precedents predict fail-or-withdraw with neighbour-vote AUC 0.80 (random 0.51); learned prioritisation
-puts 98% of the top 10% among students who later failed or withdrew. Without an LLM, the rule-based search parser
-scores F1 0.98 on templated queries but 0.74 on paraphrases, which is where the LLM path is expected to help.
-Fairness gaps for region, IMD and disability (0.16–0.26) are flagged for review.
+All figures are generated from the build artifacts: [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) (regenerated by
+`make report`) covers the models at each checkpoint, retrieval and typed search, the embedding and LLM comparisons,
+RAGAS, DeepEval, the judge, fairness and the quality gate. `docs/reference_run/` keeps the earlier scikit-learn baseline.
 
 ## Layout
 
@@ -65,12 +68,15 @@ Fairness gaps for region, IMD and disability (0.16–0.26) are flagged for revie
 ssa/                 Python package (see docs/ARCHITECTURE.md)
   data/  models/  retrieval/  agents/  evaluation/  feedback/  api/  service.py  appdb.py  reporting.py  cli.py
 frontend/            React console (src/, prebuilt dist/, DESIGN.md)
+scripts/             architecture diagram, lock file, RAGAS runner
 tests/               pytest on an isolated synthetic fixture (no network, no LLM)
-docs/                architecture, design, API, deployment, model card, audit fixes, PRD traceability, deck, screenshots
+docs/                architecture, design, decisions, security, API, deployment, model card, PRD traceability, deck, screenshots
 ```
 
 ## Documentation
 
-[Architecture](docs/ARCHITECTURE.md) · [Design](docs/DESIGN.md) · [Console design](frontend/DESIGN.md) · [API](docs/API.md) ·
-[Deployment](docs/DEPLOYMENT.md) · [Model card](docs/MODEL_CARD.md) · [PRD traceability](docs/PRD_TRACEABILITY.md) ·
-[Audit fixes](docs/AUDIT_FIXES.md) · [Deck](docs/Student_Success_Assistant_10min.pptx) · [Presentation script](docs/PRESENTATION_SCRIPT.md)
+[Architecture](docs/ARCHITECTURE.md) · [Design](docs/DESIGN.md) · [Design decisions](docs/DECISIONS.md) ·
+[Agent graph](docs/AGENT_GRAPH.md) · [Security and compliance](docs/SECURITY.md) · [Console design](frontend/DESIGN.md) ·
+[API](docs/API.md) · [Deployment](docs/DEPLOYMENT.md) · [Model card](docs/MODEL_CARD.md) ·
+[PRD traceability](docs/PRD_TRACEABILITY.md) · [Audit fixes](docs/AUDIT_FIXES.md) ·
+[Deck](docs/Student_Success_Assistant_10min.pptx) · [Presentation script](docs/PRESENTATION_SCRIPT.md)

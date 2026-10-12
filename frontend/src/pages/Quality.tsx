@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, CircleAlert, TriangleAlert } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { api, fmt, type ApiError } from "../api";
+import { api, fmt, runJob, type ApiError } from "../api";
 import { useStore } from "../store";
 import { Empty, ErrorNote, Loading, TabSet } from "../ui";
 import { COL, GroupedBars, HBars, Reliability } from "../viz";
@@ -18,7 +18,7 @@ export default function Quality() {
     <>
       <div className="page-head"><div><h1>Model quality</h1><div className="sub">How well each part works, measured on a later presentation the models never saw.</div></div></div>
       <TabSet label="Model quality" value={tab} onChange={setTab} tabs={[["risk", "Risk models"], ["retrieval", "Similar cases"], ["ranking", "Prioritisation"],
-        ["llm", "AI features"], ["online", "Live reviews"], ["usage", "AI usage and cost"], ["gate", "Release checks"]]}>
+        ["llm", "AI features"], ["online", "Live reviews"], ["human", "Human review"], ["usage", "AI usage and cost"], ["gate", "Release checks"]]}>
         {m.error && <ErrorNote error={m.error as ApiError} onRetry={() => m.refetch()} />}
         {!d && !m.error && ["risk", "retrieval", "ranking", "gate"].includes(tab) && <Loading lines={6} />}
         {d && tab === "risk" && <Risk m={d} />}
@@ -26,6 +26,7 @@ export default function Quality() {
         {d && tab === "ranking" && <Ranking p={d.prioritization} />}
         {tab === "llm" && <LlmEval />}
         {tab === "online" && <Online />}
+        {tab === "human" && <HumanReview />}
         {tab === "usage" && <Usage />}
         {d && tab === "gate" && <Gate g={d.quality_gate} />}
       </TabSet>
@@ -157,6 +158,88 @@ function LlmEval() {
         <p className="small muted">Judge agreement with advisors: {e.human_agreement.status || `kappa ${e.human_agreement.verdict_cohen_kappa?.toFixed(2)}`}</p>
       </Block>
     </div>
+  );
+}
+
+function HumanReview() {
+  const q = useQuery({ queryKey: ["human-review"], queryFn: ({ signal }) => api("/evaluations/human-review", { signal }) });
+  const [open, setOpen] = useState<any>(null);
+  if (q.error) return <ErrorNote error={q.error as ApiError} onRetry={() => q.refetch()} />;
+  if (!q.data) return <Loading lines={5} />;
+  const d: any = q.data;
+  if (!d.cases.length) return <Empty title="No evaluation cases yet">Run <code>python -m ssa.cli llm-eval</code> to create the cases advisors can rate.</Empty>;
+  const ag = d.agreement || {};
+  return (
+    <div className="stack">
+      <p>Rate the AI-drafted analysis and plan for each evaluation case without seeing the AI judge's verdict. Your ratings measure how
+        far the judge can be trusted: agreement is computed once at least 5 cases are rated, and again on every <code>llm-eval</code> run.</p>
+      <div className="stats">
+        <div className="stat"><div className="v">{d.labelled} of {d.cases.length}</div><div className="l">cases rated</div></div>
+        <div className="stat"><div className="v">{ag.verdict_agreement != null ? fmt.pct(ag.verdict_agreement) : "–"}</div><div className="l">same verdict as the AI judge</div></div>
+        <div className="stat"><div className="v">{ag.verdict_cohen_kappa != null ? ag.verdict_cohen_kappa.toFixed(2) : "–"}</div><div className="l">Cohen's kappa (chance-corrected)</div></div>
+      </div>
+      {ag.status && <p className="small muted">{ag.status === "insufficient overlap" ? `Agreement needs at least 5 rated cases (${ag.n} so far).` : ag.status}.</p>}
+      <div className="table-wrap"><table className="data">
+        <caption className="visually-hidden">Evaluation cases to rate</caption>
+        <thead><tr><th scope="col">Student</th><th scope="col">Course</th><th scope="col">Tier</th><th scope="col">Plan by</th><th scope="col">Your rating</th><th scope="col"></th></tr></thead>
+        <tbody>{d.cases.map((c: any) => (
+          <tr key={`${c.id_student}-${c.code_module}`} className={open?.id_student === c.id_student && open?.code_module === c.code_module ? "hl" : undefined}>
+            <td>{c.id_student}</td><td>{c.code_module} {c.code_presentation}</td><td>{c.tier}</td><td>{c.plan_source?.startsWith("llm") ? "AI" : "Computed"}</td>
+            <td>{c.label ? `${c.label.verdict === "PASS" ? "Pass" : "Needs review"}, ${c.label.overall}/10` : "–"}</td>
+            <td><button className="ghost" onClick={() => setOpen(c)}>{c.label ? "Re-rate" : "Rate"}</button></td></tr>))}</tbody>
+      </table></div>
+      {open && <RateCase key={`${open.id_student}-${open.code_module}`} c={open} onSaved={() => { q.refetch(); setOpen(null); }} />}
+    </div>
+  );
+}
+
+function RateCase({ c, onSaved }: { c: any; onSaved: () => void }) {
+  const { notify } = useStore();
+  const [res, setRes] = useState<{ status: string; data?: any; error?: ApiError }>({ status: "idle" });
+  const [verdict, setVerdict] = useState(c.label?.verdict || "PASS");
+  const [overall, setOverall] = useState<number>(c.label?.overall ?? 7);
+  const [notes, setNotes] = useState(c.label?.notes || "");
+  const [reviewer, setReviewer] = useState(() => { try { return localStorage.getItem("ssa.reviewer") || ""; } catch { return ""; } });
+  const ref = { id_student: c.id_student, code_module: c.code_module, code_presentation: c.code_presentation };
+  const load = async () => {
+    setRes({ status: "loading" });
+    try { setRes({ status: "done", data: await runJob("/jobs/analyze", { student: ref, use_llm: true }, () => {}) }); }
+    catch (e) { setRes({ status: "error", error: e as ApiError }); }
+  };
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try { localStorage.setItem("ssa.reviewer", reviewer); } catch { /* per-viewer convenience only */ }
+    try {
+      await api("/evaluations/human-labels", { method: "POST", body: { ...ref, verdict, overall, notes, reviewer } });
+      notify(`Rating saved for ${c.id_student}`); onSaved();
+    } catch (err) { setRes((r) => ({ ...r, error: err as ApiError })); }
+  };
+  const wf = res.data?.workflow;
+  const plan = wf?.intervention_plan;
+  return (
+    <section className="panel stack" aria-labelledby="rate-h">
+      <h3 className="h4" id="rate-h">Rate student {c.id_student} in {c.code_module} {c.code_presentation}</h3>
+      {res.status === "idle" && <div><button className="primary" onClick={load}>Show the analysis and plan</button>
+        <p className="small muted">Loads the same AI draft the evaluation scored (from the response cache when unchanged).</p></div>}
+      {res.status === "loading" && <Loading lines={4} label="Loading the analysis" />}
+      {res.error && <ErrorNote error={res.error} />}
+      {wf && <>
+        <div><strong>Risk</strong><p>{wf.risk_analysis.risk_summary}</p><p className="small">{wf.risk_analysis.historical_context}</p></div>
+        <div><strong>Plan ({plan.mode}, {plan.priority})</strong><ul>{plan.actions.map((a: any) => <li key={a.id}>{a.text}</li>)}</ul></div>
+        <div><strong>Message to the student</strong><p>{plan.outreach_message}</p></div>
+        <div><strong>Rationale for the advisor</strong><p className="small">{plan.rationale}</p></div>
+        <details><summary>Evidence the agents could use</summary><ul className="small">{wf.observations.map((o: any) => <li key={o.id}>{o.id}: {o.text}</li>)}</ul></details>
+        <form className="stack" onSubmit={save}>
+          <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}><legend className="small">Would you use this plan as it is?</legend>
+            <label><input type="radio" name="verdict" value="PASS" checked={verdict === "PASS"} onChange={() => setVerdict("PASS")} /> Yes, it is sound and supportive</label>
+            <label><input type="radio" name="verdict" value="REVIEW" checked={verdict === "REVIEW"} onChange={() => setVerdict("REVIEW")} /> No, it needs changes</label></fieldset>
+          <label className="field">Overall quality: {overall} / 10<input type="range" min="0" max="10" step="0.5" value={overall} onChange={(e) => setOverall(Number(e.target.value))} /></label>
+          <label className="field">Notes (optional)<textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} rows={3} /></label>
+          <label className="field">Your name or initials<input value={reviewer} onChange={(e) => setReviewer(e.target.value)} required maxLength={64} pattern="[A-Za-z0-9_.@ \-]+" /></label>
+          <div><button className="primary" type="submit">Save rating</button></div>
+        </form>
+      </>}
+    </section>
   );
 }
 

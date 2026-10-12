@@ -314,6 +314,19 @@ class JudgeRequest(Strict):
     recommendation_id: str = Field(min_length=8, max_length=64, pattern=r"^[a-f0-9]+$")
 
 
+class HumanLabelRequest(StudentRef):
+    """An advisor's blind rating of the AI-drafted analysis and plan for one evaluation case."""
+    verdict: Literal["PASS", "REVIEW"]
+    overall: float = Field(ge=0, le=10)
+    notes: str = Field("", max_length=1000)
+    reviewer: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_.@ -]+$")
+
+    @field_validator("notes")
+    @classmethod
+    def _clean_notes(cls, v: str) -> str:
+        return sanitize_text(v, 1000)
+
+
 class FeedbackLoopRequest(Strict):
     apply: bool = False
     approved_by: str | None = Field(None, max_length=64, pattern=r"^[A-Za-z0-9_.@ -]+$")

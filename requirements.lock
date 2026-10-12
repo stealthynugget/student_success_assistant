@@ -15,6 +15,7 @@ charset-normalizer==3.5.2
 click==8.3.3
 cloudpickle==3.1.2
 colorama==0.4.6 ; sys_platform == 'win32'
+coverage==7.16.2
 deepeval==3.9.9
 deprecation==2.1.0
 distro==1.9.0
@@ -84,6 +85,7 @@ pyfiglet==1.0.4
 pygments==2.21.0
 pytest==9.1.1
 pytest-asyncio==1.4.0
+pytest-cov==7.1.0
 pytest-repeat==0.9.4
 pytest-rerunfailures==16.7
 pytest-xdist==3.8.0

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import random
 import threading
+import time
 
 from ssa.agents.copilot import Copilot
 from ssa.agents.genai import briefing_evidence, cohort_briefing, note_themes, outreach_variant, understand_query
@@ -27,6 +28,7 @@ log = get_logger("ssa.api")
 
 
 _jsonable = jsonable
+_LABEL_LOCK = threading.Lock()
 
 
 class Handlers:
@@ -253,6 +255,48 @@ class Handlers:
             self.db.add_eval("analysis", req.recommendation_id, j["verdict"], j.get("overall"), j["scores"], j.get("judge_model"),
                              {"checks": j.get("deterministic_checks"), "rationale": j.get("rationale"), "sampled": False})
         return j
+
+    # ---------------------------------------------------------------- human evaluation (blind advisor ratings)
+    def _eval_rows(self) -> list[dict]:
+        path = self.settings.global_metrics_dir / "llm_evaluation_cases.jsonl"
+        if not path.exists():
+            return []
+        return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+    def _labels(self) -> dict:
+        path = self.settings.global_metrics_dir / "human_labels.jsonl"
+        if not path.exists():
+            return {}
+        out = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                d = json.loads(line)
+                out[(d["id_student"], d["code_module"], d["code_presentation"])] = d
+        return out
+
+    def human_review(self):
+        """Evaluation cases to rate, without the AI judge's verdict (blind), plus judge-vs-human agreement so far."""
+        from ssa.evaluation.offline_eval import human_agreement
+        rows, labels = self._eval_rows(), self._labels()
+        cases = [{**r["ref"], "plan_source": r.get("plan_source"),
+                  "label": labels.get((r["ref"]["id_student"], r["ref"]["code_module"], r["ref"]["code_presentation"]))}
+                 for r in rows]
+        return {"cases": cases, "labelled": sum(c["label"] is not None for c in cases),
+                "agreement": human_agreement(rows, self.settings) if rows else {"status": "no evaluation run yet"}}
+
+    def human_label(self, req: S.HumanLabelRequest):
+        """Save (or replace) one blind rating; agreement is recomputed by `llm-eval` and shown by `human_review`."""
+        d = req.model_dump()
+        d["created_at"] = time.time()
+        with _LABEL_LOCK:
+            labels = self._labels()
+            labels[(d["id_student"], d["code_module"], d["code_presentation"])] = d
+            path = self.settings.global_metrics_dir / "human_labels.jsonl"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text("\n".join(json.dumps(v) for v in labels.values()) + "\n", encoding="utf-8")
+            tmp.replace(path)
+        return self.human_review()
 
     def llm_usage(self, since_hours: float | None = None):
         return self.db.usage_summary(since_s=since_hours * 3600 if since_hours else None)

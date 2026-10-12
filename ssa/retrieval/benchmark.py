@@ -54,7 +54,7 @@ def _evaluate(df, index, query_presentation, specs, n_queries, k, seed):
     corpus_rows = key_to_row.reindex(corpus_keys).to_numpy()
     key_pos = {ck: i for i, ck in enumerate(corpus_keys)}
     rng = np.random.default_rng(seed)
-    acc = {name: {"vote_w": [], "vote_p": [], "agree": [], "ndcg": []} for name, _, _ in specs}
+    acc = {spec[0]: {"vote_w": [], "vote_p": [], "agree": [], "ndcg": []} for spec in specs}
     y_w, y_p = [], []
     for _, q in queries.iterrows():
         prof = q.to_dict()
@@ -66,19 +66,21 @@ def _evaluate(df, index, query_presentation, specs, n_queries, k, seed):
         d_ref = np.sqrt(((Rz[rows_e] - Rz[key_to_row[q["enrollment_key"]]]) ** 2).sum(1))
         rel = 1.0 / (1.0 + d_ref)
         rel_of = dict(zip(elig, rel))
-        ideal = np.sort(rel)[::-1][:k]
         y_w.append(int(q["withdrawn"])), y_p.append(int(q["poor_outcome"]))
-        for name, mode, weights in specs:
+        for spec in specs:  # (name, mode, weights[, extra search kwargs])
+            name, mode, weights = spec[:3]
+            extra = spec[3] if len(spec) > 3 else {}
             if mode == "random":
                 docs = rng.choice(elig, k, replace=False)
             else:
-                res = index.search(profile=prof, filters=filt, top_k=k, mode=mode, weights=weights)
+                res = index.search(profile=prof, filters=filt, top_k=extra.get("top_k", k), mode=mode, weights=weights,
+                                   **{key: v for key, v in extra.items() if key != "top_k"})
                 docs = np.array([key_pos[c["case_id"]] for c in res["cases"]])
             sub = index.meta.iloc[docs]
             acc[name]["vote_w"].append(sub["withdrawn"].mean())
             acc[name]["vote_p"].append(sub["poor_outcome"].mean())
             acc[name]["agree"].append(float((sub["poor_outcome"] == q["poor_outcome"]).mean()))
-            acc[name]["ndcg"].append(_ndcg([rel_of[d] for d in docs], ideal))
+            acc[name]["ndcg"].append(_ndcg([rel_of[d] for d in docs], np.sort(rel)[::-1][: len(docs)]))
     y_w, y_p = np.array(y_w), np.array(y_p)
     out = {}
     for name, a in acc.items():
@@ -136,6 +138,32 @@ def run_benchmark(df: pd.DataFrame, index: HistoricalCaseIndex, n_queries: int =
     }
     write_json(s.metrics_dir / "retrieval_benchmark.json", result)
     return result
+
+
+def retrieval_sensitivity(df: pd.DataFrame, index: HistoricalCaseIndex, n_queries: int = 300, settings: Settings | None = None,
+                          seed: int = 42) -> dict:
+    """How the retrieval settings behave on the test presentation (hybrid mode): the number of precedents used (top-K),
+    the depth of each channel's list before fusion (candidate pool) and the RRF constant. Production: 6 precedents shown
+    to advisors and the agents, outcome mix over the 50 nearest, pool 200, RRF k 60."""
+    s = settings or get_settings()
+    index._ensure()
+    pres = sorted(df.loc[df["in_scope"] == 1, "code_presentation"].unique(), key=presentation_sort_key)
+    groups = {
+        "top_k": [(f"k={k}", "hybrid", None, {"top_k": k}) for k in (3, 6, 10, 20, 50)] + [("k=6 random", "random", None)],
+        "candidate_pool": [(f"pool={p}", "hybrid", None, {"candidate_pool": p}) for p in (50, 100, 200, 500)],
+        "rrf_k": [(f"rrf_k={r}", "hybrid", None, {"rrf_k": r}) for r in (10, 30, 60, 100)],
+    }
+    out = {"queries": n_queries, "query_presentation": pres[-1], "mode": "hybrid",
+           "production": {"precedents_shown": 6, "outcome_neighbourhood": 50, "candidate_pool": 200, "rrf_k": 60}}
+    for g, specs in groups.items():
+        k = 6 if g == "top_k" else 10
+        t0 = time.time()
+        res, _, _ = _evaluate(df, index, pres[-1], specs, n_queries, k, seed)
+        out[g] = {name: {"vote_auc_poor_outcome": v["neighbour_vote_auc_poor_outcome"], "vote_auc_withdrawal": v["neighbour_vote_auc_withdrawal"],
+                         "outcome_agreement": v[f"outcome_agreement_at_{k}"]} for name, v in res.items()}
+        out[g]["seconds"] = round(time.time() - t0, 1)
+    write_json(s.metrics_dir / "retrieval_sensitivity.json", out)
+    return out
 
 
 # --------------------------------------------------------------------------- typed (free-text) search
