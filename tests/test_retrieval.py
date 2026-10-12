@@ -112,3 +112,17 @@ def test_queries_use_the_index_embedding_spec(service):
         idx.manifest = old
         del idx._encode
         idx._qcache.clear()
+
+
+def test_dense_vectors_are_reused_for_unchanged_narratives(built):
+    import numpy as np
+
+    from ssa.retrieval.hybrid import HistoricalCaseIndex
+    idx = HistoricalCaseIndex(built)
+    calls = []
+    idx._encode = lambda texts: (calls.append(list(texts)), np.ones((len(texts), 3), np.float32))[1]
+    old = {1: ("same text", np.full(3, 7, np.float32)), 2: ("old text", np.full(3, 9, np.float32))}
+    vecs, reused = idx._encode_corpus(np.array([1, 2, 3]), ["same text", "new text", "third"], "passage: ", old)
+    assert reused == 1 and calls == [["passage: new text", "passage: third"]]
+    assert (vecs[0] == 7).all() and (vecs[1] == 1).all() and (vecs[2] == 1).all()
+    assert idx._reusable_dense({"model": "some-other-model", "query_prefix": "", "passage_prefix": ""}) == {}  # model changed

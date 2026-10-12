@@ -142,9 +142,12 @@ class HistoricalCaseIndex:
                 from ssa.config import embedding_prefixes
                 qp, pp = embedding_prefixes(self.settings.embedding_model_name)
                 self._spec = {"model": self.settings.embedding_model_name, "query_prefix": qp, "passage_prefix": pp}
+                old = self._reusable_dense(self._spec)  # read before self.manifest is reset
                 self.manifest = {}  # encode with the configured model, not the one of a previously loaded index
-                dense = self._encode([pp + t for t in texts])
+                dense, reused = self._encode_corpus(corpus["enrollment_key"].to_numpy(), texts, pp, old)
                 dense_status = "built"
+                if reused:
+                    log.info(f"dense vectors reused for {reused:,} of {len(texts):,} unchanged narratives")
             except Exception as exc:  # sentence-transformers optional
                 dense_status = f"unavailable: {type(exc).__name__}"
                 log.warning(f"dense channel unavailable: {exc}")
@@ -180,6 +183,40 @@ class HistoricalCaseIndex:
         self.load()
         log.info(f"index built: {manifest['n_docs']:,} docs, dense={dense_status}")
         return manifest
+
+    def _reusable_dense(self, spec: dict) -> dict:
+        """Dense vectors of the index currently on disk, by enrolment, if it was built with the same model and prefixes:
+        {enrollment_key: (narrative, vector)}. Rebuilding after a model change elsewhere then only re-encodes narratives
+        whose text changed (encoding is the slow part of a build). Empty when nothing can be reused."""
+        man = read_json(self.dir / "manifest.json", {})
+        if (man.get("embedding_model") != spec["model"] or (man.get("embedding_query_prefix") or "") != spec["query_prefix"]
+                or (man.get("embedding_passage_prefix") or "") != spec["passage_prefix"]):
+            return {}
+        try:
+            meta = pd.read_csv(self.dir / "meta.csv.gz", usecols=["enrollment_key", "narrative"], low_memory=False)
+            store = LanceVectorStore(self.dir) if LanceVectorStore.exists(self.dir) else NumpyVectorStore.load(self.dir)
+            if not store.has("dense") or store.count() != len(meta):
+                return {}
+            vecs = store.vectors("dense", list(range(len(meta))))
+        except Exception as exc:  # unreadable old index: encode everything
+            log.warning(f"could not reuse dense vectors: {exc}")
+            return {}
+        return {int(k): (str(t), v) for k, t, v in zip(meta["enrollment_key"], meta["narrative"].fillna(""), vecs, strict=True)}
+
+    def _encode_corpus(self, keys: np.ndarray, texts: list[str], passage_prefix: str, old: dict) -> tuple[np.ndarray, int]:
+        out: list = [None] * len(texts)
+        todo = []
+        for i, (k, t) in enumerate(zip(keys, texts, strict=True)):
+            hit = old.get(int(k))
+            if hit is not None and hit[0] == t:
+                out[i] = hit[1]
+            else:
+                todo.append(i)
+        if todo:
+            fresh = self._encode([passage_prefix + texts[i] for i in todo])
+            for i, v in zip(todo, fresh, strict=True):
+                out[i] = v
+        return np.asarray(out, dtype=np.float32), len(texts) - len(todo)
 
     def _write_vectors(self, directory: Path, meta: pd.DataFrame, arrays: dict[str, np.ndarray]) -> str:
         if self.settings.vector_store == "lancedb":

@@ -227,3 +227,12 @@ Phase 2 (once access is back):
     the typed-search benchmark when an LLM is configured (it used to overwrite those rows with rules-only results).
   - *Hugging Face cache moved* from E: (removable drive) to `D:\huggingface\hub` (user-level `HF_HOME`; the machine-level
     variable still says E: and needs an administrator to change).
+- **Model-improvement experiment (2026-10-12), not adopted.** Candidates: student-history features (earlier module results,
+  only once known; concurrent registrations; never `date_unregistration`), assessment context (missed the most recent
+  deadline, next deadline and weight), recent activity relative to the cohort, a 24-configuration withdrawal search chosen
+  by leave-one-presentation-out PR-AUC, and a configuration search for the outcome model. Validation (2014B, and the
+  rotating historical folds) improved at all four checkpoints. The test presentation (2014J), scored once, did not hold it:
+  withdrawal ROC-AUC +0.000 to +0.006 and PR-AUC -0.006 to +0.030, but ECE 0.009-0.017 -> 0.011-0.021 at every checkpoint
+  and outcome macro-F1 -0.003 to -0.022. Rolled back (artifacts restored byte-for-byte from a backup; code reverted). The
+  current scores look close to the ceiling for this honest protocol. Kept: index builds now reuse dense vectors of
+  unchanged narratives (a rebuild after a model change takes seconds instead of ~10 minutes per checkpoint).
