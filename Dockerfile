@@ -22,7 +22,7 @@ RUN if [ "$INSTALL_EXTRAS" = "true" ]; then \
     else pip install -r requirements-core.txt -c requirements.lock; fi
 # Bake the sentence-embedding model into the image: otherwise the first dense search in a new container downloads it
 # (about 45 s cold start). Change EMBEDDING_MODEL to match EMBEDDING_MODEL_NAME if you override it.
-ARG EMBEDDING_MODEL=all-MiniLM-L6-v2
+ARG EMBEDDING_MODEL=intfloat/e5-small-v2
 RUN if [ "$INSTALL_EXTRAS" = "true" ]; then \
       python -c "import sys; from sentence_transformers import SentenceTransformer; SentenceTransformer(sys.argv[1])" "$EMBEDDING_MODEL" \
       && chown -R ssa:ssa /opt/hf; fi

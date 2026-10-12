@@ -92,3 +92,23 @@ def test_text_weights_follow_the_parser(service, monkeypatch):
     assert idx.fusion_weights(text_only=True, parser="rules")["dense"] == 2.0
     assert idx.fusion_weights(text_only=True, parser="other")["dense"] == 2.0  # unknown parser: the default text weights
     assert idx.fusion_weights(parser="llm")["dense"] == 0.0 and idx.fusion_weights(parser="llm")["lexical"] == 0.5  # profiles unaffected
+
+
+def test_queries_use_the_index_embedding_spec(service):
+    idx = service.bundle(None).index
+    old = dict(idx.manifest)
+    try:
+        idx.manifest = {**old, "embedding_model": "intfloat/e5-small-v2", "embedding_query_prefix": "query: ",
+                        "embedding_passage_prefix": "passage: "}
+        seen = []
+        idx._encode = lambda texts: seen.extend(texts) or __import__("numpy").zeros((len(texts), 4))
+        idx._qcache.clear()
+        idx._encode_query("students who stopped submitting")
+        idx._encode_query("a narrative", kind="passage")
+        assert seen == ["query: students who stopped submitting", "passage: a narrative"]
+        idx.manifest = {k: v for k, v in old.items() if not k.startswith("embedding")} | {"embedding_model": "all-MiniLM-L6-v2"}
+        assert idx._embedding_spec() == {"model": "all-MiniLM-L6-v2", "query_prefix": "", "passage_prefix": ""}  # older index
+    finally:
+        idx.manifest = old
+        del idx._encode
+        idx._qcache.clear()

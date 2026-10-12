@@ -108,6 +108,8 @@ class HistoricalCaseIndex:
         self.scaler: dict = {}
         self.manifest: dict = {}
         self._encoder = None
+        self._encoder_name: str | None = None
+        self._spec: dict | None = None
         self._qcache: OrderedDict[str, np.ndarray] = OrderedDict()
 
     # ------------------------------------------------------------------ build
@@ -137,7 +139,11 @@ class HistoricalCaseIndex:
         dense_status = "disabled"
         if use_dense:
             try:
-                dense = self._encode(texts)
+                from ssa.config import embedding_prefixes
+                qp, pp = embedding_prefixes(self.settings.embedding_model_name)
+                self._spec = {"model": self.settings.embedding_model_name, "query_prefix": qp, "passage_prefix": pp}
+                self.manifest = {}  # encode with the configured model, not the one of a previously loaded index
+                dense = self._encode([pp + t for t in texts])
                 dense_status = "built"
             except Exception as exc:  # sentence-transformers optional
                 dense_status = f"unavailable: {type(exc).__name__}"
@@ -159,6 +165,8 @@ class HistoricalCaseIndex:
         manifest = {"index_version": INDEX_VERSION, "built_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "n_docs": int(len(meta)),
                     "presentations": sorted(meta["code_presentation"].unique().tolist(), key=presentation_sort_key),
                     "dense_channel": dense_status, "embedding_model": self.settings.embedding_model_name if dense is not None else None,
+                    "embedding_query_prefix": self._spec["query_prefix"] if dense is not None else None,
+                    "embedding_passage_prefix": self._spec["passage_prefix"] if dense is not None else None,
                     "vector_checksum": digest, "vector_store": backend, "supervised_feature_weights": bool(importance),
                     "build_seconds": round(time.time() - t0, 1)}
         write_json(tmp / "manifest.json", manifest)
@@ -211,14 +219,27 @@ class HistoricalCaseIndex:
         Z = np.clip(Z, -5, 5)
         return Z * w
 
+    def _embedding_spec(self) -> dict:
+        """The model and prefixes that built this index's dense vectors (from the manifest), so queries are always encoded
+        the same way as the stored passages, whatever EMBEDDING_MODEL_NAME says now. Indexes built before prefixes were
+        recorded used the model without prefixes."""
+        if self.manifest.get("embedding_model"):
+            return {"model": self.manifest["embedding_model"], "query_prefix": self.manifest.get("embedding_query_prefix") or "",
+                    "passage_prefix": self.manifest.get("embedding_passage_prefix") or ""}
+        return self._spec or {"model": self.settings.embedding_model_name, "query_prefix": "", "passage_prefix": ""}
+
     def _encode(self, texts: list[str]) -> np.ndarray:
-        if self._encoder is None:
+        model = self._embedding_spec()["model"]
+        if self._encoder is None or self._encoder_name != model:
             from sentence_transformers import SentenceTransformer
-            self._encoder = SentenceTransformer(self.settings.embedding_model_name)
+            self._encoder, self._encoder_name = SentenceTransformer(model), model
         return np.asarray(self._encoder.encode(texts, batch_size=256, normalize_embeddings=True, show_progress_bar=False))
 
-    def _encode_query(self, text: str) -> np.ndarray:
-        """Query embeddings are cached: tuning and benchmarks re-rank the same query under many fusion weightings."""
+    def _encode_query(self, text: str, kind: str = "query") -> np.ndarray:
+        """Embed a typed query (``kind="query"``) or a student narrative compared passage-to-passage (``"passage"``) with the
+        index's prefixes. Cached: tuning and benchmarks re-rank the same query under many fusion weightings."""
+        spec = self._embedding_spec()
+        text = (spec["query_prefix"] if kind == "query" else spec["passage_prefix"]) + text
         with _LOAD_LOCK:
             hit = self._qcache.get(text)
             if hit is not None:
@@ -248,6 +269,7 @@ class HistoricalCaseIndex:
                 raise RuntimeError("index files are inconsistent with manifest")
             tokens = [str(t).split() for t in meta["tokens"].fillna("")]
             self.manifest, self.store, self.scaler, self.tokens = manifest, store, read_json(self.dir / "scaler.json"), tokens
+            self._qcache.clear()  # cached query vectors may come from another model
             self.bm25 = BM25(tokens)
             self._pres_rank = meta["code_presentation"].map(lambda p: presentation_sort_key(p)).tolist()
             self.meta = meta  # assigned last: readiness flag for _ensure()
@@ -349,7 +371,7 @@ class HistoricalCaseIndex:
         if mode in ("hybrid", "dense") and self.store.has("dense") and (text or profile is not None):
             q_text = (text or "") + (" " + narrative(profile, include_outcome=False) if profile is not None else "")
             try:
-                qe = self._encode_query(q_text.strip())
+                qe = self._encode_query(q_text.strip(), "query" if text else "passage")
                 ranks["dense"] = self.store.search("dense", qe, flt, candidate_pool)[0]
             except Exception as exc:
                 log.warning(f"dense query failed: {exc}")

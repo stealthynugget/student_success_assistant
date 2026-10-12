@@ -218,3 +218,12 @@ Phase 2 (once access is back):
     LLM parser, hybrid typed search is lexical-only either way. Not switched yet: it means re-encoding all four indexes
     (~10 min each) and adding e5's "query: "/"passage: " prefixes. gte-small's encoding speed was measured while other jobs
     shared the CPU, so its docs/s figure is pessimistic.
+  - *Embedding switch (2026-10-12).* Production dense channel is now intfloat/e5-small-v2 (`EMBEDDING_MODEL_NAME`, with
+    "query: "/"passage: " prefixes). The index manifest records model and prefixes and queries always use them, so an older
+    index keeps working with its own model. All four indexes re-encoded; fusion and per-parser text weights re-tuned.
+    Typed search (rules parser) hybrid precision@10 0.622 -> 0.737; LLM parser unchanged (lexical-only); profile hybrid at
+    week 15 unchanged (dense weight still 0), so the AI evaluation stays valid; week 6 now gives dense weight 0.5. Docker
+    bakes e5 (`EMBEDDING_MODEL` build arg); verified offline in the container. `evaluate` now includes the LLM parser in
+    the typed-search benchmark when an LLM is configured (it used to overwrite those rows with rules-only results).
+  - *Hugging Face cache moved* from E: (removable drive) to `D:\huggingface\hub` (user-level `HF_HOME`; the machine-level
+    variable still says E: and needs an administrator to change).

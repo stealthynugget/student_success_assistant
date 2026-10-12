@@ -93,7 +93,7 @@
 <path fill="#f8fafc" stroke="#cbd5e1" d="M1009.5,-412.38C1009.5,-412.38 854.5,-412.38 854.5,-412.38 848.5,-412.38 842.5,-406.38 842.5,-400.38 842.5,-400.38 842.5,-383.38 842.5,-383.38 842.5,-377.38 848.5,-371.38 854.5,-371.38 854.5,-371.38 1009.5,-371.38 1009.5,-371.38 1015.5,-371.38 1021.5,-377.38 1021.5,-383.38 1021.5,-383.38 1021.5,-400.38 1021.5,-400.38 1021.5,-406.38 1015.5,-412.38 1009.5,-412.38"/>
 <text text-anchor="middle" x="932" y="-400.38" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#172036">Case index</text>
 <text text-anchor="middle" x="932" y="-389.38" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#172036">supervised kNN + BM25 + dense</text>
-<text text-anchor="middle" x="932" y="-378.38" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#172036">(all&#45;MiniLM&#45;L6&#45;v2), weighted RRF</text>
+<text text-anchor="middle" x="932" y="-378.38" font-family="Helvetica,sans-Serif" font-size="10.00" fill="#172036">(e5&#45;small&#45;v2), weighted RRF</text>
 </g>
 <!-- feat&#45;&gt;idx -->
 <g id="edge7" class="edge">

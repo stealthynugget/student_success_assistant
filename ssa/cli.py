@@ -118,7 +118,11 @@ def cmd_evaluate(args):
     b = run_benchmark(df, HistoricalCaseIndex(s).load(), n_queries=args.queries, settings=s)
     log.info(f"retrieval: hybrid vote-AUC(poor) {b['modes']['hybrid']['neighbour_vote_auc_poor_outcome']:.3f} vs random "
              f"{b['modes']['random']['neighbour_vote_auc_poor_outcome']:.3f}")
-    _text_benchmark(s, llm=None)
+    llm = None
+    if s.llm_configured:  # include the LLM query parser (about $0.01, cached across runs), as `search-benchmark --llm` does
+        from ssa.agents.llm import LLMClient
+        llm = LLMClient(s)
+    _text_benchmark(s, llm=llm)
 
 
 def _text_benchmark(s, llm=None) -> dict:

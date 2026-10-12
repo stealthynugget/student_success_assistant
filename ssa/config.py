@@ -43,6 +43,19 @@ def _int(name: str, default: int) -> int:
     return int(raw) if raw not in (None, "") else default
 
 
+# Input prefixes some retrieval-tuned embedding models were trained with: (query prefix, passage prefix).
+EMBEDDING_PREFIXES = {
+    "intfloat/e5-small-v2": ("query: ", "passage: "),
+    "BAAI/bge-small-en-v1.5": ("Represent this sentence for searching relevant passages: ", ""),
+}
+
+
+def embedding_prefixes(model_name: str) -> tuple[str, str]:
+    """Prefixes for a model, overridable with EMBEDDING_QUERY_PREFIX / EMBEDDING_PASSAGE_PREFIX."""
+    q, p = EMBEDDING_PREFIXES.get(model_name, EMBEDDING_PREFIXES.get(f"intfloat/{model_name}", ("", "")))
+    return os.getenv("EMBEDDING_QUERY_PREFIX", q), os.getenv("EMBEDDING_PASSAGE_PREFIX", p)
+
+
 @dataclass(frozen=True)
 class Settings:
     home: Path
@@ -60,7 +73,7 @@ class Settings:
     priority_selection: str = "one_se_blend"  # one_se_blend | argmax (see ssa.models.prioritization)
 
     # Retrieval
-    embedding_model_name: str = "all-MiniLM-L6-v2"
+    embedding_model_name: str = "intfloat/e5-small-v2"  # chosen by `ssa.cli embedding-eval` (model card)
     enable_text_embeddings: bool = True
     workflow_engine: str = "langgraph"  # langgraph | python (reference orchestrator, same results)
     vector_store: str = "lancedb"  # lancedb (embedded vector database) | numpy; see ssa/retrieval/vector_store.py
@@ -290,7 +303,7 @@ def get_settings() -> Settings:
         include_sensitive_features=_bool("INCLUDE_SENSITIVE_FEATURES", False),
         model_engine=os.getenv("MODEL_ENGINE", "auto").lower(),
         priority_selection=(os.getenv("PRIORITY_SELECTION") or "one_se_blend").lower(),
-        embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2"),
+        embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "intfloat/e5-small-v2"),
         enable_text_embeddings=_bool("ENABLE_TEXT_EMBEDDINGS", True),
         vector_store=(os.getenv("VECTOR_STORE") or "lancedb").strip().lower(),
         workflow_engine=(os.getenv("WORKFLOW_ENGINE") or "langgraph").strip().lower(),

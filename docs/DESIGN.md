@@ -41,7 +41,7 @@
   similarity); exact Euclidean search in the vector database.
 - **Lexical:** BM25 over discretised, cohort-relative descriptors (e.g. `missed_most`, `engagement_declining`), so keyword
   matches are meaningful; natural-language queries map onto descriptors.
-- **Dense (optional):** sentence embeddings (all-MiniLM-L6-v2, 384 dimensions, unit length) of qualitative narratives
+- **Dense (optional):** sentence embeddings (intfloat/e5-small-v2, 384 dimensions, unit length, "query: "/"passage: " prefixes recorded in the index manifest) of qualitative narratives
   (no raw numbers) for free-text queries; exact cosine search in the vector database.
 - **Fusion:** weighted RRF over each channel's top 200; weights tuned on validation queries (typed search: per query
   parser), overridable by feedback-learned weights.

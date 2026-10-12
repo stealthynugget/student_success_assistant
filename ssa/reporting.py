@@ -138,7 +138,7 @@ def _strategy_lines(sv: dict) -> list[str]:
     return lines
 
 
-def _embedding_lines(ee: dict) -> list[str]:
+def _embedding_lines(ee: dict, in_use: str | None = None) -> list[str]:
     rows = [r for r in ee.get("models", []) if "error" not in r]
     if not rows:
         return []
@@ -148,7 +148,8 @@ def _embedding_lines(ee: dict) -> list[str]:
              f"Same {rows[0]['corpus_docs']:,} case narratives (checkpoint {ee['checkpoint']}), encoded on CPU by each model. "
              "Typed search: "
              "40 labelled queries, hybrid ratio tuned per model on separate tuning queries. Precedents: dense-only neighbours "
-             f"of {ee['profile_queries'].split(' ')[0]} test students. Current model: {ee['current_model']}.", "",
+             f"of {ee['profile_queries'].split(' ')[0]} test students. Evaluated while {ee['current_model']} was in production; "
+             f"in production now: {in_use or ee['current_model']} (index manifest).", "",
              f"| Model | Params (M) | Dims | Index MB | Encode docs/s | Query ms | {head} | Precedents vote-AUC (fail/withdraw) |",
              "|---|---|---|---|---|---|" + "---|" * len(parsers) + "---|"]
     for r in rows:
@@ -292,7 +293,8 @@ def model_card(s: Settings | None = None) -> str:
         "| Mode | Neighbour-vote AUC (fail/withdraw) | Outcome agreement@10 | nDCG@10 (global ideal) |", "|---|---|---|---|",
     ] + [f"| {k} | {_f(v['neighbour_vote_auc_poor_outcome'])} | {_f(v['outcome_agreement_at_10'])} | {_f(v['reference_ndcg_at_10_global_ideal'])} |"
          for k, v in r.get("modes", {}).items()] + _typed_search_lines(m.get("text_search_benchmark", {})) + \
-        _strategy_lines(m.get("retrieval_sensitivity", {})) + _embedding_lines(m.get("embedding_eval", {})) + [
+        _strategy_lines(m.get("retrieval_sensitivity", {})) + \
+        _embedding_lines(m.get("embedding_eval", {}), r.get("index", {}).get("embedding_model")) + [
         "", "## Fairness audit (High tier, test presentation)",
         f"Groups count towards a gap only with {fa.get('sufficient_sample_rule', 'a sufficient sample')}. "
         "Chance gap: the median max−min gap when group labels are shuffled among withdrawn students (1,000 permutations), "
@@ -566,7 +568,8 @@ def build_deck(s: Settings | None = None, out: Path | None = None) -> Path:
             text(sl, 6.9, 4.4, 6.0, 2.8, [f"Encoding speed {min(x['encode_docs_per_second'] for x in rows):.0f}–"
                                           f"{max(x['encode_docs_per_second'] for x in rows):.0f} docs/s on CPU; index "
                                           f"{min(x['index_mb'] for x in rows):.0f}–{max(x['index_mb'] for x in rows):.0f} MB.",
-                                          f"In use: {ee['current_model']} (full table in the model card)."], size=13)
+                                          f"In production: {r.get('index', {}).get('embedding_model') or ee['current_model']} "
+                                          "(full table in the model card)."], size=13)
 
     if rg.get("features") and llm:
         sl = slide("Evaluating the AI: five layers",

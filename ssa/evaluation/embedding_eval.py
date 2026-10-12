@@ -36,12 +36,12 @@ class Candidate:
 
 
 CANDIDATES = [
-    Candidate("all-MiniLM-L6-v2", "sentence-transformers/all-MiniLM-L6-v2", note="current default; 6 layers"),
+    Candidate("all-MiniLM-L6-v2", "sentence-transformers/all-MiniLM-L6-v2", note="earlier default; 6 layers"),
     Candidate("all-mpnet-base-v2", "sentence-transformers/all-mpnet-base-v2", note="larger general-purpose sentence model"),
     Candidate("bge-small-en-v1.5", "BAAI/bge-small-en-v1.5", query_prefix="Represent this sentence for searching relevant passages: ",
               note="retrieval-tuned; instruction on short queries"),
     Candidate("e5-small-v2", "intfloat/e5-small-v2", query_prefix="query: ", passage_prefix="passage: ",
-              note="retrieval-tuned; query/passage prefixes"),
+              note="retrieval-tuned; query/passage prefixes; production default since this evaluation"),
     Candidate("gte-small", "thenlper/gte-small", note="retrieval-tuned"),
 ]
 
@@ -72,7 +72,7 @@ def evaluate_model(c: Candidate, settings: Settings, df, n_profile_queries: int 
     def use_prefix(prefix: str):
         cache: dict[str, np.ndarray] = {}
 
-        def enc(text: str) -> np.ndarray:
+        def enc(text: str, kind: str | None = None) -> np.ndarray:  # this evaluation sets the prefix itself
             if text not in cache:
                 cache[text] = np.asarray(model.encode([prefix + text], normalize_embeddings=True, show_progress_bar=False)[0], np.float32)
             return cache[text]

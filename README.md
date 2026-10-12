@@ -6,7 +6,7 @@ explains why, shows what happened to similar students from earlier cohorts, rank
 advisor capacity, and drafts a supportive plan and message that an advisor reviews. A copilot answers questions by
 calling the same tools, every AI feature is evaluated, and advisor feedback flows back through approval-gated updates.
 
-**Stack:** Python 3.12 (pandas, XGBoost with TreeSHAP), LanceDB vector store, sentence-transformers (all-MiniLM-L6-v2),
+**Stack:** Python 3.12 (pandas, XGBoost with TreeSHAP), LanceDB vector store, sentence-transformers (e5-small-v2),
 LangGraph agent workflow, Claude through the Anthropic API (Haiku / Sonnet / Opus by task; everything has a computed
 fallback), FastAPI + uvicorn, React 19 + TypeScript console (Vite, TanStack Query/Table, Radix, Recharts), SQLite for
 feedback, usage and evaluation records, DeepEval and RAGAS for AI evaluation.

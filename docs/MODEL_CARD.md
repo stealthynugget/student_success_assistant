@@ -1,6 +1,6 @@
 # Model card — Student Success Assistant v5
 
-_Generated 2026-10-12 09:32 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
+_Generated 2026-10-12 10:56 from `artifacts/metrics/*.json` by `python -m ssa.cli report`. Engine: **xgboost**. Evidence profile: **official** (quality gate passed)._
 
 ## Intended use
 Early-warning support for academic advisors at ~40% of a course presentation: surface students still enrolled who may withdraw or fail, explain why, show comparable historical cases and draft supportive outreach. A human advisor reviews every recommendation. Not for admissions, grading, sanctions or any automated adverse decision.
@@ -67,22 +67,22 @@ Queries: 600 in-scope students of 2014J; corpus: earlier presentations, same mod
 | hybrid | 0.835 | 0.715 | 0.866 |
 | behavioural | 0.829 | 0.718 | 0.870 |
 | lexical | 0.836 | 0.708 | 0.754 |
-| dense | 0.775 | 0.725 | 0.724 |
+| dense | 0.830 | 0.721 | 0.732 |
 | random | 0.512 | 0.528 | 0.544 |
 
 ### Typed search
-40 labelled plain-English queries (templated, paraphrased and behaviour-led); a returned case is relevant when it meets every expected filter and shows every expected behaviour. Hybrid typed search uses weights tuned per query parser on a separate query set (rules parser lexical 1.0, dense 2.0; llm parser lexical 1.0, dense 0.0).
+40 labelled plain-English queries (templated, paraphrased and behaviour-led); a returned case is relevant when it meets every expected filter and shows every expected behaviour. Hybrid typed search uses weights tuned per query parser on a separate query set (rules parser lexical 1.0, dense 4.0; llm parser lexical 1.0, dense 0.0).
 
 | Query parser | Mode | Precision@10 | Filter match@10 | Behaviour match@10 |
 |---|---|---|---|---|
 | rules | lexical | 0.522 | 0.735 | 0.527 |
-| rules | hybrid | 0.622 | 0.860 | 0.668 |
-| rules | dense | 0.634 | 0.875 | 0.674 |
+| rules | hybrid | 0.737 | 0.893 | 0.784 |
+| rules | dense | 0.729 | 0.893 | 0.777 |
 | rules | random_corpus | 0.071 | n/a | n/a |
 | rules | random_within_parsed_filters | 0.370 | n/a | n/a |
 | llm | lexical | 0.862 | 0.985 | 0.846 |
 | llm | hybrid | 0.862 | 0.985 | 0.846 |
-| llm | dense | 0.714 | 0.978 | 0.671 |
+| llm | dense | 0.802 | 0.978 | 0.780 |
 | llm | random_corpus | 0.071 | n/a | n/a |
 | llm | random_within_parsed_filters | 0.459 | n/a | n/a |
 
@@ -109,7 +109,7 @@ One document per enrolment, no chunking: each case is one record (snapshot featu
 More neighbours make better outcome estimates (hence 50 for the outcome mix); a handful of concrete stories keeps the context readable and the prompt short (hence 6). Pool depth and the RRF constant hardly matter here.
 
 ## Embedding model evaluation (dense narrative channel)
-Same 25,204 case narratives (checkpoint 0.4), encoded on CPU by each model. Typed search: 40 labelled queries, hybrid ratio tuned per model on separate tuning queries. Precedents: dense-only neighbours of 300 test students. Current model: all-MiniLM-L6-v2.
+Same 25,204 case narratives (checkpoint 0.4), encoded on CPU by each model. Typed search: 40 labelled queries, hybrid ratio tuned per model on separate tuning queries. Precedents: dense-only neighbours of 300 test students. Evaluated while all-MiniLM-L6-v2 was in production; in production now: intfloat/e5-small-v2 (index manifest).
 
 | Model | Params (M) | Dims | Index MB | Encode docs/s | Query ms | Typed llm: dense / hybrid P@10 | Typed rules: dense / hybrid P@10 | Precedents vote-AUC (fail/withdraw) |
 |---|---|---|---|---|---|---|---|---|

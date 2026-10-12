@@ -10,7 +10,7 @@ digraph SSA {
     risk [label="Withdrawal model\nGBM, LOPO Platt calibration,\nlearned tiers, TreeSHAP"];
     out  [label="Outcome model\n4 classes, calibrated"];
     prio [label="Prioritiser\nweights learned for\nprecision at capacity"];
-    idx  [label="Case index\nsupervised kNN + BM25 + dense\n(all-MiniLM-L6-v2), weighted RRF"];
+    idx  [label="Case index\nsupervised kNN + BM25 + dense\n(e5-small-v2), weighted RRF"];
     vdb  [label="LanceDB vector store\nbehavioural + dense vectors,\nmetadata pre-filter, exact kNN", shape=cylinder, fillcolor="#EEF2F1"];
     eval [label="Evaluation + quality gate\nmodels, retrieval, fairness, embeddings,\nLLM judge, DeepEval, RAGAS, tier comparison"];
     raw -> feat; raw -> full; feat -> risk; feat -> out; risk -> prio; out -> prio; feat -> idx; risk -> idx [label="weights"]; idx -> vdb;
